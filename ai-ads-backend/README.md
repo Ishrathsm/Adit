@@ -10,8 +10,10 @@ Full product plan / PRD: see the Notion docs
 
 Scaffolding stage — Node.js + TypeScript (Express), confirmed 2026-09-17 (follows from BullMQ,
 already locked in as the queue library, being Node-only). `GET /health` reports Supabase and
-queue connectivity. Queue/worker logic is not wired up yet — Upstash's TCP connection string
-(not the REST URL/token pair already in `.env`) still needs to be added before BullMQ can connect.
+queue connectivity — both verified live against the real Supabase project and Upstash Redis
+(TCP connection, eviction disabled per BullMQ's own guidance so job data can't be silently
+dropped under memory pressure). Actual job/worker logic isn't written yet — no providers
+(Veo/Runway/Kling/ElevenLabs) are wired into the pipeline.
 
 ```
 npm install
