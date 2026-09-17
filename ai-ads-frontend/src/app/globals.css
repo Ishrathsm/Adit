@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* next-themes toggles a `dark`/`light` class on <html> — tell Tailwind v4 to key off that
+   instead of prefers-color-scheme, since the product is dark-by-default with a manual toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@property --rgb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+:root,
+.dark {
+  --background: #0a0a0b;
+  --surface: #131316;
+  --foreground: #f4f4f5;
+  --muted: #9a9aa2;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --button-fg: #0a0a0b;
+  --button-bg: #ffffff;
+}
+
+.light {
+  --background: #fafafa;
+  --surface: #ffffff;
+  --foreground: #17171a;
+  --muted: #6b6b74;
+  --border-subtle: rgba(10, 10, 11, 0.08);
+  --border-strong: rgba(10, 10, 11, 0.14);
+  --button-fg: #ffffff;
+  --button-bg: #0a0a0b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-button-bg: var(--button-bg);
+  --color-button-fg: var(--button-fg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-card: 1.75rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Fixed-position film grain, blended over everything — subtle, not decorative noise you notice. */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.light .grain-overlay {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+/* Thin, slowly-rotating RGB sheen used on the primary onboarding/selection cards. */
+.rgb-border {
+  --rgb-angle: 0deg;
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.rgb-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--rgb-angle),
+    rgba(255, 99, 99, 0.55),
+    rgba(255, 214, 99, 0.35),
+    rgba(99, 255, 173, 0.5),
+    rgba(99, 170, 255, 0.55),
+    rgba(198, 99, 255, 0.4),
+    rgba(255, 99, 99, 0.55)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rgb-rotate 10s linear infinite;
+  z-index: -1;
+}
+@keyframes rgb-rotate {
+  to {
+    --rgb-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rgb-border::before {
+    animation: none;
+  }
+}
