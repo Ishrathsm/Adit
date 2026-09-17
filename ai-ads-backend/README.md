@@ -8,7 +8,17 @@ Full product plan / PRD: see the Notion docs
 
 ## Status
 
-Scaffolding stage — framework not yet chosen. Candidates under consideration: Node/TypeScript, Python (FastAPI).
+Scaffolding stage — Node.js + TypeScript (Express), confirmed 2026-09-17 (follows from BullMQ,
+already locked in as the queue library, being Node-only). `GET /health` reports Supabase and
+queue connectivity. Queue/worker logic is not wired up yet — Upstash's TCP connection string
+(not the REST URL/token pair already in `.env`) still needs to be added before BullMQ can connect.
+
+```
+npm install
+npm run dev     # tsx watch, http://localhost:4000
+npm run build   # tsc -> dist/
+npm start       # node dist/index.js
+```
 
 ## Responsibilities (v1)
 
