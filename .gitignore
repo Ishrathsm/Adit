@@ -1,0 +1,18 @@
+# Env files — real secrets live in .env/.env.local, never committed
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# Installed skill packs (regenerate with `npx skills add ...`)
+**/.agents/
+
+# Local Claude Code / tooling config — not part of the shipped app
+.claude/
+.mcp.json
+daily-notes/
