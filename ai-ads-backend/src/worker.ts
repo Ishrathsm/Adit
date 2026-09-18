@@ -1,3 +1,4 @@
+import "./lib/gcp-credentials-bootstrap";
 import { Worker } from "bullmq";
 import { type GenerationTask, enqueueStoryboardStitch, redisConnection } from "./lib/queue";
 import { getJob, updateJobStatus } from "./lib/jobs";

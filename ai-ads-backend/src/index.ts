@@ -1,3 +1,4 @@
+import "./lib/gcp-credentials-bootstrap";
 import { createApp } from "./app";
 import { env } from "./lib/env";
 import { ensureBrandAssetsBucket } from "./lib/storage";
