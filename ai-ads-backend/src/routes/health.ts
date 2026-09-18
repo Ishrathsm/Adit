@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { generationQueue } from "../lib/queue";
 import { supabase } from "../lib/supabase";
+import { veoEnabled } from "../lib/veo";
 
 export const healthRouter = Router();
 
@@ -14,5 +15,6 @@ healthRouter.get("/", async (_req, res) => {
     status: "ok",
     supabase: supabaseReachable ? "reachable" : "unreachable",
     queue: generationQueue ? "connected" : "disabled",
+    veo: veoEnabled ? "configured" : "disabled",
   });
 });

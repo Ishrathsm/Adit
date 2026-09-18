@@ -17,6 +17,21 @@ export const env = {
   // Optional: features degrade gracefully instead of crashing at boot when these are unset,
   // since not every POC account is created yet.
   upstashRedisUrl: process.env.UPSTASH_REDIS_URL || undefined,
-  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || undefined,
   geminiApiKey: process.env.GEMINI_API_KEY || undefined,
+
+  // Google Cloud / Veo. GOOGLE_APPLICATION_CREDENTIALS is read directly by google-auth-library
+  // from process.env — not duplicated here.
+  googleCloudProjectId: process.env.GOOGLE_CLOUD_PROJECT_ID || undefined,
+  googleCloudLocation: process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1",
+  // veo-2.0-generate-001 was retired — veo-3.1-lite-generate-001 is the current cheapest tier.
+  veoModel: process.env.VEO_MODEL ?? "veo-3.1-lite-generate-001",
+  // Imagen (imagen-4.x, all variants) 404s on this project in every region tried — blocked at
+  // the account/entitlement level, unrelated to model naming. Gemini's native image output
+  // ("Nano Banana") is a separate product/API path and does work. gemini-3.1-flash-image
+  // (Nano Banana 2, Google's current most-capable image model) is only live in the "global"
+  // location for this project — it 404s in us-central1 same as Imagen does.
+  imageModel: process.env.IMAGE_MODEL ?? "gemini-3.1-flash-image",
+  imageLocation: process.env.IMAGE_LOCATION ?? "global",
+  // Text generation (storyboard shot breakdown) — plain Gemini text, no region quirks observed.
+  textModel: process.env.TEXT_MODEL ?? "gemini-2.5-flash",
 };

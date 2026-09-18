@@ -18,3 +18,32 @@ if (!redisConnection) {
 export const generationQueue = redisConnection
   ? new Queue("generation", { connection: redisConnection })
   : null;
+
+export type GenerationTask =
+  | { kind: "job"; jobId: string }
+  | { kind: "storyboard-shot-choices"; shotId: string }
+  | { kind: "storyboard-shot-video"; shotId: string }
+  | { kind: "storyboard-stitch"; storyboardId: string };
+
+async function enqueue(task: GenerationTask): Promise<void> {
+  if (!generationQueue) {
+    throw new Error("Generation queue is disabled — UPSTASH_REDIS_URL not set");
+  }
+  await generationQueue.add(task.kind, task);
+}
+
+export function enqueueGenerationJob(jobId: string): Promise<void> {
+  return enqueue({ kind: "job", jobId });
+}
+
+export function enqueueShotChoices(shotId: string): Promise<void> {
+  return enqueue({ kind: "storyboard-shot-choices", shotId });
+}
+
+export function enqueueShotVideo(shotId: string): Promise<void> {
+  return enqueue({ kind: "storyboard-shot-video", shotId });
+}
+
+export function enqueueStoryboardStitch(storyboardId: string): Promise<void> {
+  return enqueue({ kind: "storyboard-stitch", storyboardId });
+}

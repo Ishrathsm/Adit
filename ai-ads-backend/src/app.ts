@@ -1,7 +1,14 @@
 import cors from "cors";
 import express from "express";
 import { env } from "./lib/env";
+import { requireAuth } from "./middleware/auth";
+import { accountRouter } from "./routes/account";
 import { healthRouter } from "./routes/health";
+import { jobsRouter } from "./routes/jobs";
+import { productsRouter } from "./routes/products";
+import { projectsRouter } from "./routes/projects";
+import { storyboardsRouter } from "./routes/storyboards";
+import { templatesRouter } from "./routes/templates";
 
 export function createApp() {
   const app = express();
@@ -10,6 +17,12 @@ export function createApp() {
   app.use(express.json());
 
   app.use("/health", healthRouter);
+  app.use("/api/account", requireAuth, accountRouter);
+  app.use("/api/products", requireAuth, productsRouter);
+  app.use("/api/projects", requireAuth, projectsRouter);
+  app.use("/api/jobs", requireAuth, jobsRouter);
+  app.use("/api/storyboards", requireAuth, storyboardsRouter);
+  app.use("/api/templates", requireAuth, templatesRouter);
 
   return app;
 }
