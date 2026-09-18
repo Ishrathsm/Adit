@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createAccount, getAccount, type AccountType } from "@/lib/api";
 
@@ -81,7 +82,8 @@ export default function OnboardingPage() {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <Logo className="text-foreground" />
         <ThemeToggle />
       </div>
 

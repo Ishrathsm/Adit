@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, FolderPlus, Image as ImageIcon, LogOut, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -100,6 +101,7 @@ function ProjectsPageInner() {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <Logo className="text-foreground" />
           <p className="text-sm font-medium text-muted">Projects</p>
           {activeProduct && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border-strong px-3 py-1 text-xs text-muted">
