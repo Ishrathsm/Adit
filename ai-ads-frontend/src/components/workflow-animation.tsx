@@ -120,7 +120,10 @@ const FRAMES = [FormatFrame, PromptFrame, RefineFrame, GenerateFrame, PickFrame,
 export function WorkflowAnimation() {
   const reduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { amount: 0.6 });
+  // "some" (not a strict 60%+ threshold) — the section is tall enough that requiring
+  // most of it to be visible at once made the interval below effectively never start
+  // on a lot of scroll positions, which is why the animation looked permanently stuck.
+  const isInView = useInView(containerRef, { amount: "some" });
 
   const [step, setStep] = useState(0);
 
