@@ -210,7 +210,15 @@ const worker = new Worker(
         break;
     }
   },
-  { connection: redisConnection, concurrency: 1 },
+  {
+    connection: redisConnection,
+    concurrency: 1,
+    // Default drainDelay (5s) means BullMQ re-polls Redis every 5 seconds even when the
+    // queue is empty — on Upstash's pay-per-request billing that idle polling alone burns
+    // through the command quota in about a day. Generation jobs take many seconds to
+    // minutes anyway, so a 60s poll interval costs nothing in real latency.
+    drainDelay: 60,
+  },
 );
 
 worker.on("completed", (job) => console.log(`[worker] job ${job.id} completed`));
