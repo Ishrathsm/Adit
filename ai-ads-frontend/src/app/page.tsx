@@ -25,7 +25,7 @@ export default function LandingPage() {
         />
       </div>
 
-      <div className="fixed top-24 right-4 z-[60] origin-top-right scale-[0.65] sm:top-4 sm:right-8">
+      <div className="fixed top-4 right-8 z-[60] hidden origin-top-right scale-[0.65] md:block">
         <CinematicThemeSwitcher />
       </div>
 
