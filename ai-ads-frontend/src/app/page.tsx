@@ -12,20 +12,15 @@ const PRIMARY_BUTTON =
 export default function LandingPage() {
   return (
     <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center overflow-hidden"
-      >
-        <div className="relative h-[420px] w-[900px]">
-          <div
-            className="ambient-glow absolute inset-0 opacity-15 blur-[110px] dark:opacity-30"
-            style={{
-              background:
-                "radial-gradient(closest-side, rgba(99,140,255,0.55), rgba(198,99,255,0.35) 45%, rgba(255,99,170,0.2) 70%, transparent 80%)",
-            }}
-          />
-          <div className="ambient-glow-grain absolute inset-0" />
-        </div>
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div
+          className="ambient-glow absolute top-[-10%] left-1/2 h-[750px] w-[1300px] -translate-x-1/2 opacity-20 blur-[120px] dark:opacity-35"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(255,99,99,0.5), rgba(255,214,99,0.4) 25%, rgba(99,255,173,0.35) 45%, rgba(99,170,255,0.4) 65%, rgba(198,99,255,0.3) 80%, transparent 90%)",
+          }}
+        />
+        <div className="ambient-glow-grain absolute inset-0" />
       </div>
 
       <div className="fixed top-4 right-8 z-[60] hidden origin-top-right scale-[0.65] md:block">
