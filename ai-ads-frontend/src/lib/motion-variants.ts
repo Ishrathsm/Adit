@@ -5,6 +5,10 @@ export const fadeUpVariants = {
   visible: { opacity: 1, y: 0 },
 } as const;
 
-export const fadeUpTransition = { duration: 0.5, ease: [0.22, 1, 0.36, 1] } as const;
+export const fadeUpTransition = { duration: 0.9, ease: [0.16, 1, 0.3, 1] } as const;
 
-export const fadeUpViewport = { once: true, amount: 0.4 } as const;
+// "some" (any overlap at all, not a fixed 20%/40% ratio) triggers the fade as soon as a
+// section starts entering the viewport — on a fast mobile flick that's the difference
+// between the animation having the whole scroll-in to play out versus popping in only
+// once a larger fraction has already scrolled past.
+export const fadeUpViewport = { once: true, amount: "some" } as const;
