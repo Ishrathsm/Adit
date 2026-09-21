@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { fadeUpTransition, fadeUpVariants, fadeUpViewport } from "@/lib/motion-variants";
 
@@ -56,13 +57,19 @@ export function OutputSamples() {
     >
       <div className="flex flex-col gap-2 text-center">
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Real output</p>
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Made with Adit — not mockups.</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Made with Adit, not mockups.</h2>
       </div>
       <div className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:justify-center">
         {SAMPLES.map((sample) => (
           <div
             key={sample.label}
-            className="rgb-border shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-1"
+            className={clsx(
+              "rgb-border shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-1",
+              // On mobile the video card fills the full carousel width (one full-bleed
+              // swipe at a time) instead of the fixed-height/auto-width sizing used on
+              // larger screens where there's room to show a peek of the next card.
+              sample.type === "video" && "w-full sm:w-auto",
+            )}
           >
             {sample.type === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element -- remote, real generated sample
@@ -72,7 +79,7 @@ export function OutputSamples() {
                 className="h-72 w-auto rounded-2xl sm:h-80"
               />
             ) : (
-              <AutoplayVideo src={sample.src} className="h-72 w-auto rounded-2xl sm:h-80" />
+              <AutoplayVideo src={sample.src} className="h-auto w-full rounded-2xl sm:h-80 sm:w-auto" />
             )}
             <p className="px-2 pt-2 pb-1 text-xs font-medium text-muted">{sample.label}</p>
           </div>

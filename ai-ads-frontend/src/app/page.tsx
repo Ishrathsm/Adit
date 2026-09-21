@@ -25,7 +25,7 @@ export default function LandingPage() {
         />
       </div>
 
-      <div className="fixed top-4 right-4 z-[60] origin-top-right scale-[0.65] sm:right-8">
+      <div className="fixed top-24 right-4 z-[60] origin-top-right scale-[0.65] sm:top-4 sm:right-8">
         <CinematicThemeSwitcher />
       </div>
 
@@ -51,8 +51,8 @@ export default function LandingPage() {
           What&apos;s the ad in your head?
         </h1>
         <p className="max-w-lg text-base leading-relaxed text-muted">
-          Pick a poster or a video — build it shot by shot with a storyboard if you want
-          full control. Adit keeps it on-brand either way.
+          Pick a poster or a video. Build it shot by shot with a storyboard for full
+          control. Adit keeps it on-brand either way.
         </p>
         <div className="w-full pt-4">
           <FunctionalHero />

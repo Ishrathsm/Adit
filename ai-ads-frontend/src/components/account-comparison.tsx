@@ -15,7 +15,7 @@ const ROWS: { label: string; individual: boolean | string; organisation: boolean
   { label: "Storyboards (shot by shot)", individual: true, organisation: true },
   { label: "Prompt refinement", individual: true, organisation: true },
   { label: "Brand kits", individual: "One, shared", organisation: "One per product" },
-  { label: "Products", individual: "—", organisation: "Unlimited" },
+  { label: "Products", individual: "N/A", organisation: "Unlimited" },
   { label: "Setup", individual: "Start right away", organisation: "Brand questionnaire per product" },
 ];
 
@@ -26,7 +26,7 @@ function Cell({ value }: { value: boolean | string }) {
         <Check size={11} strokeWidth={3} />
       </span>
     ) : (
-      <span className="text-muted">—</span>
+      <span className="text-muted">N/A</span>
     );
   }
   return <span className="text-sm text-muted">{value}</span>;
@@ -48,7 +48,7 @@ export function AccountComparison() {
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Individual or organisation</p>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">One account type, either way.</h2>
         <p className="mx-auto max-w-md text-sm text-muted">
-          Every generation feature is the same — the only difference is how brand kits are scoped.
+          Every generation feature is the same. The only difference is how brand kits are scoped.
         </p>
       </div>
 
