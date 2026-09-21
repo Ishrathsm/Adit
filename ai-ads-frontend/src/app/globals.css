@@ -73,6 +73,35 @@ body {
   mix-blend-mode: multiply;
 }
 
+/* Ambient hero glow: the existing color blob, given a slow drift and a visible (but
+   still restrained) grain layer on top — a lightweight CSS approximation of a noisy
+   gradient shader, not a WebGL/canvas effect. */
+.ambient-glow {
+  animation: ambient-drift 28s ease-in-out infinite alternate;
+}
+@keyframes ambient-drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-4%, 3%) scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient-glow {
+    animation: none;
+  }
+}
+.ambient-glow-grain {
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.light .ambient-glow-grain {
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
 /* Glossy primary button — landing page's alternative to .rgb-border: a single-hue
    gloss (no rainbow) plus a light sweep on hover, instead of a gradient stroke. */
 .shiny-button {

@@ -16,13 +16,16 @@ export default function LandingPage() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center overflow-hidden"
       >
-        <div
-          className="h-[420px] w-[900px] opacity-15 blur-[110px] dark:opacity-30"
-          style={{
-            background:
-              "radial-gradient(closest-side, rgba(99,140,255,0.55), rgba(198,99,255,0.35) 45%, rgba(255,99,170,0.2) 70%, transparent 80%)",
-          }}
-        />
+        <div className="relative h-[420px] w-[900px]">
+          <div
+            className="ambient-glow absolute inset-0 opacity-15 blur-[110px] dark:opacity-30"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(99,140,255,0.55), rgba(198,99,255,0.35) 45%, rgba(255,99,170,0.2) 70%, transparent 80%)",
+            }}
+          />
+          <div className="ambient-glow-grain absolute inset-0" />
+        </div>
       </div>
 
       <div className="fixed top-4 right-8 z-[60] hidden origin-top-right scale-[0.65] md:block">
