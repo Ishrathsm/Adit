@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clapperboard, Download, Loader2, Sparkles, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   ASPECT_RATIOS,
   createJob,
@@ -63,6 +64,13 @@ export default function ProjectDetailPage() {
     getProject(id)
       .then(({ project }) => setProject(project))
       .catch((err) => setLoadError(err instanceof Error ? err.message : String(err)));
+  }, [id]);
+
+  useEffect(() => {
+    // Reading a one-time hand-off from sessionStorage into state, not an external subscription.
+    const prefill = consumePrefillForProject(id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (prefill) setPrompt(prefill);
   }, [id]);
 
   useEffect(() => {

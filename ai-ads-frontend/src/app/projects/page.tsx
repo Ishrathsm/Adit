@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, FolderPlus, Image as ImageIcon, LogOut, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
+import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createProject,
   getAccount,
@@ -33,9 +34,11 @@ function ProjectsPageInner() {
 
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
+  const [accountChecked, setAccountChecked] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const draftHandledRef = useRef(false);
 
   useEffect(() => {
     listProjects()
@@ -45,8 +48,38 @@ function ProjectsPageInner() {
       .then(({ account }) => setAccount(account))
       .catch(() => {
         /* non-fatal — only used to gate Organisation project creation */
-      });
+      })
+      .finally(() => setAccountChecked(true));
   }, []);
+
+  // Hero hand-off: if the visitor typed a prompt on the landing page before signing up,
+  // spin up their first project from it automatically (no credits spent — this only
+  // creates the project shell; generating still requires an explicit click).
+  useEffect(() => {
+    if (!accountChecked || draftHandledRef.current) return;
+    const draft = peekDraftPrompt();
+    if (!draft || !account) return;
+    if (account.account_type === "organisation" && !productId) return; // wait for product context
+
+    draftHandledRef.current = true;
+    clearDraftPrompt();
+
+    const apiType: ProjectType = draft.projectType;
+    const name = apiType === "video" ? "Untitled Video Ad" : "Untitled Poster Ad";
+    const useStoryboard = draft.projectType === "video" && draft.storyboard;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCreating(true);
+    createProject(name, apiType, productId ?? undefined)
+      .then(({ project }) => {
+        savePrefillForProject(project.id, draft.prompt);
+        router.push(useStoryboard ? `/projects/${project.id}/storyboard` : `/projects/${project.id}`);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : String(err));
+        setCreating(false);
+      });
+  }, [accountChecked, account, productId, router]);
 
   useEffect(() => {
     if (!productId) {

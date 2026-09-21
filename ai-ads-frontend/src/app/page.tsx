@@ -1,80 +1,23 @@
-"use client";
-
-import { Building2, User } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { clsx } from "clsx";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { createAccount, getAccount, type AccountType } from "@/lib/api";
+import { CinematicThemeSwitcher } from "@/components/ui/cinematic-theme-switcher";
+import { FunctionalHero } from "@/components/functional-hero";
+import { OutputSamples } from "@/components/output-samples";
+import { WorkflowAnimation } from "@/components/workflow-animation";
+import { AccountComparison } from "@/components/account-comparison";
 
-const OPTIONS: {
-  id: AccountType;
-  icon: typeof User;
-  title: string;
-  description: string;
-}[] = [
-  {
-    id: "individual",
-    icon: User,
-    title: "Individual",
-    description: "One brand kit, straight into your Projects. Best if it's just you.",
-  },
-  {
-    id: "organisation",
-    icon: Building2,
-    title: "Organisation",
-    description:
-      "Multiple products, each with its own brand kit. Starts with a quick brand questionnaire per product.",
-  },
-];
+const PRIMARY_BUTTON =
+  "shiny-button inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium text-button-fg transition-transform duration-150 hover:scale-[1.03] active:scale-95";
 
-export default function OnboardingPage() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<AccountType | null>(null);
-  const [checkingAccount, setCheckingAccount] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getAccount()
-      .then(({ account }) => {
-        if (!account) {
-          setCheckingAccount(false);
-          return;
-        }
-        router.replace(account.account_type === "organisation" ? "/onboarding/organisation" : "/projects");
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : String(err));
-        setCheckingAccount(false);
-      });
-  }, [router]);
-
-  async function handleContinue() {
-    if (!selected) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await createAccount(selected);
-      router.push(selected === "individual" ? "/projects" : "/onboarding/organisation");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setSubmitting(false);
-    }
-  }
-
-  if (checkingAccount) return null;
-
+export default function LandingPage() {
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
+    <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center overflow-hidden"
       >
         <div
-          className="h-[420px] w-[720px] opacity-15 blur-[110px] dark:opacity-30"
+          className="h-[420px] w-[900px] opacity-15 blur-[110px] dark:opacity-30"
           style={{
             background:
               "radial-gradient(closest-side, rgba(99,140,255,0.55), rgba(198,99,255,0.35) 45%, rgba(255,99,170,0.2) 70%, transparent 80%)",
@@ -82,67 +25,65 @@ export default function OnboardingPage() {
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <Logo className="text-foreground" />
-        <ThemeToggle />
+      <div className="fixed top-4 right-4 z-[60] origin-top-right scale-[0.65] sm:right-8">
+        <CinematicThemeSwitcher />
       </div>
 
-      <div className="flex flex-1 flex-col justify-center gap-10 py-16">
-        <div className="flex flex-col gap-3 text-center">
-          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">
-            Welcome
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            How will you be creating ads?
-          </h1>
-          <p className="mx-auto max-w-md text-sm text-muted">
-            This decides how your account is set up. You can&apos;t switch it later without
-            starting a new account.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isSelected = selected === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setSelected(option.id)}
-                className={clsx(
-                  "rgb-border cursor-pointer p-6 text-left transition-transform duration-150",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
-                  isSelected ? "scale-[1.01]" : "hover:scale-[1.005]",
-                )}
-              >
-                <div
-                  className={clsx(
-                    "mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full border transition-colors",
-                    isSelected
-                      ? "border-transparent bg-button-bg text-button-fg"
-                      : "border-border-strong text-foreground",
-                  )}
-                >
-                  <Icon size={18} />
-                </div>
-                <h2 className="mb-1.5 text-base font-medium">{option.title}</h2>
-                <p className="text-sm leading-relaxed text-muted">
-                  {option.description}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        {error && <p className="text-center text-sm text-red-400">{error}</p>}
-
-        <div className="flex justify-center">
-          <Button disabled={!selected || submitting} onClick={handleContinue}>
-            {submitting ? "Setting up…" : "Continue"}
-          </Button>
-        </div>
+      <div className="sticky top-4 z-50 mt-4 mb-8">
+        <header className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-full border border-border-subtle bg-background/70 px-4 py-2.5 shadow-lg shadow-black/10 backdrop-blur-xl sm:px-6">
+          <Logo className="text-foreground" />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+            >
+              Sign in
+            </Link>
+            <Link href="/login?mode=sign-up" className={PRIMARY_BUTTON}>
+              Get started
+            </Link>
+          </div>
+        </header>
       </div>
+
+      <section className="flex flex-col items-center gap-6 pt-8 pb-16 text-center sm:pb-24">
+        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          What&apos;s the ad in your head?
+        </h1>
+        <p className="max-w-lg text-base leading-relaxed text-muted">
+          Pick a poster or a video — build it shot by shot with a storyboard if you want
+          full control. Adit keeps it on-brand either way.
+        </p>
+        <div className="w-full pt-4">
+          <FunctionalHero />
+        </div>
+      </section>
+
+      <section className="py-10">
+        <OutputSamples />
+      </section>
+
+      <section className="py-16">
+        <WorkflowAnimation />
+      </section>
+
+      <section className="py-16">
+        <AccountComparison />
+      </section>
+
+      <section className="flex flex-col items-center gap-6 py-16 text-center">
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Ready to make your first ad?
+        </h2>
+        <Link href="/login?mode=sign-up" className={PRIMARY_BUTTON}>
+          Get started free
+        </Link>
+      </section>
+
+      <footer className="flex items-center justify-between border-t border-border-subtle py-8 text-xs text-muted">
+        <Logo className="h-5 w-auto text-foreground opacity-70" />
+        <p>© {new Date().getFullYear()} Adit</p>
+      </footer>
     </main>
   );
 }

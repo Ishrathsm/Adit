@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
   generateStoryboardVideo,
@@ -68,6 +69,13 @@ export default function StoryboardPage() {
   const [generating, setGenerating] = useState(false);
 
   const isMock = storyboard?.id === "mock-storyboard";
+
+  useEffect(() => {
+    // Reading a one-time hand-off from sessionStorage into state, not an external subscription.
+    const prefill = consumePrefillForProject(id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (prefill) setConcept(prefill);
+  }, [id]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

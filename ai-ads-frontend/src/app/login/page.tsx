@@ -2,10 +2,16 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail } from "lucide-react";
+import { Mail, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
+import { clearDraftPrompt, peekDraftPrompt, type DraftPrompt } from "@/lib/draft-prompt";
+
+const DRAFT_TYPE_LABEL: Record<DraftPrompt["projectType"], string> = {
+  poster: "Poster",
+  video: "Video",
+};
 
 type Mode = "sign-in" | "sign-up";
 
@@ -22,13 +28,20 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
 
-  const [mode, setMode] = useState<Mode>("sign-in");
+  const [mode, setMode] = useState<Mode>(searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [exchangingCode, setExchangingCode] = useState(Boolean(code));
+  const [draft, setDraft] = useState<DraftPrompt | null>(null);
+
+  useEffect(() => {
+    // Reading a one-time hand-off from sessionStorage into state, not an external subscription.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (searchParams.get("draft") === "1") setDraft(peekDraftPrompt());
+  }, [searchParams]);
 
   useEffect(() => {
     if (!code) return;
@@ -39,7 +52,7 @@ function LoginForm() {
         setExchangingCode(false);
         return;
       }
-      router.push("/");
+      router.push("/onboarding");
       router.refresh();
     });
   }, [code, router]);
@@ -62,7 +75,7 @@ function LoginForm() {
         setConfirmationSent(true);
         return;
       }
-      router.push("/");
+      router.push("/onboarding");
       router.refresh();
       return;
     }
@@ -73,7 +86,7 @@ function LoginForm() {
       setError(error.message);
       return;
     }
-    router.push("/");
+    router.push("/onboarding");
     router.refresh();
   }
 
@@ -99,6 +112,27 @@ function LoginForm() {
       </div>
 
       <div className="flex flex-1 flex-col justify-center gap-8 py-16">
+        {draft && (
+          <div className="rgb-border flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+            <p className="truncate text-muted">
+              Continuing: <span className="text-foreground">&ldquo;{draft.prompt}&rdquo;</span> (
+              {DRAFT_TYPE_LABEL[draft.projectType]}
+              {draft.projectType === "video" && draft.storyboard ? " · Storyboard" : ""})
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                clearDraftPrompt();
+                router.push("/");
+              }}
+              className="inline-flex shrink-0 items-center gap-1 font-medium text-muted transition-colors hover:text-foreground"
+            >
+              <Pencil size={11} />
+              Edit
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
             {mode === "sign-in" ? "Welcome back" : "Create your account"}

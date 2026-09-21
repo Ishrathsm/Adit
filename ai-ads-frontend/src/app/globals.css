@@ -73,6 +73,34 @@ body {
   mix-blend-mode: multiply;
 }
 
+/* Glossy primary button — landing page's alternative to .rgb-border: a single-hue
+   gloss (no rainbow) plus a light sweep on hover, instead of a gradient stroke. */
+.shiny-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--button-bg) 100%, white 18%), var(--button-bg) 65%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 6px 16px rgba(0, 0, 0, 0.25);
+}
+.shiny-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+}
+.shiny-button:hover::after {
+  transform: translateX(120%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .shiny-button::after {
+    transition: none;
+  }
+}
+
 /* Thin, slowly-rotating RGB sheen used on the primary onboarding/selection cards. */
 .rgb-border {
   --rgb-angle: 0deg;
@@ -112,3 +140,39 @@ body {
     animation: none;
   }
 }
+
+/* Same RGB palette as .rgb-border, flowing horizontally — used for progress-bar fills. */
+.rgb-flow {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 99, 99, 0.9),
+    rgba(255, 214, 99, 0.9),
+    rgba(99, 255, 173, 0.9),
+    rgba(99, 170, 255, 0.9),
+    rgba(198, 99, 255, 0.9),
+    rgba(255, 99, 99, 0.9)
+  );
+  background-size: 200% 100%;
+  animation: rgb-flow-move 3s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rgb-flow {
+    animation: none;
+  }
+}
+@keyframes rgb-flow-move {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Hides the scrollbar on swipeable/scrollable rows (e.g. the output-samples carousel)
+   without disabling scroll itself. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
