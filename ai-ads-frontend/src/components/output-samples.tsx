@@ -59,12 +59,15 @@ export function OutputSamples() {
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Real output</p>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Made with Adit, not mockups.</h2>
       </div>
-      <div className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:justify-center">
+      {/* items-center (not the flex default of stretch) so a landscape video card hugs
+          its own height and sits vertically centered against the taller portrait poster
+          card beside it, instead of being stretched down to match it. */}
+      <div className="scrollbar-hide flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-6 pb-2 sm:justify-center">
         {SAMPLES.map((sample) => (
           <div
             key={sample.label}
             className={clsx(
-              "rgb-border shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-1",
+              "rgb-border relative shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-1",
               // On mobile the video card fills the full carousel width (one full-bleed
               // swipe at a time) instead of the fixed-height/auto-width sizing used on
               // larger screens where there's room to show a peek of the next card.
@@ -81,7 +84,11 @@ export function OutputSamples() {
             ) : (
               <AutoplayVideo src={sample.src} className="h-auto w-full rounded-2xl sm:h-80 sm:w-auto" />
             )}
-            <p className="px-2 pt-2 pb-1 text-xs font-medium text-muted">{sample.label}</p>
+            {/* Label overlaid on the media itself (not a separate row below) so both
+                card types are purely media and line up cleanly regardless of aspect ratio. */}
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-end rounded-b-2xl bg-gradient-to-t from-black/70 to-transparent px-2 pt-8 pb-2">
+              <p className="text-xs font-medium text-white">{sample.label}</p>
+            </div>
           </div>
         ))}
       </div>
