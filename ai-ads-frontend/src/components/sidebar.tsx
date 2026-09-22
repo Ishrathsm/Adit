@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
-import { CircleUserRound, FolderKanban, Image as ImageIcon, LogOut, Moon, Sparkles, Sun, Video } from "lucide-react";
+import {
+  CircleUserRound,
+  FolderKanban,
+  Image as ImageIcon,
+  LayoutTemplate,
+  LogOut,
+  Moon,
+  Sparkles,
+  Sun,
+  Video,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
@@ -15,11 +25,13 @@ function NavLink({
   href,
   icon: Icon,
   label,
+  sublabel,
   active,
 }: {
   href: string;
   icon: typeof FolderKanban;
   label: string;
+  sublabel?: string;
   active: boolean;
 }) {
   return (
@@ -31,7 +43,14 @@ function NavLink({
       )}
     >
       <Icon size={16} className="shrink-0" />
-      <span className="hidden sm:inline">{label}</span>
+      <span className="hidden min-w-0 flex-1 sm:flex sm:flex-col sm:items-start sm:leading-tight">
+        <span className="truncate">{label}</span>
+        {sublabel && (
+          <span className={clsx("truncate text-[10px] font-normal", active ? "text-button-fg/70" : "text-muted")}>
+            {sublabel}
+          </span>
+        )}
+      </span>
     </Link>
   );
 }
@@ -73,6 +92,14 @@ export function Sidebar() {
     }
   }
 
+  function handleTemplatesClick() {
+    if (pathname === "/projects") {
+      document.getElementById("templates")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      router.push("/projects#templates");
+    }
+  }
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -94,6 +121,13 @@ export function Sidebar() {
         label="Projects"
         active={pathname === "/projects" || pathname.startsWith("/projects/")}
       />
+      <button
+        onClick={handleTemplatesClick}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+      >
+        <LayoutTemplate size={16} className="shrink-0" />
+        <span className="hidden sm:inline">Templates</span>
+      </button>
 
       <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
         Categories
@@ -138,7 +172,13 @@ export function Sidebar() {
         </span>
       </button>
 
-      <NavLink href="/account" icon={CircleUserRound} label="Account" active={pathname === "/account"} />
+      <NavLink
+        href="/account"
+        icon={CircleUserRound}
+        label="Account"
+        sublabel={account ? (account.account_type === "organisation" ? "Organisation" : "Individual") : undefined}
+        active={pathname === "/account"}
+      />
 
       <button
         onClick={handleSignOut}

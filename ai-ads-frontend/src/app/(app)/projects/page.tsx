@@ -5,14 +5,18 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
+  Download,
   Folder as FolderIcon,
   FolderInput,
   FolderPlus,
   Image as ImageIcon,
+  LayoutTemplate,
+  MessageSquare,
   MoreVertical,
   Pencil,
   Trash2,
   Video,
+  Wand2,
 } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -53,6 +57,8 @@ function relativeDate(iso: string) {
 }
 
 type DeleteTarget = { kind: "project" | "folder"; id: string; name: string };
+
+const DRAFT_FRESHNESS_MS = 5 * 60_000;
 
 function FolderThumb({ project }: { project: Project }) {
   if (project.preview_url) {
@@ -132,10 +138,19 @@ function ProjectsPageInner() {
   // Hero hand-off: if the visitor typed a prompt on the landing page before signing up,
   // spin up their first project from it automatically (no credits spent — this only
   // creates the project shell; generating still requires an explicit click).
+  //
+  // Org accounts wait in sessionStorage until a `?product=` is picked, and that can be
+  // several navigations later than the draft itself — so a stale draft (left over from an
+  // earlier visit, or the tab just sitting open) must not resurrect and hijack an unrelated
+  // later click into an existing product. Only honor a draft typed in the last few minutes.
   useEffect(() => {
     if (!accountChecked || draftHandledRef.current) return;
     const draft = peekDraftPrompt();
     if (!draft || !account) return;
+    if (Date.now() - draft.ts > DRAFT_FRESHNESS_MS) {
+      clearDraftPrompt();
+      return;
+    }
     if (account.account_type === "organisation" && !productId) return; // wait for product context
 
     draftHandledRef.current = true;
@@ -289,10 +304,7 @@ function ProjectsPageInner() {
           {creating ? (
             <p className="text-sm text-muted">Setting up your project…</p>
           ) : (
-            <>
-              <CreateHero account={account} productId={productId} />
-              {/* Templates row goes here — reserved for tomorrow */}
-            </>
+            <CreateHero account={account} productId={productId} />
           )}
         </div>
       )}
@@ -591,6 +603,25 @@ function ProjectsPageInner() {
           ))}
           </div>
         </div>
+      ) : !activeFolder && folders.length === 0 ? (
+        <div className="mt-10 flex flex-col items-center gap-3 py-10 text-center">
+          <h2 className="text-sm font-medium text-muted">How it works</h2>
+          <div className="mt-2 grid w-full max-w-2xl gap-4 sm:grid-cols-3">
+            {[
+              { icon: MessageSquare, title: "1. Describe", body: "Type what the ad is for in the box above." },
+              { icon: Wand2, title: "2. Generate", body: "Pick Poster or Video and hit Create." },
+              { icon: Download, title: "3. Download", body: "Review the result and export it when it's ready." },
+            ].map((step) => (
+              <div key={step.title} className="rgb-border flex flex-col items-center gap-2 p-5 text-center">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border-strong text-muted">
+                  <step.icon size={16} />
+                </div>
+                <p className="text-sm font-medium">{step.title}</p>
+                <p className="text-xs text-muted">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
           <div className="rgb-border flex h-16 w-16 items-center justify-center">
@@ -600,6 +631,21 @@ function ProjectsPageInner() {
           <p className="mx-auto max-w-sm text-sm text-muted">
             Describe your first ad above and we&apos;ll take it from there.
           </p>
+        </div>
+      )}
+
+      {!activeFolder && (
+        <div id="templates" className="mt-14 scroll-mt-6 pb-10">
+          <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Templates</p>
+          <div className="rgb-border flex flex-col items-center gap-2 p-8 text-center opacity-70">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border-strong">
+              <LayoutTemplate size={18} />
+            </div>
+            <p className="text-sm font-medium">Templates are coming soon</p>
+            <p className="max-w-sm text-xs text-muted">
+              Ready-made starting points for common ad formats — on the way.
+            </p>
+          </div>
         </div>
       )}
 
