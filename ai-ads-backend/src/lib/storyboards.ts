@@ -1,5 +1,7 @@
 import { supabase } from "./supabase";
 
+export const SHOT_CHOICE_COUNT = 2;
+
 export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "failed";
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
 

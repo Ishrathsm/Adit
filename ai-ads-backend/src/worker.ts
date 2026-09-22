@@ -11,7 +11,14 @@ import { getProductById, type ProductRow } from "./lib/products";
 import { getTemplateById } from "./lib/templates";
 import { ensureMediaBucket, uploadPoster, uploadVideo } from "./lib/storage";
 import { stitchVideos } from "./lib/video-stitch";
-import { getShot, getStoryboardById, listShots, updateShot, updateStoryboardStatus } from "./lib/storyboards";
+import {
+  getShot,
+  getStoryboardById,
+  listShots,
+  SHOT_CHOICE_COUNT,
+  updateShot,
+  updateStoryboardStatus,
+} from "./lib/storyboards";
 
 if (!redisConnection) {
   console.error("[worker] UPSTASH_REDIS_URL not set — cannot start worker.");
@@ -98,7 +105,7 @@ async function processShotChoices(shotId: string): Promise<void> {
       brand,
     );
     const images = await Promise.all(
-      Array.from({ length: 3 }, () => generateImage(refinedPrompt, STORYBOARD_ASPECT_RATIO)),
+      Array.from({ length: SHOT_CHOICE_COUNT }, () => generateImage(refinedPrompt, STORYBOARD_ASPECT_RATIO)),
     );
     const urls = await Promise.all(
       images.map((image, i) => uploadPoster(`${shotId}-choice-${i}`, Buffer.from(image.imageBytes, "base64"))),

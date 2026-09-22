@@ -30,7 +30,7 @@ function mockShot(index: number, opts: { picked?: boolean; withVideo?: boolean }
     storyboard_id: "mock-storyboard",
     shot_index: index,
     description: `Shot ${index + 1}: a dynamic close-up of the product in action, cinematic lighting.`,
-    choice_urls: [MOCK_IMAGE_URL, MOCK_IMAGE_URL, MOCK_IMAGE_URL],
+    choice_urls: [MOCK_IMAGE_URL, MOCK_IMAGE_URL],
     selected_choice: opts.picked || opts.withVideo ? 0 : null,
     video_url: opts.withVideo ? MOCK_VIDEO_URL : null,
     status: "choices_ready",
@@ -208,7 +208,8 @@ export default function StoryboardPage() {
               className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
             />
             <p className="text-xs text-muted">
-              We&apos;ll split this into 4 shots (5s each) and generate 3 visual choices per shot.
+              We&apos;ll split this into 4 shots (5s each) and generate 2 visual choices per shot, one
+              shot at a time as you pick.
             </p>
             <Button onClick={handleCreate} disabled={creating || !concept.trim()} className="self-start">
               {creating ? "Breaking into shots…" : "Create Storyboard"}
@@ -287,8 +288,14 @@ export default function StoryboardPage() {
 
               {currentShot.status === "pending" && (
                 <div className="flex items-center gap-3 py-8">
-                  <Loader2 size={18} className="animate-spin text-muted" />
-                  <p className="text-sm text-muted">Generating 3 choices for this shot…</p>
+                  {shots[currentIndex - 1] && shots[currentIndex - 1].selected_choice === null ? (
+                    <p className="text-sm text-muted">Pick shot {currentIndex} first to generate this one.</p>
+                  ) : (
+                    <>
+                      <Loader2 size={18} className="animate-spin text-muted" />
+                      <p className="text-sm text-muted">Generating 2 choices for this shot…</p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -300,7 +307,7 @@ export default function StoryboardPage() {
               )}
 
               {currentShot.choice_urls && (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {currentShot.choice_urls.map((url, choiceIndex) => (
                     <button
                       key={choiceIndex}

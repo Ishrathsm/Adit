@@ -8,6 +8,7 @@ import {
   getStoryboard,
   listShots,
   selectShotChoice,
+  SHOT_CHOICE_COUNT,
   updateStoryboardStatus,
 } from "../lib/storyboards";
 import { enqueueShotChoices, enqueueShotVideo, enqueueStoryboardStitch } from "../lib/queue";
@@ -36,7 +37,10 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     const descriptions = await generateShotDescriptions(concept.trim(), SHOT_COUNT);
     const shots = await createShots(storyboard.id, descriptions);
 
-    await Promise.all(shots.map((shot) => enqueueShotChoices(shot.id)));
+    // Only kick off the first shot — each next shot's choices are enqueued once its
+    // predecessor gets a selection (see PATCH below), so we don't burst the image API
+    // and hit its rate limit generating all shots' choices at once.
+    await enqueueShotChoices(shots[0].id);
 
     res.status(201).json({ storyboard, shots });
   } catch (err) {
@@ -61,8 +65,8 @@ storyboardsRouter.get("/:id", async (req: AuthedRequest, res) => {
 storyboardsRouter.patch("/:id/shots/:shotId", async (req: AuthedRequest, res) => {
   const { selectedChoice } = req.body ?? {};
 
-  if (typeof selectedChoice !== "number" || selectedChoice < 0 || selectedChoice > 2) {
-    res.status(400).json({ error: "selectedChoice must be 0, 1, or 2" });
+  if (typeof selectedChoice !== "number" || selectedChoice < 0 || selectedChoice >= SHOT_CHOICE_COUNT) {
+    res.status(400).json({ error: `selectedChoice must be between 0 and ${SHOT_CHOICE_COUNT - 1}` });
     return;
   }
 
@@ -73,6 +77,14 @@ storyboardsRouter.patch("/:id/shots/:shotId", async (req: AuthedRequest, res) =>
       return;
     }
     const shot = await selectShotChoice(req.params.shotId, selectedChoice);
+
+    // Kick off the next shot's choices now that this one is picked, if it hasn't started yet.
+    const shots = await listShots(storyboard.id);
+    const next = shots.find((s) => s.shot_index === shot.shot_index + 1);
+    if (next && next.status === "pending" && !next.choice_urls) {
+      await enqueueShotChoices(next.id);
+    }
+
     res.json({ shot });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });

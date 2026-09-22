@@ -16,7 +16,12 @@ if (!redisConnection) {
 }
 
 export const generationQueue = redisConnection
-  ? new Queue("generation", { connection: redisConnection })
+  ? new Queue("generation", {
+      connection: redisConnection,
+      // Google's image/video APIs 429 under burst load — retry with backoff instead of
+      // failing the shot outright on a transient quota hit.
+      defaultJobOptions: { attempts: 3, backoff: { type: "exponential", delay: 15000 } },
+    })
   : null;
 
 export type GenerationTask =
