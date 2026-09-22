@@ -25,7 +25,6 @@ if (!redisConnection) {
   process.exit(1);
 }
 
-const STORYBOARD_ASPECT_RATIO = "16:9";
 const DEFAULT_VIDEO_DURATION_SECONDS = 8;
 
 function toBrandContext(product: ProductRow | null): BrandContext | undefined {
@@ -97,11 +96,19 @@ async function processShotChoices(shotId: string): Promise<void> {
   try {
     const brand = await getBrandContextForProject(storyboard.project_id);
 
-    // Ground every shot after the first on the previous shot's chosen image (image-to-image)
-    // so the subject/product/style stay visually consistent across the storyboard, instead of
-    // each shot being generated fresh from text alone.
+    // Shot 0 grounds on the user's own reference image (if they gave one); every shot after
+    // that grounds on the previous shot's chosen image instead (image-to-image) so the
+    // subject/product/style stay visually consistent across the storyboard, rather than each
+    // shot being generated fresh from text alone.
     let referenceImage: { imageBytes: string; mimeType: string } | undefined;
-    if (shot.shot_index > 0) {
+    let referenceImageRole: "subject" | "style" | undefined;
+    if (shot.shot_index === 0 && storyboard.reference_image_url) {
+      const referenceRes = await fetch(storyboard.reference_image_url);
+      if (!referenceRes.ok) throw new Error(`failed to fetch reference image: ${referenceRes.status}`);
+      const imageBytes = Buffer.from(await referenceRes.arrayBuffer()).toString("base64");
+      referenceImage = { imageBytes, mimeType: "image/png" };
+      referenceImageRole = storyboard.reference_image_role ?? "subject";
+    } else if (shot.shot_index > 0) {
       const siblingShots = await listShots(shot.storyboard_id);
       const previous = siblingShots.find((s) => s.shot_index === shot.shot_index - 1);
       if (previous?.selected_choice !== null && previous?.selected_choice !== undefined && previous.choice_urls) {
@@ -110,6 +117,7 @@ async function processShotChoices(shotId: string): Promise<void> {
         if (!referenceRes.ok) throw new Error(`failed to fetch reference image: ${referenceRes.status}`);
         const imageBytes = Buffer.from(await referenceRes.arrayBuffer()).toString("base64");
         referenceImage = { imageBytes, mimeType: "image/png" };
+        referenceImageRole = "subject";
       }
     }
 
@@ -118,13 +126,13 @@ async function processShotChoices(shotId: string): Promise<void> {
       storyboard.concept,
       shot.shot_index,
       storyboard.shot_count,
-      STORYBOARD_ASPECT_RATIO,
+      storyboard.aspect_ratio,
       brand,
-      Boolean(referenceImage),
+      referenceImageRole,
     );
     const images = await Promise.all(
       Array.from({ length: SHOT_CHOICE_COUNT }, () =>
-        generateImage(refinedPrompt, STORYBOARD_ASPECT_RATIO, referenceImage),
+        generateImage(refinedPrompt, storyboard.aspect_ratio, referenceImage),
       ),
     );
     const urls = await Promise.all(
@@ -160,14 +168,14 @@ async function processShotVideo(shotId: string): Promise<void> {
       shot.shot_index,
       storyboard.shot_count,
       storyboard.shot_duration_seconds,
-      STORYBOARD_ASPECT_RATIO,
+      storyboard.aspect_ratio,
       brand,
     );
 
     const video = await generateVideo(refinedPrompt, {
       generateAudio: false,
       durationSeconds: storyboard.shot_duration_seconds,
-      aspectRatio: STORYBOARD_ASPECT_RATIO,
+      aspectRatio: storyboard.aspect_ratio,
       image: { imageBytes, mimeType: "image/png" },
     });
 

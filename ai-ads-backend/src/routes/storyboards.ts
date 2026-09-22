@@ -1,7 +1,9 @@
 import { Router } from "express";
+import multer from "multer";
 import type { AuthedRequest } from "../middleware/auth";
 import { getProject } from "../lib/projects";
 import { generateShotDescriptions } from "../lib/text-gen";
+import { uploadReferenceImage } from "../lib/storage";
 import {
   createShots,
   createStoryboard,
@@ -9,20 +11,62 @@ import {
   listShots,
   selectShotChoice,
   SHOT_CHOICE_COUNT,
-  updateStoryboardStatus,
+  type ReferenceImageRole,
 } from "../lib/storyboards";
-import { enqueueShotChoices, enqueueShotVideo, enqueueStoryboardStitch } from "../lib/queue";
+import { enqueueShotChoices, enqueueShotVideo } from "../lib/queue";
 
 export const storyboardsRouter = Router();
 
-const SHOT_COUNT = 4;
-const SHOT_DURATION_SECONDS = 5;
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+const ASPECT_RATIOS = ["1:1", "3:4", "4:3", "4:5", "9:16", "16:9"];
+const MIN_SHOT_COUNT = 2;
+const MAX_SHOT_COUNT = 4;
+// Veo's image-to-video feature only supports these — anything else gets rejected outright.
+const SHOT_DURATIONS = [4, 6, 8];
+const REFERENCE_IMAGE_ROLES: ReferenceImageRole[] = ["subject", "style"];
+
+storyboardsRouter.post("/reference-image", upload.single("image"), async (req: AuthedRequest, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: "image file is required" });
+    return;
+  }
+
+  try {
+    const extension = req.file.originalname.split(".").pop() || "png";
+    const referenceImageUrl = await uploadReferenceImage(req.userId!, req.file.buffer, req.file.mimetype, extension);
+    res.json({ referenceImageUrl });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
 
 storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, concept } = req.body ?? {};
+  const { projectId, concept, aspectRatio, shotCount, shotDurationSeconds, referenceImageUrl, referenceImageRole } =
+    req.body ?? {};
 
   if (typeof projectId !== "string" || typeof concept !== "string" || !concept.trim()) {
     res.status(400).json({ error: "projectId and concept are required" });
+    return;
+  }
+  if (typeof aspectRatio !== "string" || !ASPECT_RATIOS.includes(aspectRatio)) {
+    res.status(400).json({ error: `aspectRatio must be one of ${ASPECT_RATIOS.join(", ")}` });
+    return;
+  }
+  if (typeof shotCount !== "number" || shotCount < MIN_SHOT_COUNT || shotCount > MAX_SHOT_COUNT) {
+    res.status(400).json({ error: `shotCount must be between ${MIN_SHOT_COUNT} and ${MAX_SHOT_COUNT}` });
+    return;
+  }
+  if (typeof shotDurationSeconds !== "number" || !SHOT_DURATIONS.includes(shotDurationSeconds)) {
+    res.status(400).json({ error: `shotDurationSeconds must be one of ${SHOT_DURATIONS.join(", ")}` });
+    return;
+  }
+  if (referenceImageUrl !== undefined && typeof referenceImageUrl !== "string") {
+    res.status(400).json({ error: "referenceImageUrl must be a string" });
+    return;
+  }
+  if (referenceImageUrl && !REFERENCE_IMAGE_ROLES.includes(referenceImageRole)) {
+    res.status(400).json({ error: `referenceImageRole must be one of ${REFERENCE_IMAGE_ROLES.join(", ")}` });
     return;
   }
 
@@ -33,8 +77,12 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
       return;
     }
 
-    const storyboard = await createStoryboard(projectId, concept.trim(), SHOT_COUNT, SHOT_DURATION_SECONDS);
-    const descriptions = await generateShotDescriptions(concept.trim(), SHOT_COUNT);
+    const storyboard = await createStoryboard(projectId, concept.trim(), shotCount, shotDurationSeconds, {
+      aspectRatio,
+      referenceImageUrl: referenceImageUrl || null,
+      referenceImageRole: referenceImageUrl ? referenceImageRole : null,
+    });
+    const descriptions = await generateShotDescriptions(concept.trim(), shotCount);
     const shots = await createShots(storyboard.id, descriptions);
 
     // Only kick off the first shot — each next shot's choices are enqueued once its
@@ -78,6 +126,11 @@ storyboardsRouter.patch("/:id/shots/:shotId", async (req: AuthedRequest, res) =>
     }
     const shot = await selectShotChoice(req.params.shotId, selectedChoice);
 
+    // Picking a choice (first time or re-picking) immediately kicks off this shot's video —
+    // no separate "generate final video" step. `processShotVideo` auto-enqueues the stitch
+    // once every shot has a video, so the whole storyboard finishes itself from here.
+    await enqueueShotVideo(shot.id);
+
     // Kick off the next shot's choices now that this one is picked, if it hasn't started yet.
     const shots = await listShots(storyboard.id);
     const next = shots.find((s) => s.shot_index === shot.shot_index + 1);
@@ -86,38 +139,6 @@ storyboardsRouter.patch("/:id/shots/:shotId", async (req: AuthedRequest, res) =>
     }
 
     res.json({ shot });
-  } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-  }
-});
-
-storyboardsRouter.post("/:id/generate", async (req: AuthedRequest, res) => {
-  try {
-    const storyboard = await getStoryboard(req.userId!, req.params.id);
-    if (!storyboard) {
-      res.status(404).json({ error: "storyboard not found" });
-      return;
-    }
-
-    const shots = await listShots(storyboard.id);
-    const unselected = shots.filter((shot) => shot.selected_choice === null);
-    if (unselected.length > 0) {
-      res.status(400).json({ error: "every shot needs a selected choice before generating the final video" });
-      return;
-    }
-
-    await updateStoryboardStatus(storyboard.id, { status: "generating_video" });
-
-    // Only (re-)generate shots that don't already have a video — re-picking a single shot
-    // clears just that shot's video_url, so untouched shots stay cached per the product plan.
-    const pending = shots.filter((shot) => !shot.video_url);
-    if (pending.length === 0) {
-      await enqueueStoryboardStitch(storyboard.id);
-    } else {
-      await Promise.all(pending.map((shot) => enqueueShotVideo(shot.id)));
-    }
-
-    res.status(202).json({ storyboard });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

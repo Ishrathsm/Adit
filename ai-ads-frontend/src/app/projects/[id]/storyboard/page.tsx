@@ -2,27 +2,41 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Download, Loader2, Upload, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
-  generateStoryboardVideo,
   getStoryboard,
   selectShotChoice,
+  uploadStoryboardReferenceImage,
+  STORYBOARD_ASPECT_RATIOS,
+  STORYBOARD_SHOT_COUNTS,
+  STORYBOARD_SHOT_DURATIONS,
+  type ReferenceImageRole,
   type Storyboard,
+  type StoryboardAspectRatio,
   type StoryboardShot,
+  type StoryboardShotCount,
+  type StoryboardShotDuration,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
 
-// Reuses assets we already generated and paid for today — lets the whole stepper flow be
-// checked without spending any Imagen/Veo credits. Swap for the real API once verified.
+// Reuses assets we already generated and paid for today — lets the whole flow be checked
+// without spending any Imagen/Veo credits. Swap for the real API once verified.
 const MOCK_IMAGE_URL =
   "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/9863e624-107d-4d32-80a7-4d748e7bed47.png";
 const MOCK_VIDEO_URL =
   "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/8aa5874d-e00c-4336-8050-b1189f79522e.mp4";
+
+// Tailwind needs static class names to pick them up — can't interpolate `grid-cols-${n}`.
+const SHOT_GRID_COLS: Record<number, string> = {
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-3",
+  4: "sm:grid-cols-2 lg:grid-cols-4",
+};
 
 function mockShot(index: number, opts: { picked?: boolean; withVideo?: boolean } = {}): StoryboardShot {
   return {
@@ -40,13 +54,16 @@ function mockShot(index: number, opts: { picked?: boolean; withVideo?: boolean }
   };
 }
 
-function mockStoryboard(status: Storyboard["status"]): Storyboard {
+function mockStoryboard(status: Storyboard["status"], shotCount: number): Storyboard {
   return {
     id: "mock-storyboard",
     project_id: "mock",
     concept: "Preview storyboard — not a real generation",
-    shot_count: 4,
-    shot_duration_seconds: 5,
+    shot_count: shotCount,
+    shot_duration_seconds: 4,
+    aspect_ratio: "9:16",
+    reference_image_url: null,
+    reference_image_role: null,
     status,
     output_url: status === "completed" ? MOCK_VIDEO_URL : null,
     error: null,
@@ -55,18 +72,29 @@ function mockStoryboard(status: Storyboard["status"]): Storyboard {
   };
 }
 
+function pillClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+    active
+      ? "border-transparent bg-button-bg text-button-fg"
+      : "border-border-strong text-foreground hover:bg-white/5"
+  }`;
+}
+
 export default function StoryboardPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [concept, setConcept] = useState("");
+  const [aspectRatio, setAspectRatio] = useState<StoryboardAspectRatio>("9:16");
+  const [shotDurationSeconds, setShotDurationSeconds] = useState<StoryboardShotDuration>(4);
+  const [shotCount, setShotCount] = useState<StoryboardShotCount>(3);
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [referenceImageRole, setReferenceImageRole] = useState<ReferenceImageRole>("subject");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [shots, setShots] = useState<StoryboardShot[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [generating, setGenerating] = useState(false);
 
   const isMock = storyboard?.id === "mock-storyboard";
 
@@ -113,7 +141,18 @@ export default function StoryboardPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      const { storyboard, shots } = await createStoryboard(id, concept.trim());
+      let referenceImageUrl: string | undefined;
+      if (referenceImageFile) {
+        const uploaded = await uploadStoryboardReferenceImage(referenceImageFile);
+        referenceImageUrl = uploaded.referenceImageUrl;
+      }
+      const { storyboard, shots } = await createStoryboard(id, concept.trim(), {
+        aspectRatio,
+        shotCount,
+        shotDurationSeconds,
+        referenceImageUrl,
+        referenceImageRole: referenceImageUrl ? referenceImageRole : undefined,
+      });
       setStoryboard(storyboard);
       setShots(shots);
     } catch (err) {
@@ -125,16 +164,15 @@ export default function StoryboardPage() {
 
   function loadMock(kind: "choices" | "ready" | "completed") {
     if (kind === "choices") {
-      setStoryboard(mockStoryboard("drafting"));
-      setShots([0, 1, 2, 3].map((i) => mockShot(i)));
+      setStoryboard(mockStoryboard("drafting", shotCount));
+      setShots(Array.from({ length: shotCount }, (_, i) => mockShot(i)));
     } else if (kind === "ready") {
-      setStoryboard(mockStoryboard("drafting"));
-      setShots([0, 1, 2, 3].map((i) => mockShot(i, { picked: true })));
+      setStoryboard(mockStoryboard("drafting", shotCount));
+      setShots(Array.from({ length: shotCount }, (_, i) => mockShot(i, { picked: true })));
     } else {
-      setStoryboard(mockStoryboard("completed"));
-      setShots([0, 1, 2, 3].map((i) => mockShot(i, { withVideo: true })));
+      setStoryboard(mockStoryboard("completed", shotCount));
+      setShots(Array.from({ length: shotCount }, (_, i) => mockShot(i, { withVideo: true })));
     }
-    setCurrentIndex(0);
   }
 
   async function handleSelect(shot: StoryboardShot, choiceIndex: number) {
@@ -152,30 +190,8 @@ export default function StoryboardPage() {
     }
   }
 
-  async function handleGenerateFinal() {
-    if (!storyboard) return;
-    setGenerating(true);
-    try {
-      if (isMock) {
-        setStoryboard((prev) => (prev ? { ...prev, status: "generating_video" } : prev));
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setShots((prev) => prev.map((s) => ({ ...s, video_url: MOCK_VIDEO_URL, status: "video_ready" })));
-        setStoryboard((prev) => (prev ? { ...prev, status: "completed", output_url: MOCK_VIDEO_URL } : prev));
-      } else {
-        const { storyboard: updated } = await generateStoryboardVideo(storyboard.id);
-        setStoryboard(updated);
-      }
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  const allPicked = shots.length > 0 && shots.every((s) => s.selected_choice !== null);
-  const needsGeneration = shots.some((s) => !s.video_url);
-  const currentShot = shots[currentIndex];
-
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-10">
+    <main className="relative mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10">
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.push(`/projects/${id}`)}
@@ -194,28 +210,119 @@ export default function StoryboardPage() {
 
       {!storyboard ? (
         <div className="mt-8 flex flex-col gap-4">
-          <div className="rgb-border flex flex-col gap-3 p-5">
-            <label htmlFor="concept" className="text-sm font-medium">
-              Describe the ad concept
-            </label>
-            <textarea
-              id="concept"
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              disabled={creating}
-              rows={4}
-              placeholder="A cold brew coffee brand's morning routine ad — from grinding beans to the first sip"
-              className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-            />
-            <p className="text-xs text-muted">
-              We&apos;ll split this into 4 shots (5s each) and generate 2 visual choices per shot, one
-              shot at a time as you pick.
-            </p>
-            <Button onClick={handleCreate} disabled={creating || !concept.trim()} className="self-start">
-              {creating ? "Breaking into shots…" : "Create Storyboard"}
-            </Button>
-            {createError && <p className="text-sm text-red-400">{createError}</p>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <label htmlFor="concept" className="text-sm font-medium">
+                Describe the ad concept
+              </label>
+              <textarea
+                id="concept"
+                value={concept}
+                onChange={(e) => setConcept(e.target.value)}
+                disabled={creating}
+                rows={4}
+                placeholder="A cold brew coffee brand's morning routine ad — from grinding beans to the first sip"
+                className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+              />
+              <p className="text-xs text-muted">
+                We&apos;ll split this into {shotCount} shots ({shotDurationSeconds}s each) and generate 2 visual
+                choices per shot, one shot at a time as you pick.
+              </p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5">
+              <label htmlFor="aspect-ratio" className="text-sm font-medium">
+                Aspect ratio
+              </label>
+              <select
+                id="aspect-ratio"
+                value={aspectRatio}
+                disabled={creating}
+                onChange={(e) => setAspectRatio(e.target.value as StoryboardAspectRatio)}
+                className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none focus:border-border-strong disabled:opacity-50"
+              >
+                {STORYBOARD_ASPECT_RATIOS.map((ratio) => (
+                  <option key={ratio.value} value={ratio.value}>
+                    {ratio.label} ({ratio.value})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5">
+              <label className="text-sm font-medium">
+                Reference image <span className="text-muted">(optional)</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm text-muted transition-colors hover:border-border-strong">
+                <Upload size={14} />
+                <span className="truncate">{referenceImageFile?.name || "Upload an image"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={creating}
+                  className="hidden"
+                  onChange={(e) => setReferenceImageFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {referenceImageFile && (
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setReferenceImageRole("subject")}
+                    className={pillClass(referenceImageRole === "subject")}
+                  >
+                    This is my product
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReferenceImageRole("style")}
+                    className={pillClass(referenceImageRole === "style")}
+                  >
+                    Match this look
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5">
+              <label className="text-sm font-medium">Shot duration</label>
+              <div className="flex gap-2">
+                {STORYBOARD_SHOT_DURATIONS.map((duration) => (
+                  <button
+                    key={duration}
+                    type="button"
+                    disabled={creating}
+                    onClick={() => setShotDurationSeconds(duration)}
+                    className={pillClass(shotDurationSeconds === duration)}
+                  >
+                    {duration}s
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5">
+              <label className="text-sm font-medium">Number of shots</label>
+              <div className="flex gap-2">
+                {STORYBOARD_SHOT_COUNTS.map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    disabled={creating}
+                    onClick={() => setShotCount(count)}
+                    className={pillClass(shotCount === count)}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          <Button onClick={handleCreate} disabled={creating || !concept.trim()} className="self-start">
+            {creating ? (referenceImageFile ? "Uploading reference…" : "Breaking into shots…") : "Create Storyboard"}
+          </Button>
+          {createError && <p className="text-sm text-red-400">{createError}</p>}
 
           {process.env.NODE_ENV !== "production" && (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border-strong p-3 text-xs text-muted">
@@ -243,94 +350,82 @@ export default function StoryboardPage() {
         </div>
       ) : (
         <div className="mt-8 flex flex-col gap-6">
-          <div className="flex items-center justify-center gap-2">
-            {shots.map((shot, i) => (
-              <button
-                key={shot.id}
-                onClick={() => setCurrentIndex(i)}
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                  i === currentIndex
-                    ? "bg-foreground"
-                    : shot.selected_choice !== null
-                      ? "bg-emerald-400"
-                      : "bg-border-strong"
-                }`}
-                aria-label={`Shot ${i + 1}`}
-              />
-            ))}
-          </div>
+          <div className={`grid grid-cols-1 gap-4 ${SHOT_GRID_COLS[shots.length] ?? "sm:grid-cols-2"}`}>
+            {shots.map((shot, index) => {
+              const previous = shots[index - 1];
+              const waitingOnPrevious = index > 0 && previous && previous.selected_choice === null;
+              const locked = shot.selected_choice !== null && shot.choice_urls;
 
-          {currentShot && (
-            <div className="rgb-border flex flex-col gap-4 p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">
-                  Shot {currentIndex + 1} of {shots.length}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                    disabled={currentIndex === 0}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-strong disabled:opacity-30"
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  <button
-                    onClick={() => setCurrentIndex((i) => Math.min(shots.length - 1, i + 1))}
-                    disabled={currentIndex === shots.length - 1}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-strong disabled:opacity-30"
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
+              return (
+                <div key={shot.id} className="rgb-border flex flex-col gap-3 p-4">
+                  <p className="text-xs font-medium text-muted">
+                    Shot {index + 1} of {shots.length}
+                  </p>
+                  <p className="line-clamp-3 text-sm text-muted">{shot.description}</p>
 
-              <p className="text-sm text-muted">{currentShot.description}</p>
+                  {shot.status === "pending" && (
+                    <div className="flex items-center gap-2 py-6">
+                      {waitingOnPrevious ? (
+                        <p className="text-xs text-muted">Pick shot {index} first.</p>
+                      ) : (
+                        <>
+                          <Loader2 size={16} className="animate-spin text-muted" />
+                          <p className="text-xs text-muted">Generating choices…</p>
+                        </>
+                      )}
+                    </div>
+                  )}
 
-              {currentShot.status === "pending" && (
-                <div className="flex items-center gap-3 py-8">
-                  {shots[currentIndex - 1] && shots[currentIndex - 1].selected_choice === null ? (
-                    <p className="text-sm text-muted">Pick shot {currentIndex} first to generate this one.</p>
-                  ) : (
-                    <>
-                      <Loader2 size={18} className="animate-spin text-muted" />
-                      <p className="text-sm text-muted">Generating 2 choices for this shot…</p>
-                    </>
+                  {shot.status === "failed" && shot.selected_choice === null && (
+                    <div className="flex items-start gap-2">
+                      <XCircle size={16} className="mt-0.5 shrink-0 text-red-400" />
+                      <p className="text-xs text-red-400">{shot.error}</p>
+                    </div>
+                  )}
+
+                  {shot.choice_urls && shot.selected_choice === null && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {shot.choice_urls.map((url, choiceIndex) => (
+                        <button
+                          key={choiceIndex}
+                          onClick={() => handleSelect(shot, choiceIndex)}
+                          className="relative overflow-hidden rounded-xl border-2 border-transparent transition-colors hover:border-border-strong"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
+                          <img
+                            src={url}
+                            alt={`Choice ${choiceIndex + 1}`}
+                            className="aspect-square w-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {locked && (
+                    <div className="relative overflow-hidden rounded-xl">
+                      {shot.video_url ? (
+                        <video src={shot.video_url} controls className="w-full rounded-xl" />
+                      ) : (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
+                          <img
+                            src={shot.choice_urls![shot.selected_choice!]}
+                            alt="Selected"
+                            className="aspect-square w-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/60">
+                            <Loader2 size={16} className="animate-spin" />
+                            <p className="text-xs font-medium">Generating video…</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-
-              {currentShot.status === "failed" && (
-                <div className="flex items-start gap-3">
-                  <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />
-                  <p className="text-sm text-red-400">{currentShot.error}</p>
-                </div>
-              )}
-
-              {currentShot.choice_urls && (
-                <div className="grid grid-cols-2 gap-3">
-                  {currentShot.choice_urls.map((url, choiceIndex) => (
-                    <button
-                      key={choiceIndex}
-                      onClick={() => handleSelect(currentShot, choiceIndex)}
-                      className={`relative overflow-hidden rounded-2xl border-2 transition-colors ${
-                        currentShot.selected_choice === choiceIndex
-                          ? "border-emerald-400"
-                          : "border-transparent hover:border-border-strong"
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
-                      <img src={url} alt={`Choice ${choiceIndex + 1}`} className="aspect-square w-full object-cover" />
-                      {currentShot.selected_choice === choiceIndex && (
-                        <div className="absolute right-1.5 top-1.5 rounded-full bg-emerald-400 p-0.5">
-                          <CheckCircle2 size={14} className="text-background" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+              );
+            })}
+          </div>
 
           {process.env.NODE_ENV !== "production" && isMock && (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border-strong p-3 text-xs text-muted">
@@ -356,17 +451,7 @@ export default function StoryboardPage() {
             </div>
           )}
 
-          {(needsGeneration || storyboard.status === "generating_video") && (
-            <Button onClick={handleGenerateFinal} disabled={!allPicked || generating} className="self-center">
-              {storyboard.status === "generating_video"
-                ? "Generating final video…"
-                : storyboard.output_url
-                  ? "Regenerate video"
-                  : "Generate Final Video"}
-            </Button>
-          )}
-
-          {storyboard.status === "completed" && storyboard.output_url && !needsGeneration && (
+          {storyboard.status === "completed" && storyboard.output_url && (
             <div className="rgb-border flex flex-col gap-3 p-5">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-400" />

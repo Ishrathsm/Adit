@@ -148,11 +148,18 @@ export async function refineShotImagePrompt(
   shotCount: number,
   aspectRatio: string,
   brand?: BrandContext,
-  hasReferenceImage?: boolean,
+  // "subject" = ground the shot on a real photo (own product, or the previous shot's chosen
+  // image for continuity) — keep it literally recognizable. "style" = a user-supplied mood/style
+  // reference — match the look, but the subject and scene should be an original creation, not a
+  // reproduction of what's literally in the reference image.
+  referenceImageRole?: "subject" | "style",
 ): Promise<string> {
-  const referenceInstruction = hasReferenceImage
-    ? `\n\nAn image from the previous shot is attached as reference. The final image prompt must direct the model to keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this shot's brief.`
-    : "";
+  const referenceInstruction =
+    referenceImageRole === "subject"
+      ? `\n\nA reference image is attached. The final image prompt must direct the model to keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this shot's brief.`
+      : referenceImageRole === "style"
+        ? `\n\nA style reference image is attached. The final image prompt must direct the model to match that reference's mood, color palette, lighting character, and overall visual style — but the subject and scene must be an original creation for this shot's brief, not a literal reproduction of whatever is depicted in the reference.`
+        : "";
   const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstruction}
 
 Expand this into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.

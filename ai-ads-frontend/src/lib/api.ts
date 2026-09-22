@@ -187,6 +187,22 @@ export function listTemplates(type: TemplateType) {
 
 export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "failed";
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
+export type ReferenceImageRole = "subject" | "style";
+
+export const STORYBOARD_ASPECT_RATIOS = [
+  { label: "Instagram Story / Reels", value: "9:16" },
+  { label: "Instagram Post (Square)", value: "1:1" },
+  { label: "Instagram Portrait", value: "4:5" },
+  { label: "YouTube / Landscape", value: "16:9" },
+  { label: "Classic Portrait", value: "3:4" },
+] as const;
+export type StoryboardAspectRatio = (typeof STORYBOARD_ASPECT_RATIOS)[number]["value"];
+
+export const STORYBOARD_SHOT_DURATIONS = [4, 6, 8] as const;
+export type StoryboardShotDuration = (typeof STORYBOARD_SHOT_DURATIONS)[number];
+
+export const STORYBOARD_SHOT_COUNTS = [2, 3, 4] as const;
+export type StoryboardShotCount = (typeof STORYBOARD_SHOT_COUNTS)[number];
 
 export interface Storyboard {
   id: string;
@@ -194,6 +210,9 @@ export interface Storyboard {
   concept: string;
   shot_count: number;
   shot_duration_seconds: number;
+  aspect_ratio: string;
+  reference_image_url: string | null;
+  reference_image_role: ReferenceImageRole | null;
   status: StoryboardStatus;
   output_url: string | null;
   error: string | null;
@@ -215,11 +234,40 @@ export interface StoryboardShot {
   updated_at: string;
 }
 
-export function createStoryboard(projectId: string, concept: string) {
+export interface CreateStoryboardOptions {
+  aspectRatio: StoryboardAspectRatio;
+  shotCount: StoryboardShotCount;
+  shotDurationSeconds: StoryboardShotDuration;
+  referenceImageUrl?: string;
+  referenceImageRole?: ReferenceImageRole;
+}
+
+export function createStoryboard(projectId: string, concept: string, options: CreateStoryboardOptions) {
   return request<{ storyboard: Storyboard; shots: StoryboardShot[] }>("/api/storyboards", {
     method: "POST",
-    body: JSON.stringify({ projectId, concept }),
+    body: JSON.stringify({ projectId, concept, ...options }),
   });
+}
+
+export async function uploadStoryboardReferenceImage(file: File): Promise<{ referenceImageUrl: string }> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_BASE_URL}/api/storyboards/reference-image`, {
+    method: "POST",
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error ?? `Request failed with status ${res.status}`);
+  }
+  return data;
 }
 
 export function getStoryboard(id: string) {
@@ -230,11 +278,5 @@ export function selectShotChoice(storyboardId: string, shotId: string, selectedC
   return request<{ shot: StoryboardShot }>(`/api/storyboards/${storyboardId}/shots/${shotId}`, {
     method: "PATCH",
     body: JSON.stringify({ selectedChoice }),
-  });
-}
-
-export function generateStoryboardVideo(storyboardId: string) {
-  return request<{ storyboard: Storyboard }>(`/api/storyboards/${storyboardId}/generate`, {
-    method: "POST",
   });
 }

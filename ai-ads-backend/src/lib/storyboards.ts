@@ -5,12 +5,17 @@ export const SHOT_CHOICE_COUNT = 2;
 export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "failed";
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
 
+export type ReferenceImageRole = "subject" | "style";
+
 export interface StoryboardRow {
   id: string;
   project_id: string;
   concept: string;
   shot_count: number;
   shot_duration_seconds: number;
+  aspect_ratio: string;
+  reference_image_url: string | null;
+  reference_image_role: ReferenceImageRole | null;
   status: StoryboardStatus;
   output_url: string | null;
   error: string | null;
@@ -32,15 +37,30 @@ export interface StoryboardShotRow {
   updated_at: string;
 }
 
+export interface CreateStoryboardOptions {
+  aspectRatio: string;
+  referenceImageUrl?: string | null;
+  referenceImageRole?: ReferenceImageRole | null;
+}
+
 export async function createStoryboard(
   projectId: string,
   concept: string,
   shotCount: number,
   shotDurationSeconds: number,
+  options: CreateStoryboardOptions,
 ): Promise<StoryboardRow> {
   const { data, error } = await supabase
     .from("storyboards")
-    .insert({ project_id: projectId, concept, shot_count: shotCount, shot_duration_seconds: shotDurationSeconds })
+    .insert({
+      project_id: projectId,
+      concept,
+      shot_count: shotCount,
+      shot_duration_seconds: shotDurationSeconds,
+      aspect_ratio: options.aspectRatio,
+      reference_image_url: options.referenceImageUrl ?? null,
+      reference_image_role: options.referenceImageRole ?? null,
+    })
     .select()
     .single();
   if (error) throw error;
