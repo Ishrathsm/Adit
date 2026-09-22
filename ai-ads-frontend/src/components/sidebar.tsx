@@ -83,7 +83,7 @@ export function Sidebar() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col gap-1 border-r border-border-subtle bg-surface px-2 py-4 sm:w-56 sm:px-3">
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border-subtle bg-surface px-2 py-4 sm:w-56 sm:px-3">
       <Link href="/projects" className="mb-6 flex items-center justify-center px-1 sm:justify-start sm:px-2">
         <Logo className="text-foreground" />
       </Link>
