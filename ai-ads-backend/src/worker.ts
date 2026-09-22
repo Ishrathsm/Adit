@@ -96,6 +96,23 @@ async function processShotChoices(shotId: string): Promise<void> {
 
   try {
     const brand = await getBrandContextForProject(storyboard.project_id);
+
+    // Ground every shot after the first on the previous shot's chosen image (image-to-image)
+    // so the subject/product/style stay visually consistent across the storyboard, instead of
+    // each shot being generated fresh from text alone.
+    let referenceImage: { imageBytes: string; mimeType: string } | undefined;
+    if (shot.shot_index > 0) {
+      const siblingShots = await listShots(shot.storyboard_id);
+      const previous = siblingShots.find((s) => s.shot_index === shot.shot_index - 1);
+      if (previous?.selected_choice !== null && previous?.selected_choice !== undefined && previous.choice_urls) {
+        const referenceUrl = previous.choice_urls[previous.selected_choice];
+        const referenceRes = await fetch(referenceUrl);
+        if (!referenceRes.ok) throw new Error(`failed to fetch reference image: ${referenceRes.status}`);
+        const imageBytes = Buffer.from(await referenceRes.arrayBuffer()).toString("base64");
+        referenceImage = { imageBytes, mimeType: "image/png" };
+      }
+    }
+
     const refinedPrompt = await refineShotImagePrompt(
       shot.description,
       storyboard.concept,
@@ -103,9 +120,12 @@ async function processShotChoices(shotId: string): Promise<void> {
       storyboard.shot_count,
       STORYBOARD_ASPECT_RATIO,
       brand,
+      Boolean(referenceImage),
     );
     const images = await Promise.all(
-      Array.from({ length: SHOT_CHOICE_COUNT }, () => generateImage(refinedPrompt, STORYBOARD_ASPECT_RATIO)),
+      Array.from({ length: SHOT_CHOICE_COUNT }, () =>
+        generateImage(refinedPrompt, STORYBOARD_ASPECT_RATIO, referenceImage),
+      ),
     );
     const urls = await Promise.all(
       images.map((image, i) => uploadPoster(`${shotId}-choice-${i}`, Buffer.from(image.imageBytes, "base64"))),

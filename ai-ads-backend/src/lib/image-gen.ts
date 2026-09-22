@@ -18,14 +18,29 @@ export interface GeneratedImage {
   mimeType: string;
 }
 
-export async function generateImage(prompt: string, aspectRatio: string): Promise<GeneratedImage> {
+export interface ReferenceImage {
+  imageBytes: string;
+  mimeType: string;
+}
+
+export async function generateImage(
+  prompt: string,
+  aspectRatio: string,
+  // A prior shot's chosen image, attached so Nano Banana edits/matches it (image-to-image)
+  // instead of generating a fresh, potentially inconsistent-looking subject from text alone.
+  referenceImage?: ReferenceImage,
+): Promise<GeneratedImage> {
   if (!genAI) {
     throw new Error("Image generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
 
+  const contents = referenceImage
+    ? [{ inlineData: { data: referenceImage.imageBytes, mimeType: referenceImage.mimeType } }, prompt]
+    : prompt;
+
   const response = await genAI.models.generateContent({
     model: env.imageModel,
-    contents: prompt,
+    contents,
     config: {
       responseModalities: ["IMAGE"],
       imageConfig: { aspectRatio },

@@ -26,6 +26,27 @@ function templateBlock(styleTemplate?: string): string {
   return `\n\nYou MUST use the following curated visual template as the foundational style, composition, lighting, and mood — treat it as fixed creative direction, and adapt only the specific subject/product/text details from the user's concept to fit within it (do not invent a different style):\n"""\n${styleTemplate}\n"""`;
 }
 
+// Shared creative bar spliced into every meta-prompt. The checklist-style prompts below (camera,
+// lighting, color, etc.) were producing competent-but-generic "AI stock photo" output — this pushes
+// for an actual scroll-stopping ad hero shot instead, and explicitly bans the model's own tells.
+function qualityBarBlock(medium: "image" | "video"): string {
+  const common = `This is not a moodboard sketch or a generic AI render — it is the actual hero frame${
+    medium === "video" ? "s of a real ad film" : " of a real ad"
+  } that has to sit next to Nike, Apple, Liquid Death, and Dove in someone's feed and still win the scroll. Judge every choice against that bar, not against "a nice AI-generated picture."
+
+Non-negotiables:
+- One unmistakable focal idea — cut anything from the brief that doesn't earn its place rather than cramming everything in at once.
+- Avoid every default AI-generation tell: waxy/plastic skin, warped hands or limbs, mismatched or dead-eyed gazes, generic gradient-mesh backdrops, dead-center symmetric "product on a table" staging, stock-photo smiling, flat beauty-lighting with no shadow character.
+- Earn a genuine hook: an unexpected angle, a surprising juxtaposition, exaggerated scale, motion frozen mid-action, a bold crop, a visual pun — something a real art director would greenlight because it's interesting, not merely competent.
+- Push materials and light to be specific and tactile (name the exact material and exactly how light catches it) instead of leaning on vague quality adjectives like "high quality" or "stunning."
+- Do not render any text, letters, numbers, or logos into the frame — the brand's logo and tagline are composited on afterward, so leave deliberate, uncluttered negative space for them as part of the composition, not an afterthought.`;
+
+  const videoAddendum =
+    "\n- Avoid AI-video tells too: rubbery or inconsistent physics, morphing geometry between frames, drifting continuity errors, aimless camera motion. Every camera move should be a deliberate choice building toward one clear payoff moment.";
+
+  return `\n\n${common}${medium === "video" ? videoAddendum : ""}`;
+}
+
 function brandContextBlock(brand?: BrandContext): string {
   if (!brand) return "";
   const lines = [
@@ -68,7 +89,8 @@ export async function refineImagePrompt(
   brand?: BrandContext,
   styleTemplate?: string,
 ): Promise<string> {
-  const metaPrompt = `You are an expert prompt engineer for a state-of-the-art AI image generation model (Google's Gemini native image generation). A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters) written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on the hero shot for a real ad campaign. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters) written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.
+${qualityBarBlock("image")}
 
 Cover in detail:
 - The exact subject: appearance, materials, textures, pose, expression, product details
@@ -95,7 +117,8 @@ export async function refineVideoPrompt(
   brand?: BrandContext,
   styleTemplate?: string,
 ): Promise<string> {
-  const metaPrompt = `You are an expert prompt engineer for Google's Veo video generation model. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready video generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose.
+  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model on a real ad campaign's hero clip. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready video generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose.
+${qualityBarBlock("video")}
 
 The finished clip is exactly ${durationSeconds} seconds long. You MUST break the action into a precise second-by-second (or half-second, where useful) timeline covering the full ${durationSeconds}s so the model knows exactly what happens and when — format each beat like "0.0s-1.5s: ..." continuing in order until ${durationSeconds}s is reached. For every beat, describe: camera movement (static/pan/tilt/dolly-in/dolly-out/handheld/orbit), subject action and motion, framing changes, and pacing/rhythm.
 
@@ -125,10 +148,15 @@ export async function refineShotImagePrompt(
   shotCount: number,
   aspectRatio: string,
   brand?: BrandContext,
+  hasReferenceImage?: boolean,
 ): Promise<string> {
-  const metaPrompt = `You are an expert prompt engineer for a state-of-the-art AI image generation model (Google's Gemini native image generation). You are generating the key still frame for shot ${shotIndex + 1} of ${shotCount} in a storyboard for this overall ad concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".
+  const referenceInstruction = hasReferenceImage
+    ? `\n\nAn image from the previous shot is attached as reference. The final image prompt must direct the model to keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this shot's brief.`
+    : "";
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstruction}
 
 Expand this into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.
+${qualityBarBlock("image")}
 
 Cover in detail:
 - The exact subject: appearance, materials, textures, pose, expression, product details
@@ -156,11 +184,14 @@ export async function refineShotVideoPrompt(
   aspectRatio: string,
   brand?: BrandContext,
 ): Promise<string> {
-  const metaPrompt = `You are an expert prompt engineer for Google's Veo video generation model, working in image-to-video mode: a starting frame image is provided separately, and Veo will animate motion from it.
+  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model in image-to-video mode: a starting frame image is provided separately, and Veo will animate motion from it.
 
-This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for the overall ad concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".
+This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".
 
-Expand this into an extremely detailed, production-ready image-to-video motion prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose. The clip is exactly ${durationSeconds} seconds long — break the motion into a precise second-by-second (or half-second) timeline from 0.0s to ${durationSeconds}s, e.g. "0.0s-1.0s: ...". For every beat describe camera movement, how the subject/scene animates and evolves from the starting frame, framing changes, and pacing.
+Expand this into an extremely detailed, production-ready image-to-video motion prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose.
+${qualityBarBlock("video")}
+
+The clip is exactly ${durationSeconds} seconds long — break the motion into a precise second-by-second (or half-second) timeline from 0.0s to ${durationSeconds}s, e.g. "0.0s-1.0s: ...". For every beat describe camera movement, how the subject/scene animates and evolves from the starting frame, framing changes, and pacing.
 
 Also describe overall visual style, lighting evolution, depth of field, mood, and how this shot's energy should flow given it is shot ${shotIndex + 1} of ${shotCount} (e.g. an opening shot should establish, a middle shot should build, a closing shot should resolve and land on the product).
 Target aspect ratio: ${aspectRatio}
