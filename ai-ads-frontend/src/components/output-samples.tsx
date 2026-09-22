@@ -5,8 +5,9 @@ import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { fadeUpTransition, fadeUpVariants, fadeUpViewport } from "@/lib/motion-variants";
 
-// The same two real, already-generated assets reused as previews elsewhere in the app
-// (project detail page, storyboard page) — genuine Adit output, not stock or mockups.
+// Genuine Adit output (generated 2026-09-22), hosted as static files under public/samples
+// rather than linked to the generation bucket — the marketing site shouldn't depend on
+// test-data storage that could get cleaned up independently of the site itself.
 // Deliberately no fixed aspect-ratio class on the media itself: each card is a fixed
 // height with the media's own intrinsic aspect ratio driving its width (h-full +
 // w-auto), so a landscape 16:9 video and a portrait 9:16 one both render correctly
@@ -15,12 +16,12 @@ const SAMPLES = [
   {
     label: "Poster",
     type: "image" as const,
-    src: "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/9863e624-107d-4d32-80a7-4d748e7bed47.png",
+    src: "/samples/poster.png",
   },
   {
     label: "Video",
     type: "video" as const,
-    src: "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/8aa5874d-e00c-4336-8050-b1189f79522e.mp4",
+    src: "/samples/video.mp4",
   },
 ];
 
