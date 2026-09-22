@@ -459,7 +459,7 @@ export default function StoryboardPage() {
               </div>
               <video src={storyboard.output_url} controls className="w-full rounded-xl" />
               <a
-                href={storyboard.output_url}
+                href={`${storyboard.output_url}?download`}
                 download
                 className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
               >

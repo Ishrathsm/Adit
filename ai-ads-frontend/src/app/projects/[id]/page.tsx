@@ -356,7 +356,7 @@ function JobStatusCard({ job }: { job: Job }) {
       {job.output_url && (
         <div className="flex gap-2">
           <a
-            href={job.output_url}
+            href={`${job.output_url}?download`}
             download
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
           >
