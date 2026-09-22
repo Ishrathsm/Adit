@@ -40,6 +40,48 @@ const SAMPLES = [
   },
 ];
 
+const AUTOPLAY_INTERVAL_MS = 3500;
+
+function useLoopingCarousel() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const indexRef = useRef(0);
+  const pausedRef = useRef(false);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const interval = setInterval(() => {
+      if (pausedRef.current) return;
+      const cards = Array.from(container.children) as HTMLElement[];
+      if (cards.length === 0) return;
+
+      indexRef.current = (indexRef.current + 1) % cards.length;
+      const target = cards[indexRef.current];
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      container.scrollTo({
+        left: container.scrollLeft + (targetRect.left - containerRect.left),
+        behavior: "smooth",
+      });
+    }, AUTOPLAY_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [reduceMotion]);
+
+  return {
+    scrollRef,
+    pause: () => {
+      pausedRef.current = true;
+    },
+    resume: () => {
+      pausedRef.current = false;
+    },
+  };
+}
+
 function AutoplayVideo({ src, className }: { src: string; className: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const reduceMotion = useReducedMotion();
@@ -61,6 +103,7 @@ function AutoplayVideo({ src, className }: { src: string; className: string }) {
 
 export function OutputSamples() {
   const reduceMotion = useReducedMotion();
+  const { scrollRef, pause, resume } = useLoopingCarousel();
 
   return (
     <motion.section
@@ -78,7 +121,14 @@ export function OutputSamples() {
       {/* items-center (not the flex default of stretch) so a landscape video card hugs
           its own height and sits vertically centered against the taller portrait poster
           card beside it, instead of being stretched down to match it. */}
-      <div className="scrollbar-hide flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-6 pb-2 sm:justify-center">
+      <div
+        ref={scrollRef}
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+        onTouchStart={pause}
+        onTouchEnd={resume}
+        className="scrollbar-hide flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-6 pb-2 sm:justify-center"
+      >
         {SAMPLES.map((sample) => (
           <div
             key={sample.id}
