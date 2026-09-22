@@ -14,9 +14,9 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CreateHero } from "@/components/create-hero";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createFolder,
@@ -166,23 +166,6 @@ function ProjectsPageInner() {
     }
   }
 
-  async function startProject(type: ProjectType) {
-    if (account?.account_type === "organisation" && !productId) {
-      router.push("/onboarding/organisation");
-      return;
-    }
-    setCreating(true);
-    setError(null);
-    try {
-      const name = type === "video" ? "Untitled Video Ad" : "Untitled Poster Ad";
-      const { project } = await createProject(name, type, productId ?? undefined);
-      router.push(`/projects/${project.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setCreating(false);
-    }
-  }
-
   async function handleCreateFolder() {
     const name = newFolderName.trim();
     setCreatingFolder(false);
@@ -279,6 +262,17 @@ function ProjectsPageInner() {
       )}
 
       {activeFolder && <h1 className="mt-6 text-xl font-semibold tracking-tight">{activeFolder.name}</h1>}
+
+      {!activeFolder && (
+        <div className="mt-8 flex flex-col items-center gap-6 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">What will you create today?</h1>
+          {creating ? (
+            <p className="text-sm text-muted">Setting up your project…</p>
+          ) : (
+            <CreateHero account={account} productId={productId} />
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="mt-6 rounded-2xl border border-border-strong bg-surface px-4 py-3 text-sm text-red-400">
@@ -562,54 +556,16 @@ function ProjectsPageInner() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
           <div className="rgb-border flex h-16 w-16 items-center justify-center">
             <FolderPlus size={22} />
           </div>
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{emptyStateTitle}</h1>
-            <p className="mx-auto max-w-sm text-sm text-muted">
-              Every ad you make lives in a project. Start your first one below.
-            </p>
-          </div>
-          <Button onClick={() => startProject("video")} disabled={creating}>
-            {creating ? "Creating…" : "New Project"}
-          </Button>
+          <h1 className="text-2xl font-semibold tracking-tight">{emptyStateTitle}</h1>
+          <p className="mx-auto max-w-sm text-sm text-muted">
+            Describe your first ad above and we&apos;ll take it from there.
+          </p>
         </div>
       )}
-
-      <div className="mt-6 grid gap-4 pb-10 sm:grid-cols-2">
-        <button
-          onClick={() => startProject("poster")}
-          disabled={creating}
-          className="rgb-border flex items-start gap-3 p-5 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong">
-            <ImageIcon size={16} />
-          </div>
-          <div>
-            <h2 className="mb-1 text-sm font-medium">Poster</h2>
-            <p className="text-xs leading-relaxed text-muted">
-              Describe the ad, pick an aspect ratio, generate with Imagen.
-            </p>
-          </div>
-        </button>
-        <button
-          onClick={() => startProject("video")}
-          disabled={creating}
-          className="rgb-border flex items-start gap-3 p-5 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong">
-            <Video size={16} />
-          </div>
-          <div>
-            <h2 className="mb-1 text-sm font-medium">Video</h2>
-            <p className="text-xs leading-relaxed text-muted">
-              Describe the ad in a prompt, generate with Veo.
-            </p>
-          </div>
-        </button>
-      </div>
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
