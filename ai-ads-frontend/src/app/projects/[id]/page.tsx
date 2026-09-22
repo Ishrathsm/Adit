@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Clapperboard, Download, Loader2, Sparkles, XCircle } from "lucide-react";
+import { CheckCircle2, Clapperboard, Download, Loader2, Sparkles, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AppHeader } from "@/components/app-header";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   ASPECT_RATIOS,
@@ -125,16 +125,7 @@ export default function ProjectDetailPage() {
 
   return (
     <main className="relative mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-10">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => router.push("/projects")}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
-        >
-          <ArrowLeft size={14} />
-          Projects
-        </button>
-        <ThemeToggle />
-      </div>
+      <AppHeader back={{ href: "/projects", label: "Projects" }} />
 
       {loadError && (
         <p className="mt-6 rounded-2xl border border-border-strong bg-surface px-4 py-3 text-sm text-red-400">

@@ -23,6 +23,12 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Terms/Privacy are readable regardless of auth state — never bounced either direction,
+  // unlike "/" and "/login" which are only meant for logged-out visitors.
+  const isAlwaysAccessible =
+    request.nextUrl.pathname.startsWith("/terms") || request.nextUrl.pathname.startsWith("/privacy");
+  if (isAlwaysAccessible) return response;
+
   const isPublicRoute = request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/login");
 
   if (!user && !isPublicRoute) {

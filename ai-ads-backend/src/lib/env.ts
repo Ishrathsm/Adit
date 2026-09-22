@@ -17,6 +17,11 @@ export const env = {
   // Optional: features degrade gracefully instead of crashing at boot when these are unset,
   // since not every POC account is created yet.
   upstashRedisUrl: process.env.UPSTASH_REDIS_URL || undefined,
+  // Separate from the TCP url above — Ratelimit talks to Upstash over its REST API, not
+  // ioredis. Same underlying database, different credential pair (Upstash dashboard's "REST"
+  // tab, not "TCP"). Rate limiting is disabled (fails open) when these aren't set.
+  upstashRedisRestUrl: process.env.UPSTASH_REDIS_REST_URL || undefined,
+  upstashRedisRestToken: process.env.UPSTASH_REDIS_REST_TOKEN || undefined,
   geminiApiKey: process.env.GEMINI_API_KEY || undefined,
 
   // Google Cloud / Veo. GOOGLE_APPLICATION_CREDENTIALS is read directly by google-auth-library

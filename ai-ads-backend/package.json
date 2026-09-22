@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/genai": "^2.23.0",
     "@supabase/supabase-js": "^2.45.4",
+    "@upstash/ratelimit": "^2.1.0",
+    "@upstash/redis": "^1.39.0",
     "bullmq": "^5.13.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

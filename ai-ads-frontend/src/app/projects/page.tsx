@@ -2,11 +2,9 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, FolderPlus, Image as ImageIcon, LogOut, Video } from "lucide-react";
+import { Building2, FolderPlus, Image as ImageIcon, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { createClient } from "@/lib/supabase/client";
+import { AppHeader } from "@/components/app-header";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createProject,
@@ -110,13 +108,6 @@ function ProjectsPageInner() {
     }
   }
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
     <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
       <div
@@ -132,28 +123,16 @@ function ProjectsPageInner() {
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Logo className="text-foreground" />
-          <p className="text-sm font-medium text-muted">Projects</p>
-          {activeProduct && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border-strong px-3 py-1 text-xs text-muted">
-              <Building2 size={12} />
-              {activeProduct.name}
-            </span>
-          )}
+      <AppHeader />
+
+      {activeProduct && (
+        <div className="mt-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-strong px-3 py-1 text-xs text-muted">
+            <Building2 size={12} />
+            {activeProduct.name}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            onClick={handleSignOut}
-            title="Sign out"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-strong text-muted transition-colors hover:text-foreground"
-          >
-            <LogOut size={14} />
-          </button>
-        </div>
-      </div>
+      )}
 
       {error && (
         <p className="mt-6 rounded-2xl border border-border-strong bg-surface px-4 py-3 text-sm text-red-400">

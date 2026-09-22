@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { env } from "./lib/env";
 import { requireAuth } from "./middleware/auth";
+import { rateLimitGenerations } from "./middleware/rate-limit";
 import { accountRouter } from "./routes/account";
 import { healthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
@@ -20,8 +21,8 @@ export function createApp() {
   app.use("/api/account", requireAuth, accountRouter);
   app.use("/api/products", requireAuth, productsRouter);
   app.use("/api/projects", requireAuth, projectsRouter);
-  app.use("/api/jobs", requireAuth, jobsRouter);
-  app.use("/api/storyboards", requireAuth, storyboardsRouter);
+  app.use("/api/jobs", requireAuth, rateLimitGenerations, jobsRouter);
+  app.use("/api/storyboards", requireAuth, rateLimitGenerations, storyboardsRouter);
   app.use("/api/templates", requireAuth, templatesRouter);
 
   return app;
