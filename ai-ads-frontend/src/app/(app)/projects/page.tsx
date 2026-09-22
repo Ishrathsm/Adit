@@ -54,6 +54,22 @@ function relativeDate(iso: string) {
 
 type DeleteTarget = { kind: "project" | "folder"; id: string; name: string };
 
+function FolderThumb({ project }: { project: Project }) {
+  if (project.preview_url) {
+    return project.preview_type === "video" ? (
+      <video src={project.preview_url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
+      <img src={project.preview_url} alt="" className="h-full w-full object-cover" />
+    );
+  }
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-background/40 text-muted">
+      {project.type === "video" ? <Video size={14} /> : <ImageIcon size={14} />}
+    </div>
+  );
+}
+
 function ProjectsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -159,10 +175,14 @@ function ProjectsPageInner() {
   // Only meaningful at the top level, where `projects` holds every project regardless of
   // folder — inside a folder the list is already filtered, so counts wouldn't be global.
   const folderCounts = new Map<string, number>();
+  const folderPreviews = new Map<string, Project[]>();
   if (!activeFolder) {
     for (const project of projects ?? []) {
       if (!project.folder_id) continue;
       folderCounts.set(project.folder_id, (folderCounts.get(project.folder_id) ?? 0) + 1);
+      const previews = folderPreviews.get(project.folder_id) ?? [];
+      if (previews.length < 4) previews.push(project);
+      folderPreviews.set(project.folder_id, previews);
     }
   }
 
@@ -289,15 +309,28 @@ function ProjectsPageInner() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {folders.map((folder) => {
               const count = folderCounts.get(folder.id) ?? 0;
+              const previewItems = folderPreviews.get(folder.id) ?? [];
               return (
                 <div key={folder.id} className="rgb-border flex flex-col gap-3 p-3">
                   <button
                     onClick={() =>
                       router.push(`/projects?folder=${folder.id}${productId ? `&product=${productId}` : ""}`)
                     }
-                    className="flex aspect-[2/1] w-full items-center justify-center rounded-xl bg-surface transition-opacity hover:opacity-90"
+                    className="flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-xl bg-surface transition-opacity hover:opacity-90"
                   >
-                    <FolderIcon size={40} className="text-muted" strokeWidth={1.5} />
+                    {previewItems.length > 0 ? (
+                      <div className="grid h-full w-full grid-cols-2 gap-0.5">
+                        {Array.from({ length: 4 }).map((_, i) =>
+                          previewItems[i] ? (
+                            <FolderThumb key={previewItems[i].id} project={previewItems[i]} />
+                          ) : (
+                            <div key={i} className="bg-background/20" />
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <FolderIcon size={40} className="text-muted" strokeWidth={1.5} />
+                    )}
                   </button>
                   <div className="flex items-start justify-between gap-2">
                     <div
