@@ -5,20 +5,35 @@ import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { fadeUpTransition, fadeUpVariants, fadeUpViewport } from "@/lib/motion-variants";
 
-// Genuine Adit output (generated 2026-09-22), hosted as static files under public/samples
-// rather than linked to the generation bucket — the marketing site shouldn't depend on
-// test-data storage that could get cleaned up independently of the site itself.
+// Genuine Adit output, not stock or mockups. The newer pair (generated 2026-09-22) is
+// hosted as static files under public/samples rather than linked to the generation bucket
+// — the marketing site shouldn't depend on test-data storage that could get cleaned up
+// independently of the site itself. The original pair stays linked to the bucket as-is.
 // Deliberately no fixed aspect-ratio class on the media itself: each card is a fixed
 // height with the media's own intrinsic aspect ratio driving its width (h-full +
-// w-auto), so a landscape 16:9 video and a portrait 9:16 one both render correctly
-// side by side without stretching or letterboxing.
+// w-auto), so landscape and portrait media both render correctly side by side without
+// stretching or letterboxing.
 const SAMPLES = [
   {
+    id: "poster-1",
+    label: "Poster",
+    type: "image" as const,
+    src: "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/9863e624-107d-4d32-80a7-4d748e7bed47.png",
+  },
+  {
+    id: "video-1",
+    label: "Video",
+    type: "video" as const,
+    src: "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/8aa5874d-e00c-4336-8050-b1189f79522e.mp4",
+  },
+  {
+    id: "poster-2",
     label: "Poster",
     type: "image" as const,
     src: "/samples/poster.png",
   },
   {
+    id: "video-2",
     label: "Video",
     type: "video" as const,
     src: "/samples/video.mp4",
@@ -66,9 +81,9 @@ export function OutputSamples() {
       <div className="scrollbar-hide flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-6 pb-2 sm:justify-center">
         {SAMPLES.map((sample) => (
           <div
-            key={sample.label}
+            key={sample.id}
             className={clsx(
-              "rgb-border relative shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-transform duration-200 hover:-translate-y-1",
+              "rgb-border relative shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)]",
               // On mobile the video card fills the full carousel width (one full-bleed
               // swipe at a time) instead of the fixed-height/auto-width sizing used on
               // larger screens where there's room to show a peek of the next card.
