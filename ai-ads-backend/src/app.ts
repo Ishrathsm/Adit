@@ -4,6 +4,7 @@ import { env } from "./lib/env";
 import { requireAuth } from "./middleware/auth";
 import { rateLimitGenerations } from "./middleware/rate-limit";
 import { accountRouter } from "./routes/account";
+import { foldersRouter } from "./routes/folders";
 import { healthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
 import { productsRouter } from "./routes/products";
@@ -19,6 +20,7 @@ export function createApp() {
 
   app.use("/health", healthRouter);
   app.use("/api/account", requireAuth, accountRouter);
+  app.use("/api/folders", requireAuth, foldersRouter);
   app.use("/api/products", requireAuth, productsRouter);
   app.use("/api/projects", requireAuth, projectsRouter);
   app.use("/api/jobs", requireAuth, rateLimitGenerations, jobsRouter);

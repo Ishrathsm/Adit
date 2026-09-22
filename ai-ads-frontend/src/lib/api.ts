@@ -8,8 +8,21 @@ export interface Project {
   id: string;
   user_id: string;
   product_id: string | null;
+  folder_id: string | null;
   name: string;
   type: ProjectType;
+  created_at: string;
+  // Only populated by listProjects (merged server-side from the latest completed job/
+  // storyboard) — the single-project GET doesn't include these.
+  preview_url?: string | null;
+  preview_type?: "poster" | "video" | null;
+}
+
+export interface Folder {
+  id: string;
+  user_id: string;
+  product_id: string | null;
+  name: string;
   created_at: string;
 }
 
@@ -151,8 +164,12 @@ export function completeQuestionnaire(id: string, brand: BrandKitInput) {
   });
 }
 
-export function listProjects() {
-  return request<{ projects: Project[] }>("/api/projects");
+export function listProjects(options?: { productId?: string; folderId?: string }) {
+  const params = new URLSearchParams();
+  if (options?.productId) params.set("productId", options.productId);
+  if (options?.folderId) params.set("folderId", options.folderId);
+  const query = params.toString();
+  return request<{ projects: Project[] }>(`/api/projects${query ? `?${query}` : ""}`);
 }
 
 export function getProject(id: string) {
@@ -164,6 +181,40 @@ export function createProject(name: string, type: ProjectType, productId?: strin
     method: "POST",
     body: JSON.stringify({ name, type, productId }),
   });
+}
+
+export function updateProject(id: string, options: { name?: string; folderId?: string | null }) {
+  return request<{ project: Project }>(`/api/projects/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(options),
+  });
+}
+
+export function deleteProject(id: string) {
+  return request<void>(`/api/projects/${id}`, { method: "DELETE" });
+}
+
+export function listFolders(productId?: string) {
+  const query = productId ? `?productId=${encodeURIComponent(productId)}` : "";
+  return request<{ folders: Folder[] }>(`/api/folders${query}`);
+}
+
+export function createFolder(name: string, productId?: string) {
+  return request<{ folder: Folder }>("/api/folders", {
+    method: "POST",
+    body: JSON.stringify({ name, productId }),
+  });
+}
+
+export function renameFolder(id: string, name: string) {
+  return request<{ folder: Folder }>(`/api/folders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteFolder(id: string) {
+  return request<void>(`/api/folders/${id}`, { method: "DELETE" });
 }
 
 export function createJob(
