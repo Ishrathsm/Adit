@@ -8,6 +8,9 @@ import { getTemplateById } from "../lib/templates";
 export const jobsRouter = Router();
 
 const VALID_ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"];
+// Veo rejects anything outside this pair (e.g. "Invalid aspect ratio: 1:1") — unlike image
+// generation, which supports the wider VALID_ASPECT_RATIOS set above.
+const VIDEO_ASPECT_RATIOS = ["9:16", "16:9"];
 
 jobsRouter.post("/", async (req: AuthedRequest, res) => {
   const { projectId, prompt, aspectRatio, tagline, templateId } = req.body ?? {};
@@ -34,6 +37,11 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
 
     const outputType = project.type === "poster" ? "poster" : "video";
 
+    if (outputType === "video" && aspectRatio !== undefined && !VIDEO_ASPECT_RATIOS.includes(aspectRatio)) {
+      res.status(400).json({ error: `aspectRatio for video must be one of ${VIDEO_ASPECT_RATIOS.join(", ")}` });
+      return;
+    }
+
     if (templateId) {
       const template = await getTemplateById(templateId);
       if (!template) {
@@ -48,7 +56,10 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
 
     const job = await createJob(projectId, prompt.trim(), {
       outputType,
-      aspectRatio: typeof aspectRatio === "string" ? aspectRatio : undefined,
+      // The jobs table's aspect_ratio default ('1:1') is poster-oriented and Veo rejects it —
+      // video jobs need an explicit video-safe fallback when the caller doesn't specify one.
+      aspectRatio:
+        typeof aspectRatio === "string" ? aspectRatio : outputType === "video" ? "16:9" : undefined,
       tagline: typeof tagline === "string" && tagline.trim() ? tagline.trim() : undefined,
       templateId: typeof templateId === "string" ? templateId : undefined,
     });

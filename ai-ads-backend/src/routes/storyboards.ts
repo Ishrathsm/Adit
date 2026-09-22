@@ -19,7 +19,10 @@ export const storyboardsRouter = Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-const ASPECT_RATIOS = ["1:1", "3:4", "4:3", "4:5", "9:16", "16:9"];
+// Narrower than image generation's supported set — each shot's aspect ratio feeds both the
+// image-choice step AND Veo's image-to-video step, and Veo rejects anything outside these two
+// (e.g. "Invalid aspect ratio: 1:1").
+const ASPECT_RATIOS = ["9:16", "16:9"];
 const MIN_SHOT_COUNT = 2;
 const MAX_SHOT_COUNT = 4;
 // Veo's image-to-video feature only supports these — anything else gets rejected outright.

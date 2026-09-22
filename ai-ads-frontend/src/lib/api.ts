@@ -189,12 +189,11 @@ export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
 export type ReferenceImageRole = "subject" | "style";
 
+// Narrower than the poster flow's aspect ratios — each shot's ratio feeds both image
+// generation AND Veo's image-to-video step, and Veo only supports these two.
 export const STORYBOARD_ASPECT_RATIOS = [
   { label: "Instagram Story / Reels", value: "9:16" },
-  { label: "Instagram Post (Square)", value: "1:1" },
-  { label: "Instagram Portrait", value: "4:5" },
   { label: "YouTube / Landscape", value: "16:9" },
-  { label: "Classic Portrait", value: "3:4" },
 ] as const;
 export type StoryboardAspectRatio = (typeof STORYBOARD_ASPECT_RATIOS)[number]["value"];
 
