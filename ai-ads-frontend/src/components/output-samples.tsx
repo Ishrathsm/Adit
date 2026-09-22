@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { fadeUpTransition, fadeUpVariants, fadeUpViewport } from "@/lib/motion-variants";
@@ -9,10 +9,9 @@ import { fadeUpTransition, fadeUpVariants, fadeUpViewport } from "@/lib/motion-v
 // hosted as static files under public/samples rather than linked to the generation bucket
 // — the marketing site shouldn't depend on test-data storage that could get cleaned up
 // independently of the site itself. The original pair stays linked to the bucket as-is.
-// Deliberately no fixed aspect-ratio class on the media itself: each card is a fixed
-// height with the media's own intrinsic aspect ratio driving its width (h-full +
-// w-auto), so landscape and portrait media both render correctly side by side without
-// stretching or letterboxing.
+// Deliberately no fixed aspect-ratio class on the media itself: each card has a fixed
+// height with the media's own intrinsic aspect ratio driving its width, so landscape and
+// portrait media both render correctly in the same row without stretching or letterboxing.
 const SAMPLES = [
   {
     id: "poster-1",
@@ -40,48 +39,6 @@ const SAMPLES = [
   },
 ];
 
-const AUTOPLAY_INTERVAL_MS = 3500;
-
-function useLoopingCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const indexRef = useRef(0);
-  const pausedRef = useRef(false);
-  const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const interval = setInterval(() => {
-      if (pausedRef.current) return;
-      const cards = Array.from(container.children) as HTMLElement[];
-      if (cards.length === 0) return;
-
-      indexRef.current = (indexRef.current + 1) % cards.length;
-      const target = cards[indexRef.current];
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      container.scrollTo({
-        left: container.scrollLeft + (targetRect.left - containerRect.left),
-        behavior: "smooth",
-      });
-    }, AUTOPLAY_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [reduceMotion]);
-
-  return {
-    scrollRef,
-    pause: () => {
-      pausedRef.current = true;
-    },
-    resume: () => {
-      pausedRef.current = false;
-    },
-  };
-}
-
 function AutoplayVideo({ src, className }: { src: string; className: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const reduceMotion = useReducedMotion();
@@ -101,9 +58,31 @@ function AutoplayVideo({ src, className }: { src: string; className: string }) {
   return <video ref={videoRef} src={src} muted loop playsInline className={className} />;
 }
 
+function SampleCard({ sample }: { sample: (typeof SAMPLES)[number] }) {
+  return (
+    <div className="rgb-border relative shrink-0 overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+      {sample.type === "image" ? (
+        // eslint-disable-next-line @next/next/no-img-element -- remote, real generated sample
+        <img
+          src={sample.src}
+          alt="Sample poster ad generated with Adit"
+          className="h-72 w-auto rounded-2xl sm:h-80"
+        />
+      ) : (
+        <AutoplayVideo src={sample.src} className="h-72 w-auto rounded-2xl sm:h-80" />
+      )}
+      {/* Label overlaid on the media itself (not a separate row below) so both
+          card types are purely media and line up cleanly regardless of aspect ratio. */}
+      <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-end rounded-b-2xl bg-gradient-to-t from-black/70 to-transparent px-2 pt-8 pb-2">
+        <p className="text-xs font-medium text-white">{sample.label}</p>
+      </div>
+    </div>
+  );
+}
+
 export function OutputSamples() {
   const reduceMotion = useReducedMotion();
-  const { scrollRef, pause, resume } = useLoopingCarousel();
+  const [paused, setPaused] = useState(false);
 
   return (
     <motion.section
@@ -118,45 +97,24 @@ export function OutputSamples() {
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Real output</p>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Made with Adit, not mockups.</h2>
       </div>
-      {/* items-center (not the flex default of stretch) so a landscape video card hugs
-          its own height and sits vertically centered against the taller portrait poster
-          card beside it, instead of being stretched down to match it. */}
-      <div
-        ref={scrollRef}
-        onMouseEnter={pause}
-        onMouseLeave={resume}
-        onTouchStart={pause}
-        onTouchEnd={resume}
-        className="scrollbar-hide flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-6 pb-2 sm:justify-center"
-      >
-        {SAMPLES.map((sample) => (
-          <div
-            key={sample.id}
-            className={clsx(
-              "rgb-border relative shrink-0 snap-center overflow-hidden p-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)]",
-              // On mobile the video card fills the full carousel width (one full-bleed
-              // swipe at a time) instead of the fixed-height/auto-width sizing used on
-              // larger screens where there's room to show a peek of the next card.
-              sample.type === "video" && "w-full sm:w-auto",
-            )}
-          >
-            {sample.type === "image" ? (
-              // eslint-disable-next-line @next/next/no-img-element -- remote, real generated sample
-              <img
-                src={sample.src}
-                alt="Sample poster ad generated with Adit"
-                className="h-72 w-auto rounded-2xl sm:h-80"
-              />
-            ) : (
-              <AutoplayVideo src={sample.src} className="h-auto w-full rounded-2xl sm:h-80 sm:w-auto" />
-            )}
-            {/* Label overlaid on the media itself (not a separate row below) so both
-                card types are purely media and line up cleanly regardless of aspect ratio. */}
-            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-end rounded-b-2xl bg-gradient-to-t from-black/70 to-transparent px-2 pt-8 pb-2">
-              <p className="text-xs font-medium text-white">{sample.label}</p>
-            </div>
-          </div>
-        ))}
+      {/* True marquee: the track renders SAMPLES twice back to back and animates exactly
+          -50%, so the seam between the two copies is invisible and it loops forever. The
+          outer wrapper's mask-image fades the left/right edges to transparent instead of
+          hard-clipping a card mid-frame. items-center so a landscape video card hugs its
+          own height and sits vertically centered against the taller portrait poster card
+          beside it, instead of being stretched to match it. */}
+      <div className="marquee-fade overflow-hidden">
+        <div
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onTouchStart={() => setPaused(true)}
+          onTouchEnd={() => setPaused(false)}
+          className={clsx("marquee-track flex w-max items-center gap-4 py-2", paused && "marquee-paused")}
+        >
+          {[...SAMPLES, ...SAMPLES].map((sample, i) => (
+            <SampleCard key={`${sample.id}-${i}`} sample={sample} />
+          ))}
+        </div>
       </div>
     </motion.section>
   );

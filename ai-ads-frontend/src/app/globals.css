@@ -205,3 +205,36 @@ body {
   display: none;
 }
 
+/* Continuous horizontal marquee (output-samples carousel). The track renders the sample
+   list twice back to back and animates exactly -50%, so the seam between the two copies
+   is invisible and the loop reads as endless. Pausing is a toggled class (hover/touch)
+   rather than :hover so touch devices can pause it too. */
+.marquee-track {
+  animation: marquee-scroll 28s linear infinite;
+}
+.marquee-track.marquee-paused {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Fades the marquee's edges to transparent instead of a hard clip. */
+.marquee-fade {
+  mask-image: linear-gradient(to right, transparent, black 4rem, black calc(100% - 4rem), transparent);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 4rem,
+    black calc(100% - 4rem),
+    transparent
+  );
+}
+
