@@ -23,8 +23,10 @@
 }
 
 .light {
-  --background: #fafafa;
-  --surface: #ffffff;
+  /* A pale sky-blue-gray instead of near-white/pure-white — flat #fff reads harsh next to
+     this product's dark-mode-first design language. */
+  --background: #eef4f8;
+  --surface: #f8fbfd;
   --foreground: #17171a;
   --muted: #6b6b74;
   --border-subtle: rgba(10, 10, 11, 0.08);

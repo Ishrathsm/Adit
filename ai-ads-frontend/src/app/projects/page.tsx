@@ -150,6 +150,16 @@ function ProjectsPageInner() {
 
   const activeFolder = folderId ? (folders.find((f) => f.id === folderId) ?? null) : null;
 
+  // Only meaningful at the top level, where `projects` holds every project regardless of
+  // folder — inside a folder the list is already filtered, so counts wouldn't be global.
+  const folderCounts = new Map<string, number>();
+  if (!activeFolder) {
+    for (const project of projects ?? []) {
+      if (!project.folder_id) continue;
+      folderCounts.set(project.folder_id, (folderCounts.get(project.folder_id) ?? 0) + 1);
+    }
+  }
+
   async function startProject(type: ProjectType) {
     if (account?.account_type === "organisation" && !productId) {
       router.push("/onboarding/organisation");
@@ -274,11 +284,14 @@ function ProjectsPageInner() {
               >
                 <FolderIcon size={14} />
                 {folder.name}
+                {Boolean(folderCounts.get(folder.id)) && (
+                  <span className="text-muted">{folderCounts.get(folder.id)}</span>
+                )}
               </button>
               <button
                 onClick={() => setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name })}
                 aria-label={`Delete ${folder.name}`}
-                className="absolute -top-1.5 -right-1.5 hidden h-5 w-5 items-center justify-center rounded-full border border-border-strong bg-background text-muted transition-colors hover:text-red-400 group-hover:flex"
+                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-border-strong bg-background text-muted opacity-60 transition-opacity hover:text-red-400 hover:opacity-100"
               >
                 <Trash2 size={10} />
               </button>
