@@ -269,7 +269,10 @@ function ProjectsPageInner() {
           {creating ? (
             <p className="text-sm text-muted">Setting up your project…</p>
           ) : (
-            <CreateHero account={account} productId={productId} />
+            <>
+              <CreateHero account={account} productId={productId} />
+              {/* Templates row goes here — reserved for tomorrow */}
+            </>
           )}
         </div>
       )}

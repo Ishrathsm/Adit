@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
-import { CircleUserRound, FolderKanban, Image as ImageIcon, LogOut, Moon, Sun, Video } from "lucide-react";
+import { CircleUserRound, FolderKanban, Image as ImageIcon, LogOut, Moon, Sparkles, Sun, Video } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
@@ -96,7 +96,7 @@ export function Sidebar() {
       />
 
       <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
-        Create
+        Categories
       </p>
       <button
         onClick={() => handleQuickCreate("poster")}
@@ -104,7 +104,7 @@ export function Sidebar() {
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
       >
         <ImageIcon size={16} className="shrink-0" />
-        <span className="hidden sm:inline">{quickCreating === "poster" ? "Creating…" : "New Poster"}</span>
+        <span className="hidden sm:inline">{quickCreating === "poster" ? "Creating…" : "Poster"}</span>
       </button>
       <button
         onClick={() => handleQuickCreate("video")}
@@ -112,8 +112,16 @@ export function Sidebar() {
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
       >
         <Video size={16} className="shrink-0" />
-        <span className="hidden sm:inline">{quickCreating === "video" ? "Creating…" : "New Video"}</span>
+        <span className="hidden sm:inline">{quickCreating === "video" ? "Creating…" : "Video"}</span>
       </button>
+      <div
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted opacity-50 sm:justify-start sm:px-3"
+        title="Motion Poster · Coming soon"
+      >
+        <Sparkles size={16} className="shrink-0" />
+        <span className="hidden sm:inline">Motion Poster</span>
+        <span className="hidden text-[10px] text-muted sm:inline">Soon</span>
+      </div>
 
       <div className="flex-1" />
 
