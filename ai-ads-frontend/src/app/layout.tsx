@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Ads Pipeline",
+  title: "Adit - AI Ad Maker",
   description: "Generate poster and video ads without touching a video editor.",
 };
 
