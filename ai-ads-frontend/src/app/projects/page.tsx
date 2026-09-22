@@ -272,62 +272,82 @@ function ProjectsPageInner() {
         </p>
       )}
 
-      {!activeFolder && (
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          {folders.map((folder) => (
-            <div key={folder.id} className="group relative">
+      {!activeFolder && (folders.length > 0 || creatingFolder) && (
+        <div className="mt-6">
+          <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Folders</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {folders.map((folder) => {
+              const count = folderCounts.get(folder.id) ?? 0;
+              return (
+                <div key={folder.id} className="rgb-border group relative flex flex-col gap-3 p-3">
+                  <button
+                    onClick={() =>
+                      router.push(`/projects?folder=${folder.id}${productId ? `&product=${productId}` : ""}`)
+                    }
+                    className="flex aspect-[2/1] w-full items-center justify-center rounded-xl bg-surface transition-opacity hover:opacity-90"
+                  >
+                    <FolderIcon size={40} className="text-muted" strokeWidth={1.5} />
+                  </button>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-medium">{folder.name}</h2>
+                    <p className="text-xs text-muted">
+                      {count} {count === 1 ? "item" : "items"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name })}
+                    aria-label={`Delete ${folder.name}`}
+                    className="absolute top-5 right-5 flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-background text-muted opacity-70 transition-opacity hover:text-red-400 hover:opacity-100"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              );
+            })}
+
+            {creatingFolder ? (
+              <div className="rgb-border flex flex-col gap-3 p-3">
+                <div className="flex aspect-[2/1] w-full items-center justify-center rounded-xl bg-surface">
+                  <FolderIcon size={40} className="text-muted" strokeWidth={1.5} />
+                </div>
+                <input
+                  autoFocus
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreateFolder();
+                    if (e.key === "Escape") {
+                      setCreatingFolder(false);
+                      setNewFolderName("");
+                    }
+                  }}
+                  onBlur={handleCreateFolder}
+                  placeholder="Folder name"
+                  className="w-full rounded-lg border border-border-strong bg-background px-2.5 py-1.5 text-sm outline-none"
+                />
+              </div>
+            ) : (
               <button
-                onClick={() =>
-                  router.push(`/projects?folder=${folder.id}${productId ? `&product=${productId}` : ""}`)
-                }
-                className="inline-flex items-center gap-2 rounded-full border border-border-strong px-4 py-2 text-sm transition-colors hover:bg-white/5"
+                onClick={() => setCreatingFolder(true)}
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border-strong p-3 text-muted transition-colors hover:text-foreground"
               >
-                <FolderIcon size={14} />
-                {folder.name}
-                {Boolean(folderCounts.get(folder.id)) && (
-                  <span className="text-muted">{folderCounts.get(folder.id)}</span>
-                )}
+                <div className="flex aspect-[2/1] w-full items-center justify-center">
+                  <FolderPlus size={32} strokeWidth={1.5} />
+                </div>
+                <p className="text-sm font-medium">New folder</p>
               </button>
-              <button
-                onClick={() => setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name })}
-                aria-label={`Delete ${folder.name}`}
-                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-border-strong bg-background text-muted opacity-60 transition-opacity hover:text-red-400 hover:opacity-100"
-              >
-                <Trash2 size={10} />
-              </button>
-            </div>
-          ))}
-          {creatingFolder ? (
-            <input
-              autoFocus
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreateFolder();
-                if (e.key === "Escape") {
-                  setCreatingFolder(false);
-                  setNewFolderName("");
-                }
-              }}
-              onBlur={handleCreateFolder}
-              placeholder="Folder name"
-              className="w-36 rounded-full border border-border-subtle bg-background px-4 py-2 text-sm outline-none focus:border-border-strong"
-            />
-          ) : (
-            <button
-              onClick={() => setCreatingFolder(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-4 py-2 text-sm text-muted transition-colors hover:text-foreground"
-            >
-              <FolderPlus size={14} />
-              New folder
-            </button>
-          )}
+            )}
+          </div>
         </div>
       )}
 
       {projects && projects.length > 0 ? (
-        <div className="mt-6 grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+        <div className="mt-6">
+          {!activeFolder && folders.length > 0 && (
+            <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Projects</p>
+          )}
+          <div className="grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
             <div key={project.id} className="rgb-border flex flex-col gap-3 p-3">
               <button
                 onClick={() => router.push(`/projects/${project.id}`)}
@@ -456,6 +476,7 @@ function ProjectsPageInner() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
