@@ -43,6 +43,10 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Excludes framework internals plus any request for a static asset file (by extension) —
   // not just specific filenames — so a new /public asset never needs a middleware update to
-  // be reachable by logged-out visitors (this bit us before with the favicon).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)"],
+  // be reachable by logged-out visitors (this bit us before with the favicon, and again with
+  // video samples — mp4 wasn't in this list, so /samples/video.mp4 was silently redirected
+  // to /login for every logged-out visitor, i.e. the entire marketing-page audience).
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|mp4|webm|mov|mp3|wav|ogg|pdf|woff2?|ttf)$).*)",
+  ],
 };
