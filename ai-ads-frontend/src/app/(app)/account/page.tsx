@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppHeader } from "@/components/app-header";
+import { BackLink } from "@/components/back-link";
 import { createClient } from "@/lib/supabase/client";
 import { getAccount, type Account } from "@/lib/api";
 
@@ -35,8 +35,8 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-md flex-col px-6 py-10">
-      <AppHeader back={{ href: "/projects", label: "Projects" }} />
+    <main className="relative mx-auto flex min-h-screen max-w-md flex-col px-6 py-10 sm:px-10">
+      <BackLink href="/projects" label="Projects" />
 
       <div className="mt-8 flex flex-col gap-2">
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Account</p>

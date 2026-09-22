@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Clapperboard, Download, Loader2, Sparkles, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppHeader } from "@/components/app-header";
+import { BackLink } from "@/components/back-link";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   ASPECT_RATIOS,
@@ -124,8 +124,8 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-10">
-      <AppHeader back={{ href: "/projects", label: "Projects" }} />
+    <main className="relative mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-10 sm:px-10">
+      <BackLink href="/projects" label="Projects" />
 
       {loadError && (
         <p className="mt-6 rounded-2xl border border-border-strong bg-surface px-4 py-3 text-sm text-red-400">

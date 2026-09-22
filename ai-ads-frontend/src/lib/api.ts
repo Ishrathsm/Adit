@@ -330,3 +330,17 @@ export function selectShotChoice(storyboardId: string, shotId: string, selectedC
     body: JSON.stringify({ selectedChoice }),
   });
 }
+
+export interface ActivityItem {
+  id: string;
+  project_id: string;
+  project_name: string;
+  kind: "job" | "storyboard";
+  output_type: "poster" | "video";
+  status: "completed" | "failed";
+  updated_at: string;
+}
+
+export function listRecentActivity() {
+  return request<{ activity: ActivityItem[] }>("/api/notifications");
+}

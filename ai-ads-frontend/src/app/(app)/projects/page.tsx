@@ -15,7 +15,7 @@ import {
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppHeader } from "@/components/app-header";
+import { BackLink } from "@/components/back-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
@@ -27,6 +27,7 @@ import {
   getProduct,
   listFolders,
   listProjects,
+  renameFolder,
   updateProject,
   type Account,
   type Folder,
@@ -77,6 +78,11 @@ function ProjectsPageInner() {
   const [menuOpenFor, setMenuOpenFor] = useState<{ id: string; top: number; right: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [folderMenuOpenFor, setFolderMenuOpenFor] = useState<{ id: string; top: number; right: number } | null>(
+    null,
+  );
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [renameFolderValue, setRenameFolderValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   function refreshProjects() {
@@ -202,6 +208,18 @@ function ProjectsPageInner() {
     }
   }
 
+  async function handleRenameFolderSubmit(folder: Folder) {
+    const name = renameFolderValue.trim();
+    setRenamingFolderId(null);
+    if (!name || name === folder.name) return;
+    try {
+      const { folder: updated } = await renameFolder(folder.id, name);
+      setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   async function handleMove(project: Project, targetFolderId: string | null) {
     setMenuOpenFor(null);
     try {
@@ -233,7 +251,7 @@ function ProjectsPageInner() {
   const emptyStateTitle = activeFolder ? `No projects in ${activeFolder.name} yet` : "No projects yet";
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10">
+    <main className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10 sm:px-10">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center overflow-hidden"
@@ -247,13 +265,9 @@ function ProjectsPageInner() {
         />
       </div>
 
-      <AppHeader
-        back={
-          activeFolder
-            ? { href: `/projects${productId ? `?product=${productId}` : ""}`, label: "All projects" }
-            : undefined
-        }
-      />
+      {activeFolder && (
+        <BackLink href={`/projects${productId ? `?product=${productId}` : ""}`} label="All projects" />
+      )}
 
       {activeProduct && (
         <div className="mt-4">
@@ -275,11 +289,11 @@ function ProjectsPageInner() {
       {!activeFolder && (folders.length > 0 || creatingFolder) && (
         <div className="mt-6">
           <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Folders</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {folders.map((folder) => {
               const count = folderCounts.get(folder.id) ?? 0;
               return (
-                <div key={folder.id} className="rgb-border group relative flex flex-col gap-3 p-3">
+                <div key={folder.id} className="rgb-border flex flex-col gap-3 p-3">
                   <button
                     onClick={() =>
                       router.push(`/projects?folder=${folder.id}${productId ? `&product=${productId}` : ""}`)
@@ -288,19 +302,88 @@ function ProjectsPageInner() {
                   >
                     <FolderIcon size={40} className="text-muted" strokeWidth={1.5} />
                   </button>
-                  <div className="min-w-0">
-                    <h2 className="truncate text-sm font-medium">{folder.name}</h2>
-                    <p className="text-xs text-muted">
-                      {count} {count === 1 ? "item" : "items"}
-                    </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div
+                      onClick={() =>
+                        renamingFolderId !== folder.id &&
+                        router.push(`/projects?folder=${folder.id}${productId ? `&product=${productId}` : ""}`)
+                      }
+                      className="min-w-0 flex-1 cursor-pointer"
+                    >
+                      {renamingFolderId === folder.id ? (
+                        <input
+                          autoFocus
+                          value={renameFolderValue}
+                          onChange={(e) => setRenameFolderValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleRenameFolderSubmit(folder);
+                            if (e.key === "Escape") setRenamingFolderId(null);
+                          }}
+                          onBlur={() => handleRenameFolderSubmit(folder)}
+                          className="w-full rounded-lg border border-border-strong bg-background px-2 py-1 text-sm outline-none"
+                        />
+                      ) : (
+                        <h2 className="truncate text-sm font-medium">{folder.name}</h2>
+                      )}
+                      <p className="text-xs text-muted">
+                        {count} {count === 1 ? "item" : "items"}
+                      </p>
+                    </div>
+
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={(e) => {
+                          if (folderMenuOpenFor?.id === folder.id) {
+                            setFolderMenuOpenFor(null);
+                            return;
+                          }
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setFolderMenuOpenFor({
+                            id: folder.id,
+                            top: rect.bottom + 4,
+                            right: window.innerWidth - rect.right,
+                          });
+                        }}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-foreground"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+                      {folderMenuOpenFor?.id === folder.id &&
+                        createPortal(
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setFolderMenuOpenFor(null)} />
+                            <div
+                              style={{ top: folderMenuOpenFor.top, right: folderMenuOpenFor.right }}
+                              className="fixed z-50 w-44 rounded-2xl border border-border-strong bg-surface p-1.5 shadow-lg"
+                            >
+                              <button
+                                onClick={() => {
+                                  setRenamingFolderId(folder.id);
+                                  setRenameFolderValue(folder.name);
+                                  setFolderMenuOpenFor(null);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                              >
+                                <Pencil size={12} /> Rename
+                              </button>
+                              <div className="mt-1 border-t border-border-subtle pt-1">
+                                <button
+                                  onClick={() => {
+                                    setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name });
+                                    setFolderMenuOpenFor(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                                >
+                                  <Trash2 size={12} /> Delete
+                                </button>
+                              </div>
+                            </div>
+                          </>,
+                          document.body,
+                        )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name })}
-                    aria-label={`Delete ${folder.name}`}
-                    className="absolute top-5 right-5 flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-background text-muted opacity-70 transition-opacity hover:text-red-400 hover:opacity-100"
-                  >
-                    <Trash2 size={12} />
-                  </button>
                 </div>
               );
             })}
@@ -346,7 +429,7 @@ function ProjectsPageInner() {
           {!activeFolder && folders.length > 0 && (
             <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Projects</p>
           )}
-          <div className="grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {projects.map((project) => (
             <div key={project.id} className="rgb-border flex flex-col gap-3 p-3">
               <button

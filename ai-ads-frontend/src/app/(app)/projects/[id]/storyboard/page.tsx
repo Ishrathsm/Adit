@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Download, Loader2, Upload, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppHeader } from "@/components/app-header";
+import { BackLink } from "@/components/back-link";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
@@ -190,8 +190,8 @@ export default function StoryboardPage() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10">
-      <AppHeader back={{ href: `/projects/${id}`, label: "Project" }} />
+    <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10 sm:px-10">
+      <BackLink href={`/projects/${id}`} label="Project" />
 
       <div className="mt-8 flex flex-col gap-2">
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Text → Storyboard → Video</p>

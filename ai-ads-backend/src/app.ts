@@ -7,6 +7,7 @@ import { accountRouter } from "./routes/account";
 import { foldersRouter } from "./routes/folders";
 import { healthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
+import { notificationsRouter } from "./routes/notifications";
 import { productsRouter } from "./routes/products";
 import { projectsRouter } from "./routes/projects";
 import { storyboardsRouter } from "./routes/storyboards";
@@ -24,6 +25,7 @@ export function createApp() {
   app.use("/api/products", requireAuth, productsRouter);
   app.use("/api/projects", requireAuth, projectsRouter);
   app.use("/api/jobs", requireAuth, rateLimitGenerations, jobsRouter);
+  app.use("/api/notifications", requireAuth, notificationsRouter);
   app.use("/api/storyboards", requireAuth, rateLimitGenerations, storyboardsRouter);
   app.use("/api/templates", requireAuth, templatesRouter);
 
