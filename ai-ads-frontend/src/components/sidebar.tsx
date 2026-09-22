@@ -1,20 +1,77 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
-import { CircleUserRound, FolderKanban, LogOut } from "lucide-react";
+import { CircleUserRound, FolderKanban, Image as ImageIcon, LogOut, Moon, Sun, Video } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
+import { createProject, getAccount, type Account, type ProjectType } from "@/lib/api";
+
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  active,
+}: {
+  href: string;
+  icon: typeof FolderKanban;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={clsx(
+        "flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3",
+        active ? "bg-button-bg text-button-fg" : "text-muted hover:bg-white/5 hover:text-foreground",
+      )}
+    >
+      <Icon size={16} className="shrink-0" />
+      <span className="hidden sm:inline">{label}</span>
+    </Link>
+  );
+}
 
 // Icon+label on sm: and up, collapses to a narrow icon-only rail below it — no slide-in
 // drawer/overlay, so it stays usable on mobile without the extra state/complexity that'd add.
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const projectsActive = pathname === "/projects" || pathname.startsWith("/projects/");
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [quickCreating, setQuickCreating] = useState<ProjectType | null>(null);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    getAccount()
+      .then(({ account }) => setAccount(account))
+      .catch(() => {
+        /* only used to gate org accounts (which need a product picked) behind the projects page instead */
+      });
+  }, []);
+
+  async function handleQuickCreate(type: ProjectType) {
+    if (account?.account_type === "organisation") {
+      // Org accounts need a product context first — the projects page already handles that flow.
+      router.push("/projects");
+      return;
+    }
+    setQuickCreating(type);
+    try {
+      const name = type === "video" ? "Untitled Video Ad" : "Untitled Poster Ad";
+      const { project } = await createProject(name, type);
+      router.push(`/projects/${project.id}`);
+    } finally {
+      setQuickCreating(null);
+    }
+  }
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -23,41 +80,57 @@ export function Sidebar() {
     router.refresh();
   }
 
+  const isDark = resolvedTheme === "dark";
+
   return (
     <aside className="flex w-16 shrink-0 flex-col gap-1 border-r border-border-subtle bg-surface px-2 py-4 sm:w-56 sm:px-3">
       <Link href="/projects" className="mb-6 flex items-center justify-center px-1 sm:justify-start sm:px-2">
         <Logo className="text-foreground" />
       </Link>
 
-      <Link
+      <NavLink
         href="/projects"
-        className={clsx(
-          "flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3",
-          projectsActive ? "bg-button-bg text-button-fg" : "text-muted hover:bg-white/5 hover:text-foreground",
-        )}
+        icon={FolderKanban}
+        label="Projects"
+        active={pathname === "/projects" || pathname.startsWith("/projects/")}
+      />
+
+      <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
+        Create
+      </p>
+      <button
+        onClick={() => handleQuickCreate("poster")}
+        disabled={quickCreating !== null}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
       >
-        <FolderKanban size={16} className="shrink-0" />
-        <span className="hidden sm:inline">Projects</span>
-      </Link>
+        <ImageIcon size={16} className="shrink-0" />
+        <span className="hidden sm:inline">{quickCreating === "poster" ? "Creating…" : "New Poster"}</span>
+      </button>
+      <button
+        onClick={() => handleQuickCreate("video")}
+        disabled={quickCreating !== null}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
+      >
+        <Video size={16} className="shrink-0" />
+        <span className="hidden sm:inline">{quickCreating === "video" ? "Creating…" : "New Video"}</span>
+      </button>
 
       <div className="flex-1" />
 
       <NotificationBell />
 
-      <div className="flex items-center justify-center px-1 py-2 sm:justify-start sm:px-3">
-        <ThemeToggle />
-      </div>
-
-      <Link
-        href="/account"
-        className={clsx(
-          "flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3",
-          pathname === "/account" ? "bg-button-bg text-button-fg" : "text-muted hover:bg-white/5 hover:text-foreground",
-        )}
+      <button
+        type="button"
+        onClick={() => mounted && setTheme(isDark ? "light" : "dark")}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-between sm:px-3"
       >
-        <CircleUserRound size={16} className="shrink-0" />
-        <span className="hidden sm:inline">Account</span>
-      </Link>
+        <span className="flex items-center gap-2.5">
+          {mounted && isDark ? <Moon size={16} className="shrink-0" /> : <Sun size={16} className="shrink-0" />}
+          <span className="hidden sm:inline">{mounted && isDark ? "Dark mode" : "Light mode"}</span>
+        </span>
+      </button>
+
+      <NavLink href="/account" icon={CircleUserRound} label="Account" active={pathname === "/account"} />
 
       <button
         onClick={handleSignOut}
