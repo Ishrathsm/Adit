@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
@@ -69,7 +70,11 @@ function ProjectsPageInner() {
 
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  // Position is captured at click time (not just an id) because the menu is portaled to
+  // document.body — it has to be positioned in fixed viewport coordinates to escape the
+  // project card's `.rgb-border` stacking context (`isolation: isolate` traps any z-index
+  // set inside it, so a normal absolute/z-20 dropdown renders behind sibling cards).
+  const [menuOpenFor, setMenuOpenFor] = useState<{ id: string; top: number; right: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -363,15 +368,26 @@ function ProjectsPageInner() {
 
                 <div className="relative shrink-0">
                   <button
-                    onClick={() => setMenuOpenFor(menuOpenFor === project.id ? null : project.id)}
+                    onClick={(e) => {
+                      if (menuOpenFor?.id === project.id) {
+                        setMenuOpenFor(null);
+                        return;
+                      }
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setMenuOpenFor({ id: project.id, top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                    }}
                     className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-foreground"
                   >
                     <MoreVertical size={14} />
                   </button>
-                  {menuOpenFor === project.id && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setMenuOpenFor(null)} />
-                      <div className="absolute top-8 right-0 z-20 w-44 rounded-2xl border border-border-strong bg-surface p-1.5 shadow-lg">
+                  {menuOpenFor?.id === project.id &&
+                    createPortal(
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setMenuOpenFor(null)} />
+                        <div
+                          style={{ top: menuOpenFor.top, right: menuOpenFor.right }}
+                          className="fixed z-50 w-44 rounded-2xl border border-border-strong bg-surface p-1.5 shadow-lg"
+                        >
                         <button
                           onClick={() => {
                             setRenamingId(project.id);
@@ -420,8 +436,9 @@ function ProjectsPageInner() {
                           </button>
                         </div>
                       </div>
-                    </>
-                  )}
+                      </>,
+                      document.body,
+                    )}
                 </div>
               </div>
             </div>
