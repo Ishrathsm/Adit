@@ -331,7 +331,7 @@ function ProjectsPageInner() {
                     className="flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-xl bg-surface transition-opacity hover:opacity-90"
                   >
                     {previewItems.length > 0 ? (
-                      <div className="grid h-full w-full grid-cols-2 gap-0.5">
+                      <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
                         {Array.from({ length: 4 }).map((_, i) =>
                           previewItems[i] ? (
                             <FolderThumb key={previewItems[i].id} project={previewItems[i]} />
