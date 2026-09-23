@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { AmbientGlow } from "@/components/ambient-glow";
-import { CinematicThemeSwitcher } from "@/components/ui/cinematic-theme-switcher";
 import { FunctionalHero } from "@/components/functional-hero";
 import { OutputSamples } from "@/components/output-samples";
 import { WorkflowAnimation } from "@/components/workflow-animation";
@@ -14,10 +13,6 @@ export default function LandingPage() {
   return (
     <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6">
       <AmbientGlow />
-
-      <div className="fixed top-4 right-8 z-[60] hidden origin-top-right scale-[0.65] md:block">
-        <CinematicThemeSwitcher />
-      </div>
 
       <div className="sticky top-4 z-50 mt-4 mb-8">
         <header className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-full border border-border-subtle bg-background/70 px-4 py-2.5 shadow-lg shadow-black/10 backdrop-blur-xl sm:px-6">

@@ -20,6 +20,19 @@
   --border-strong: rgba(255, 255, 255, 0.16);
   --button-fg: #0a0a0b;
   --button-bg: #ffffff;
+
+  /* Aliases for components using shadcn-style token names — kept in sync with the
+     tokens above rather than introducing a second, parallel color system. */
+  --card: var(--surface);
+  --muted-foreground: var(--muted);
+  --border: var(--border-strong);
+  --accent: #638cff;
+  --primary-foreground: #ffffff;
+  /* Blackish-grey neutrals, lighter than --surface/--card so the folder shape still
+     reads against the tile background, without introducing an unrelated hue. */
+  --folder-back: #232326;
+  --folder-front: #3a3a3f;
+  --folder-tab: #1c1c1f;
 }
 
 .light {
@@ -44,6 +57,14 @@
   --color-border-strong: var(--border-strong);
   --color-button-bg: var(--button-bg);
   --color-button-fg: var(--button-fg);
+  --color-card: var(--card);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-folder-back: var(--folder-back);
+  --color-folder-front: var(--folder-front);
+  --color-folder-tab: var(--folder-tab);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --radius-card: 1.75rem;

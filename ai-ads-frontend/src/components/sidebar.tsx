@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import {
   CircleUserRound,
+  Clapperboard,
   FolderKanban,
   Image as ImageIcon,
   LayoutTemplate,
@@ -64,6 +66,9 @@ export function Sidebar() {
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
   const [quickCreating, setQuickCreating] = useState<ProjectType | null>(null);
+  const [flowMenuOpenFor, setFlowMenuOpenFor] = useState<{ type: ProjectType; top: number; left: number } | null>(
+    null,
+  );
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
@@ -76,7 +81,8 @@ export function Sidebar() {
       });
   }, []);
 
-  async function handleQuickCreate(type: ProjectType) {
+  async function handleQuickCreate(type: ProjectType, storyboard = false) {
+    setFlowMenuOpenFor(null);
     if (account?.account_type === "organisation") {
       // Org accounts need a product context first — the projects page already handles that flow.
       router.push("/projects");
@@ -86,10 +92,19 @@ export function Sidebar() {
     try {
       const name = type === "video" ? "Untitled Video Ad" : "Untitled Poster Ad";
       const { project } = await createProject(name, type);
-      router.push(`/projects/${project.id}`);
+      router.push(storyboard ? `/projects/${project.id}/storyboard` : `/projects/${project.id}`);
     } finally {
       setQuickCreating(null);
     }
+  }
+
+  function toggleFlowMenu(e: MouseEvent<HTMLButtonElement>, type: ProjectType) {
+    if (flowMenuOpenFor?.type === type) {
+      setFlowMenuOpenFor(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFlowMenuOpenFor({ type, top: rect.top, left: rect.right + 8 });
   }
 
   function handleTemplatesClick() {
@@ -133,7 +148,7 @@ export function Sidebar() {
         Categories
       </p>
       <button
-        onClick={() => handleQuickCreate("poster")}
+        onClick={(e) => toggleFlowMenu(e, "poster")}
         disabled={quickCreating !== null}
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
       >
@@ -141,13 +156,48 @@ export function Sidebar() {
         <span className="hidden sm:inline">{quickCreating === "poster" ? "Creating…" : "Poster"}</span>
       </button>
       <button
-        onClick={() => handleQuickCreate("video")}
+        onClick={(e) => toggleFlowMenu(e, "video")}
         disabled={quickCreating !== null}
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
       >
         <Video size={16} className="shrink-0" />
         <span className="hidden sm:inline">{quickCreating === "video" ? "Creating…" : "Video"}</span>
       </button>
+      {flowMenuOpenFor &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setFlowMenuOpenFor(null)} />
+            <div
+              style={{ top: flowMenuOpenFor.top, left: flowMenuOpenFor.left }}
+              className="fixed z-50 w-48 rounded-2xl border border-border-strong bg-surface p-1.5 shadow-lg"
+            >
+              {flowMenuOpenFor.type === "poster" ? (
+                <button
+                  onClick={() => handleQuickCreate("poster")}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                >
+                  <ImageIcon size={12} /> New poster
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleQuickCreate("video")}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                  >
+                    <Video size={12} /> New video
+                  </button>
+                  <button
+                    onClick={() => handleQuickCreate("video", true)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                  >
+                    <Clapperboard size={12} /> Shot by shot
+                  </button>
+                </>
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
       <div
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted opacity-50 sm:justify-start sm:px-3"
         title="Motion Poster · Coming soon"

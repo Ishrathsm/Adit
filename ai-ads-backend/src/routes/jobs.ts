@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { AuthedRequest } from "../middleware/auth";
 import { enqueueGenerationJob } from "../lib/queue";
-import { createJob, getJob } from "../lib/jobs";
+import { createJob, getJob, type ReferenceImageRole } from "../lib/jobs";
 import { getProject } from "../lib/projects";
 import { getTemplateById } from "../lib/templates";
 
@@ -11,9 +11,11 @@ const VALID_ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"];
 // Veo rejects anything outside this pair (e.g. "Invalid aspect ratio: 1:1") — unlike image
 // generation, which supports the wider VALID_ASPECT_RATIOS set above.
 const VIDEO_ASPECT_RATIOS = ["9:16", "16:9"];
+const REFERENCE_IMAGE_ROLES: ReferenceImageRole[] = ["subject", "style"];
 
 jobsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, prompt, aspectRatio, tagline, templateId } = req.body ?? {};
+  const { projectId, prompt, aspectRatio, tagline, templateId, referenceImageUrl, referenceImageRole } =
+    req.body ?? {};
 
   if (typeof projectId !== "string" || typeof prompt !== "string" || !prompt.trim()) {
     res.status(400).json({ error: "projectId and prompt are required" });
@@ -25,6 +27,14 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
   }
   if (templateId !== undefined && typeof templateId !== "string") {
     res.status(400).json({ error: "templateId must be a string" });
+    return;
+  }
+  if (referenceImageUrl !== undefined && typeof referenceImageUrl !== "string") {
+    res.status(400).json({ error: "referenceImageUrl must be a string" });
+    return;
+  }
+  if (referenceImageUrl && !REFERENCE_IMAGE_ROLES.includes(referenceImageRole)) {
+    res.status(400).json({ error: `referenceImageRole must be one of ${REFERENCE_IMAGE_ROLES.join(", ")}` });
     return;
   }
 
@@ -62,6 +72,8 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
         typeof aspectRatio === "string" ? aspectRatio : outputType === "video" ? "16:9" : undefined,
       tagline: typeof tagline === "string" && tagline.trim() ? tagline.trim() : undefined,
       templateId: typeof templateId === "string" ? templateId : undefined,
+      referenceImageUrl: referenceImageUrl || null,
+      referenceImageRole: referenceImageUrl ? referenceImageRole : null,
     });
     await enqueueGenerationJob(job.id);
     res.status(201).json({ job });

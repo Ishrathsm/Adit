@@ -56,11 +56,25 @@ async function processGenerationJob(jobId: string): Promise<void> {
   const brand = toBrandContext(product);
   const template = job.template_id ? await getTemplateById(job.template_id) : null;
 
+  let referenceImage: { imageBytes: string; mimeType: string } | undefined;
+  if (job.reference_image_url) {
+    const referenceRes = await fetch(job.reference_image_url);
+    if (!referenceRes.ok) throw new Error(`failed to fetch reference image: ${referenceRes.status}`);
+    const imageBytes = Buffer.from(await referenceRes.arrayBuffer()).toString("base64");
+    referenceImage = { imageBytes, mimeType: "image/png" };
+  }
+
   let outputUrl: string;
 
   if (job.output_type === "poster") {
-    const refinedPrompt = await refineImagePrompt(job.prompt, job.aspect_ratio, brand, template?.template_prompt);
-    const image = await generateImage(refinedPrompt, job.aspect_ratio);
+    const refinedPrompt = await refineImagePrompt(
+      job.prompt,
+      job.aspect_ratio,
+      brand,
+      template?.template_prompt,
+      job.reference_image_role ?? undefined,
+    );
+    const image = await generateImage(refinedPrompt, job.aspect_ratio, referenceImage);
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
     const finalBuffer = await applyBrandOverlay(rawBuffer, {
@@ -77,8 +91,13 @@ async function processGenerationJob(jobId: string): Promise<void> {
       job.aspect_ratio,
       brand,
       template?.template_prompt,
+      job.reference_image_role ?? undefined,
     );
-    const video = await generateVideo(refinedPrompt, { generateAudio: true, aspectRatio: job.aspect_ratio });
+    const video = await generateVideo(refinedPrompt, {
+      generateAudio: true,
+      aspectRatio: job.aspect_ratio,
+      image: referenceImage,
+    });
     const videoBuffer = Buffer.from(video.videoBytes, "base64");
     outputUrl = await uploadVideo(jobId, videoBuffer, video.mimeType);
   }

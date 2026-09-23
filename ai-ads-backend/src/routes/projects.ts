@@ -8,6 +8,7 @@ import {
   listProjects,
   updateProject,
 } from "../lib/projects";
+import { getLatestJobForProject } from "../lib/jobs";
 
 export const projectsRouter = Router();
 
@@ -40,6 +41,20 @@ projectsRouter.get("/:id", async (req: AuthedRequest, res) => {
       return;
     }
     res.json({ project });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+projectsRouter.get("/:id/jobs/latest", async (req: AuthedRequest, res) => {
+  try {
+    const project = await getProject(req.userId!, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: "project not found" });
+      return;
+    }
+    const job = await getLatestJobForProject(project.id);
+    res.json({ job });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

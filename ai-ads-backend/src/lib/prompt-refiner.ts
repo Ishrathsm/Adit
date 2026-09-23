@@ -47,6 +47,21 @@ Non-negotiables:
   return `\n\n${common}${medium === "video" ? videoAddendum : ""}`;
 }
 
+// "subject" = ground on a real photo (own product, or a prior generation for continuity) —
+// keep it literally recognizable. "style" = match mood/color/lighting/style, but the subject
+// and scene should be an original creation, not a reproduction of the reference image.
+export type ReferenceImageRole = "subject" | "style";
+
+function referenceInstructionBlock(referenceImageRole?: ReferenceImageRole): string {
+  if (referenceImageRole === "subject") {
+    return `\n\nA reference image is attached. The final prompt must direct the model to keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this brief.`;
+  }
+  if (referenceImageRole === "style") {
+    return `\n\nA style reference image is attached. The final prompt must direct the model to match that reference's mood, color palette, lighting character, and overall visual style — but the subject and scene must be an original creation for this brief, not a literal reproduction of whatever is depicted in the reference.`;
+  }
+  return "";
+}
+
 function brandContextBlock(brand?: BrandContext): string {
   if (!brand) return "";
   const lines = [
@@ -88,8 +103,9 @@ export async function refineImagePrompt(
   aspectRatio: string,
   brand?: BrandContext,
   styleTemplate?: string,
+  referenceImageRole?: ReferenceImageRole,
 ): Promise<string> {
-  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on the hero shot for a real ad campaign. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters) written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on the hero shot for a real ad campaign. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters) written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.${referenceInstructionBlock(referenceImageRole)}
 ${qualityBarBlock("image")}
 
 Cover in detail:
@@ -116,8 +132,18 @@ export async function refineVideoPrompt(
   aspectRatio: string,
   brand?: BrandContext,
   styleTemplate?: string,
+  referenceImageRole?: ReferenceImageRole,
 ): Promise<string> {
-  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model on a real ad campaign's hero clip. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready video generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose.
+  // A reference image switches Veo into image-to-video mode — the prompt should describe
+  // motion/animation from that starting frame rather than composing a new scene from scratch.
+  const referenceInstruction = referenceImageRole
+    ? `\n\nA reference image is attached as the starting frame — Veo will animate motion from it rather than generate a scene from scratch. ${
+        referenceImageRole === "subject"
+          ? "Keep the exact same subject/product appearance, materials, colors, and setting as that reference; describe only how it moves and how the camera moves around it."
+          : "Match that reference's mood, color palette, lighting character, and overall visual style as the clip's starting point, while the subject and scene remain an original creation for this brief."
+      }`
+    : "";
+  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model on a real ad campaign's hero clip. A user gave a short, vague one-line ad concept. Expand it into an extremely detailed, production-ready video generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing cinematic prose.${referenceInstruction}
 ${qualityBarBlock("video")}
 
 The finished clip is exactly ${durationSeconds} seconds long. You MUST break the action into a precise second-by-second (or half-second, where useful) timeline covering the full ${durationSeconds}s so the model knows exactly what happens and when — format each beat like "0.0s-1.5s: ..." continuing in order until ${durationSeconds}s is reached. For every beat, describe: camera movement (static/pan/tilt/dolly-in/dolly-out/handheld/orbit), subject action and motion, framing changes, and pacing/rhythm.
@@ -148,19 +174,9 @@ export async function refineShotImagePrompt(
   shotCount: number,
   aspectRatio: string,
   brand?: BrandContext,
-  // "subject" = ground the shot on a real photo (own product, or the previous shot's chosen
-  // image for continuity) — keep it literally recognizable. "style" = a user-supplied mood/style
-  // reference — match the look, but the subject and scene should be an original creation, not a
-  // reproduction of what's literally in the reference image.
-  referenceImageRole?: "subject" | "style",
+  referenceImageRole?: ReferenceImageRole,
 ): Promise<string> {
-  const referenceInstruction =
-    referenceImageRole === "subject"
-      ? `\n\nA reference image is attached. The final image prompt must direct the model to keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this shot's brief.`
-      : referenceImageRole === "style"
-        ? `\n\nA style reference image is attached. The final image prompt must direct the model to match that reference's mood, color palette, lighting character, and overall visual style — but the subject and scene must be an original creation for this shot's brief, not a literal reproduction of whatever is depicted in the reference.`
-        : "";
-  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstruction}
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstructionBlock(referenceImageRole)}
 
 Expand this into an extremely detailed, production-ready image generation prompt of at least ${MIN_CHARS} characters (aim for ${MIN_CHARS}-6000 characters), written as flowing descriptive prose — NOT bullet points, NOT JSON, NOT numbered lists.
 ${qualityBarBlock("image")}

@@ -11,13 +11,20 @@ import { getAccount, type Account } from "@/lib/api";
 export default function AccountPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+      // Google OAuth populates these on user_metadata — absent for email/password sign-ins.
+      setName(data.user?.user_metadata?.full_name ?? data.user?.user_metadata?.name ?? null);
+      setAvatarUrl(data.user?.user_metadata?.avatar_url ?? data.user?.user_metadata?.picture ?? null);
+    });
     getAccount()
       .then(({ account }) => setAccount(account))
       .catch(() => {
@@ -49,12 +56,30 @@ export default function AccountPage() {
         <div className="mt-8 flex flex-col gap-4">
           <div className="rgb-border flex flex-col gap-4 p-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong">
-                <User size={16} />
-              </div>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- remote Google profile photo
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-full border border-border-strong object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong">
+                  <User size={16} />
+                </div>
+              )}
               <div className="min-w-0">
-                <p className="text-xs text-muted">Email</p>
-                <p className="truncate text-sm font-medium">{email ?? "—"}</p>
+                {name ? (
+                  <>
+                    <p className="truncate text-sm font-medium">{name}</p>
+                    <p className="truncate text-xs text-muted">{email ?? "—"}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted">Email</p>
+                    <p className="truncate text-sm font-medium">{email ?? "—"}</p>
+                  </>
+                )}
               </div>
             </div>
             {account && (

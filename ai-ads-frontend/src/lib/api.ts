@@ -42,6 +42,8 @@ export interface Job {
   template_id: string | null;
   output_url: string | null;
   error: string | null;
+  reference_image_url: string | null;
+  reference_image_role: "subject" | "style" | null;
   created_at: string;
   updated_at: string;
 }
@@ -220,7 +222,13 @@ export function deleteFolder(id: string) {
 export function createJob(
   projectId: string,
   prompt: string,
-  options?: { aspectRatio?: AspectRatio; tagline?: string; templateId?: string },
+  options?: {
+    aspectRatio?: AspectRatio;
+    tagline?: string;
+    templateId?: string;
+    referenceImageUrl?: string;
+    referenceImageRole?: "subject" | "style";
+  },
 ) {
   return request<{ job: Job }>("/api/jobs", {
     method: "POST",
@@ -230,6 +238,10 @@ export function createJob(
 
 export function getJob(id: string) {
   return request<{ job: Job }>(`/api/jobs/${id}`);
+}
+
+export function getLatestJobForProject(projectId: string) {
+  return request<{ job: Job | null }>(`/api/projects/${projectId}/jobs/latest`);
 }
 
 export function listTemplates(type: TemplateType) {
