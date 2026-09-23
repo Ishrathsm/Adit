@@ -81,13 +81,15 @@ async function processGenerationJob(jobId: string): Promise<void> {
       logoUrl: product?.logo_url,
       primaryColor: product?.primary_color,
       tagline: job.tagline,
+      font: product?.font,
     });
 
     outputUrl = await uploadPoster(jobId, finalBuffer);
   } else {
+    const durationSeconds = job.duration_seconds || DEFAULT_VIDEO_DURATION_SECONDS;
     const refinedPrompt = await refineVideoPrompt(
       job.prompt,
-      DEFAULT_VIDEO_DURATION_SECONDS,
+      durationSeconds,
       job.aspect_ratio,
       brand,
       template?.template_prompt,
@@ -95,6 +97,7 @@ async function processGenerationJob(jobId: string): Promise<void> {
     );
     const video = await generateVideo(refinedPrompt, {
       generateAudio: true,
+      durationSeconds,
       aspectRatio: job.aspect_ratio,
       image: referenceImage,
     });

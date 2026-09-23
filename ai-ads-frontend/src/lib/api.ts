@@ -30,6 +30,9 @@ export type JobStatus = "queued" | "processing" | "completed" | "failed";
 export type OutputType = "video" | "poster" | "gif";
 export const ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"] as const;
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];
+// Veo 3.1's hard cap is 8 seconds per single generation.
+export const VIDEO_DURATIONS = [4, 6, 8] as const;
+export type VideoDuration = (typeof VIDEO_DURATIONS)[number];
 
 export interface Job {
   id: string;
@@ -38,6 +41,7 @@ export interface Job {
   prompt: string;
   output_type: OutputType;
   aspect_ratio: string;
+  duration_seconds: number;
   tagline: string | null;
   template_id: string | null;
   output_url: string | null;
@@ -224,6 +228,7 @@ export function createJob(
   prompt: string,
   options?: {
     aspectRatio?: AspectRatio;
+    durationSeconds?: VideoDuration;
     tagline?: string;
     templateId?: string;
     referenceImageUrl?: string;

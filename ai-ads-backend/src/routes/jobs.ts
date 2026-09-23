@@ -12,9 +12,13 @@ const VALID_ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"];
 // generation, which supports the wider VALID_ASPECT_RATIOS set above.
 const VIDEO_ASPECT_RATIOS = ["9:16", "16:9"];
 const REFERENCE_IMAGE_ROLES: ReferenceImageRole[] = ["subject", "style"];
+// Veo 3.1's hard cap is 8 seconds per single generation (longer requires separate
+// video-extension calls, not implemented here) — these three are the same durations
+// already proven against Veo by the storyboard flow.
+const VIDEO_DURATIONS = [4, 6, 8];
 
 jobsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, prompt, aspectRatio, tagline, templateId, referenceImageUrl, referenceImageRole } =
+  const { projectId, prompt, aspectRatio, durationSeconds, tagline, templateId, referenceImageUrl, referenceImageRole } =
     req.body ?? {};
 
   if (typeof projectId !== "string" || typeof prompt !== "string" || !prompt.trim()) {
@@ -23,6 +27,10 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
   }
   if (aspectRatio !== undefined && !VALID_ASPECT_RATIOS.includes(aspectRatio)) {
     res.status(400).json({ error: `aspectRatio must be one of ${VALID_ASPECT_RATIOS.join(", ")}` });
+    return;
+  }
+  if (durationSeconds !== undefined && !VIDEO_DURATIONS.includes(durationSeconds)) {
+    res.status(400).json({ error: `durationSeconds must be one of ${VIDEO_DURATIONS.join(", ")}` });
     return;
   }
   if (templateId !== undefined && typeof templateId !== "string") {
@@ -70,6 +78,7 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
       // video jobs need an explicit video-safe fallback when the caller doesn't specify one.
       aspectRatio:
         typeof aspectRatio === "string" ? aspectRatio : outputType === "video" ? "16:9" : undefined,
+      durationSeconds: outputType === "video" && typeof durationSeconds === "number" ? durationSeconds : undefined,
       tagline: typeof tagline === "string" && tagline.trim() ? tagline.trim() : undefined,
       templateId: typeof templateId === "string" ? templateId : undefined,
       referenceImageUrl: referenceImageUrl || null,

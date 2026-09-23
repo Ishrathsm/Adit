@@ -11,6 +11,7 @@ export interface JobRow {
   prompt: string;
   output_type: OutputType;
   aspect_ratio: string;
+  duration_seconds: number;
   tagline: string | null;
   template_id: string | null;
   output_url: string | null;
@@ -24,6 +25,7 @@ export interface JobRow {
 export interface CreateJobOptions {
   outputType: OutputType;
   aspectRatio?: string;
+  durationSeconds?: number;
   tagline?: string;
   templateId?: string;
   referenceImageUrl?: string | null;
@@ -38,6 +40,7 @@ export async function createJob(projectId: string, prompt: string, options: Crea
       prompt,
       output_type: options.outputType,
       ...(options.aspectRatio ? { aspect_ratio: options.aspectRatio } : {}),
+      ...(options.durationSeconds ? { duration_seconds: options.durationSeconds } : {}),
       tagline: options.tagline ?? null,
       template_id: options.templateId ?? null,
       reference_image_url: options.referenceImageUrl ?? null,

@@ -37,6 +37,9 @@ export const env = {
   // location for this project — it 404s in us-central1 same as Imagen does.
   imageModel: process.env.IMAGE_MODEL ?? "gemini-3.1-flash-image",
   imageLocation: process.env.IMAGE_LOCATION ?? "global",
-  // Text generation (storyboard shot breakdown) — plain Gemini text, no region quirks observed.
-  textModel: process.env.TEXT_MODEL ?? "gemini-2.5-flash",
+  // Text generation (prompt refinement, storyboard shot breakdown) — plain Gemini text, no
+  // region quirks observed. Pro over Flash: the refined prompt is the single biggest lever
+  // on output quality (brand-rule adherence, actually following the user's brief), worth the
+  // extra cost/latency over the budget tier.
+  textModel: process.env.TEXT_MODEL ?? "gemini-2.5-pro",
 };

@@ -6,6 +6,7 @@ export interface BrandOverlayOptions {
   logoUrl?: string | null;
   primaryColor?: string | null;
   tagline?: string | null;
+  font?: string | null;
 }
 
 function escapeXml(value: string): string {
@@ -21,7 +22,7 @@ function escapeXml(value: string): string {
 }
 
 export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlayOptions): Promise<Buffer> {
-  const { logoUrl, primaryColor, tagline } = options;
+  const { logoUrl, primaryColor, tagline, font } = options;
 
   const base = sharp(baseImage);
   const { width = 1024, height = 1024 } = await base.metadata();
@@ -43,9 +44,12 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
 
   if (tagline) {
     const barHeight = Math.round(height * 0.12);
+    // Falls back to sans-serif if the brand's chosen font isn't installed as a system font
+    // where this renders (librsvg via sharp only sees fonts actually present on the host).
+    const fontFamily = font ? `${escapeXml(font)}, sans-serif` : "sans-serif";
     const svg = `<svg width="${width}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="${primaryColor ?? "#000000"}" fill-opacity="0.6" />
-      <text x="50%" y="58%" font-family="sans-serif" font-size="${Math.round(barHeight * 0.32)}"
+      <text x="50%" y="58%" font-family="${fontFamily}" font-size="${Math.round(barHeight * 0.32)}"
         fill="white" text-anchor="middle" dominant-baseline="middle">${escapeXml(tagline)}</text>
     </svg>`;
     composites.push({ input: Buffer.from(svg), left: 0, top: height - barHeight });

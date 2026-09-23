@@ -22,11 +22,13 @@ import {
   getLatestJobForProject,
   getProject,
   listTemplates,
+  VIDEO_DURATIONS,
   type AspectRatio,
   type Job,
   type JobStatus,
   type Project,
   type Template,
+  type VideoDuration,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
@@ -44,6 +46,7 @@ function mockJob(status: JobStatus): Job {
     prompt: "Preview job — not a real generation",
     output_type: "video",
     aspect_ratio: "16:9",
+    duration_seconds: 8,
     tagline: null,
     template_id: null,
     output_url: status === "completed" ? PREVIEW_VIDEO_URL : null,
@@ -66,6 +69,7 @@ export default function ProjectDetailPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
+  const [durationSeconds, setDurationSeconds] = useState<VideoDuration>(8);
   const [tagline, setTagline] = useState("");
 
   const [job, setJob] = useState<Job | null>(null);
@@ -141,7 +145,9 @@ export default function ProjectDetailPage() {
     setSubmitError(null);
     try {
       const { job: newJob } = await createJob(id, prompt.trim(), {
-        ...(isPoster ? { aspectRatio, tagline: tagline.trim() || undefined } : {}),
+        ...(isPoster
+          ? { aspectRatio, tagline: tagline.trim() || undefined }
+          : { durationSeconds }),
         templateId: templateId ?? undefined,
         ...(referenceImageUrl ? { referenceImageUrl, referenceImageRole: "subject" as const } : {}),
       });
@@ -325,6 +331,30 @@ export default function ProjectDetailPage() {
                     />
                   </div>
                 </>
+              )}
+
+              {!isPoster && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Duration</label>
+                  <div className="flex flex-wrap gap-2">
+                    {VIDEO_DURATIONS.map((seconds) => (
+                      <button
+                        key={seconds}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setDurationSeconds(seconds)}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
+                          durationSeconds === seconds
+                            ? "border-transparent bg-button-bg text-button-fg"
+                            : "border-border-strong text-foreground hover:bg-white/5"
+                        }`}
+                      >
+                        {seconds}s
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted">8s is Veo&apos;s max for a single generation.</p>
+                </div>
               )}
 
               <Button onClick={handleGenerate} disabled={busy || !prompt.trim()} className="self-start">
