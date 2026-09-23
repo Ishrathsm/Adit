@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, XCircle } from "lucide-react";
 import { listRecentActivity, type ActivityItem } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 20_000;
 const LAST_SEEN_KEY = "adit-activity-last-seen";
+const PANEL_HEIGHT = 384; // matches max-h-96 below
 
 function relativeTime(iso: string) {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -25,14 +27,16 @@ function label(item: ActivityItem) {
 export function NotificationBell() {
   const router = useRouter();
   const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [open, setOpen] = useState(false);
+  const [openPosition, setOpenPosition] = useState<{ top: number; left: number; tailOffset: number } | null>(null);
   const [lastSeen, setLastSeen] = useState<string>("");
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const previousIdsRef = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     // Reading a per-browser preference from storage, not an external subscription.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastSeen(localStorage.getItem(LAST_SEEN_KEY) ?? new Date(0).toISOString());
+    setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
   }, []);
 
   useEffect(() => {
@@ -63,16 +67,30 @@ export function NotificationBell() {
 
   const unreadCount = activity.filter((item) => item.updated_at > lastSeen).length;
 
-  function handleOpen() {
-    setOpen((v) => !v);
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {
-        /* ignored — the in-app bell/badge is the reliable path regardless */
-      });
+  function handleOpen(e: MouseEvent<HTMLButtonElement>) {
+    if (openPosition) {
+      setOpenPosition(null);
+    } else {
+      // Portaled to document.body and positioned from the button's own rect — the sidebar's
+      // `overflow-y-auto` would otherwise clip an absolutely-positioned dropdown before it
+      // ever became visible (the same reason the Poster/Video flow menu is portaled too).
+      // Opens beside the bell, speech-bubble style — vertically centered on the button and
+      // clamped to the viewport so the tail always still points back at it.
+      const rect = e.currentTarget.getBoundingClientRect();
+      const buttonCenterY = rect.top + rect.height / 2;
+      const top = Math.max(8, Math.min(buttonCenterY - PANEL_HEIGHT / 2, window.innerHeight - PANEL_HEIGHT - 8));
+      setOpenPosition({ top, left: rect.right + 12, tailOffset: buttonCenterY - top });
     }
     const now = new Date().toISOString();
     localStorage.setItem(LAST_SEEN_KEY, now);
     setLastSeen(now);
+  }
+
+  // A deliberate, separate click (not bundled into just opening the bell) — Chrome can
+  // permanently suppress future prompts for a site that asks without a clear, dedicated gesture.
+  function handleEnableDesktopNotifications() {
+    if (typeof Notification === "undefined") return;
+    Notification.requestPermission().then(setPermission);
   }
 
   return (
@@ -91,10 +109,43 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-0 left-full z-50 ml-2 max-h-96 w-72 overflow-y-auto rounded-2xl border border-border-strong bg-surface p-2 shadow-lg sm:bottom-auto sm:top-0 sm:left-full">
+      {openPosition &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpenPosition(null)} />
+            {/* A sibling, not a child of the scrollable panel below — nested inside it, the
+               panel's own overflow-y-auto would clip this since it pokes out past the edge. */}
+            <div
+              className="fixed z-50 h-3 w-3 rotate-45 border-b border-l border-border-strong bg-surface"
+              style={{ left: openPosition.left - 6, top: openPosition.top + openPosition.tailOffset - 6 }}
+            />
+            <div
+              style={{ top: openPosition.top, left: openPosition.left }}
+              className="fixed z-50 max-h-96 w-72 overflow-y-auto rounded-2xl border border-border-strong bg-surface p-2 shadow-lg"
+            >
+            {permission === "default" && (
+              <div className="mb-2 flex flex-col gap-2 rounded-xl border border-border-subtle bg-background/50 p-2.5">
+                <div className="flex items-start gap-2">
+                  <BellRing size={14} className="mt-0.5 shrink-0 text-muted" />
+                  <p className="text-xs text-muted">
+                    Get a desktop alert here when a generation finishes — only while this tab is open somewhere.
+                  </p>
+                </div>
+                <button
+                  onClick={handleEnableDesktopNotifications}
+                  className="self-start rounded-full border border-border-strong px-3 py-1 text-xs font-medium transition-colors hover:bg-white/5"
+                >
+                  Enable desktop notifications
+                </button>
+              </div>
+            )}
+            {permission === "denied" && (
+              <p className="mb-2 rounded-xl border border-border-subtle bg-background/50 p-2.5 text-xs text-muted">
+                Desktop notifications are blocked for this site — enable them from your browser&apos;s site
+                settings if you want an alert outside this tab.
+              </p>
+            )}
+
             <p className="px-2 py-1.5 text-xs font-medium tracking-wide text-muted uppercase">Recent activity</p>
             {activity.length === 0 ? (
               <p className="px-2 py-4 text-center text-xs text-muted">Nothing yet — generate something!</p>
@@ -103,7 +154,7 @@ export function NotificationBell() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    setOpen(false);
+                    setOpenPosition(null);
                     router.push(`/projects/${item.project_id}`);
                   }}
                   className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-white/5"
@@ -121,9 +172,10 @@ export function NotificationBell() {
                 </button>
               ))
             )}
-          </div>
-        </>
-      )}
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }

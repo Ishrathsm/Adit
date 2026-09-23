@@ -4,7 +4,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Building2,
   Download,
   Folder as FolderIcon,
   FolderInput,
@@ -21,17 +20,20 @@ import {
 import { AnimatedFolder } from "@/components/ui/3d-folder";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { BackLink } from "@/components/back-link";
+import { BrandKitPanel } from "@/components/brand-kit-panel";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CreateHero } from "@/components/create-hero";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createFolder,
+  createProduct,
   createProject,
   deleteFolder,
   deleteProject,
   getAccount,
   getProduct,
   listFolders,
+  listProducts,
   listProjects,
   renameFolder,
   updateProject,
@@ -162,16 +164,29 @@ function ProjectsPageInner() {
   }, [accountChecked, account, productId, router]);
 
   useEffect(() => {
-    if (!productId) {
-      // Resetting derived state when the ?product= URL param is removed, not an external read.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveProduct(null);
+    if (productId) {
+      getProduct(productId)
+        .then(({ product }) => setActiveProduct(product))
+        .catch(() => setActiveProduct(null));
       return;
     }
-    getProduct(productId)
-      .then(({ product }) => setActiveProduct(product))
-      .catch(() => setActiveProduct(null));
-  }, [productId]);
+    if (!accountChecked) return;
+    if (account?.account_type === "individual") {
+      // Individual accounts have exactly one implicit brand kit and never pick a product via
+      // the URL — resolve (or create, on first use) it here so its panel shows on their
+      // one and only Projects page.
+      listProducts()
+        .then(({ products }) =>
+          products[0] ? products[0] : createProduct("My brand").then(({ product }) => product),
+        )
+        .then((product) => setActiveProduct(product))
+        .catch(() => setActiveProduct(null));
+      return;
+    }
+    // Resetting derived state when the ?product= URL param is removed, not an external read.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveProduct(null);
+  }, [productId, accountChecked, account]);
 
   const activeFolder = folderId ? (folders.find((f) => f.id === folderId) ?? null) : null;
 
@@ -289,14 +304,7 @@ function ProjectsPageInner() {
         <BackLink href={`/projects${productId ? `?product=${productId}` : ""}`} label="All projects" />
       )}
 
-      {activeProduct && (
-        <div className="mt-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-strong px-3 py-1 text-xs text-muted">
-            <Building2 size={12} />
-            {activeProduct.name}
-          </span>
-        </div>
-      )}
+      {activeProduct && !activeFolder && <BrandKitPanel product={activeProduct} onUpdate={setActiveProduct} />}
 
       {activeFolder && <h1 className="mt-6 text-xl font-semibold tracking-tight">{activeFolder.name}</h1>}
 

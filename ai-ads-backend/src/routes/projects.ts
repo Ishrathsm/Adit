@@ -9,6 +9,8 @@ import {
   updateProject,
 } from "../lib/projects";
 import { getLatestJobForProject } from "../lib/jobs";
+import { getAccount } from "../lib/accounts";
+import { getOrCreateDefaultProduct } from "../lib/products";
 
 export const projectsRouter = Router();
 
@@ -69,11 +71,23 @@ projectsRouter.post("/", async (req: AuthedRequest, res) => {
   }
 
   try {
+    let resolvedProductId = typeof productId === "string" ? productId : null;
+    if (!resolvedProductId) {
+      // Individual accounts have exactly one implicit brand kit — attach it here so brand
+      // context (logo/colors/tone) applies during generation without ever showing them a
+      // product picker. Organisation accounts always pass an explicit productId.
+      const account = await getAccount(req.userId!);
+      if (account?.account_type === "individual") {
+        const product = await getOrCreateDefaultProduct(req.userId!);
+        resolvedProductId = product.id;
+      }
+    }
+
     const project = await createProject(
       req.userId!,
       typeof name === "string" && name.trim() ? name.trim() : "Untitled Project",
       type,
-      typeof productId === "string" ? productId : null,
+      resolvedProductId,
     );
     res.status(201).json({ project });
   } catch (err) {

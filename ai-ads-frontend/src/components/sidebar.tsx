@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import {
+  Building2,
   CircleUserRound,
   Clapperboard,
   FolderKanban,
@@ -13,6 +14,7 @@ import {
   LayoutTemplate,
   LogOut,
   Moon,
+  Plus,
   Sparkles,
   Sun,
   Video,
@@ -21,7 +23,7 @@ import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
-import { createProject, getAccount, type Account, type ProjectType } from "@/lib/api";
+import { createProject, getAccount, listProducts, type Account, type Product, type ProjectType } from "@/lib/api";
 
 function NavLink({
   href,
@@ -65,6 +67,8 @@ export function Sidebar() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [quickCreating, setQuickCreating] = useState<ProjectType | null>(null);
   const [flowMenuOpenFor, setFlowMenuOpenFor] = useState<{ type: ProjectType; top: number; left: number } | null>(
     null,
@@ -75,9 +79,23 @@ export function Sidebar() {
 
   useEffect(() => {
     getAccount()
-      .then(({ account }) => setAccount(account))
+      .then(({ account }) => {
+        setAccount(account);
+        if (account?.account_type === "organisation") {
+          listProducts()
+            .then(({ products }) => setProducts(products))
+            .catch(() => {
+              /* the brand list is a nav convenience — a load failure shouldn't block the sidebar */
+            });
+        }
+      })
       .catch(() => {
         /* only used to gate org accounts (which need a product picked) behind the projects page instead */
+      });
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        setAvatarUrl(data.user?.user_metadata?.avatar_url ?? data.user?.user_metadata?.picture ?? null);
       });
   }, []);
 
@@ -143,6 +161,35 @@ export function Sidebar() {
         <LayoutTemplate size={16} className="shrink-0" />
         <span className="hidden sm:inline">Templates</span>
       </button>
+      {account?.account_type === "organisation" && (
+        <>
+          <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
+            Brands
+          </p>
+          {products?.map((product) => (
+            <Link
+              key={product.id}
+              href={`/projects?product=${product.id}`}
+              className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+            >
+              {product.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element -- remote product logo
+                <img src={product.logo_url} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+              ) : (
+                <Building2 size={16} className="shrink-0" />
+              )}
+              <span className="hidden truncate sm:inline">{product.name}</span>
+            </Link>
+          ))}
+          <Link
+            href="/products"
+            className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+          >
+            <Plus size={16} className="shrink-0" />
+            <span className="hidden sm:inline">New brand</span>
+          </Link>
+        </>
+      )}
 
       <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
         Categories
@@ -222,21 +269,45 @@ export function Sidebar() {
         </span>
       </button>
 
-      <NavLink
-        href="/account"
-        icon={CircleUserRound}
-        label="Account"
-        sublabel={account ? (account.account_type === "organisation" ? "Organisation" : "Individual") : undefined}
-        active={pathname === "/account"}
-      />
+      <div className="flex items-center gap-1">
+        <Link
+          href="/account"
+          className={clsx(
+            "flex h-10 flex-1 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3",
+            pathname === "/account"
+              ? "bg-button-bg text-button-fg"
+              : "text-muted hover:bg-white/5 hover:text-foreground",
+          )}
+        >
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- remote Google profile photo
+            <img src={avatarUrl} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+          ) : (
+            <CircleUserRound size={16} className="shrink-0" />
+          )}
+          <span className="hidden min-w-0 flex-1 sm:flex sm:flex-col sm:items-start sm:leading-tight">
+            <span className="truncate">Account</span>
+            {account && (
+              <span
+                className={clsx(
+                  "truncate text-[10px] font-normal",
+                  pathname === "/account" ? "text-button-fg/70" : "text-muted",
+                )}
+              >
+                {account.account_type === "organisation" ? "Organisation" : "Individual"}
+              </span>
+            )}
+          </span>
+        </Link>
 
-      <button
-        onClick={handleSignOut}
-        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
-      >
-        <LogOut size={16} className="shrink-0" />
-        <span className="hidden sm:inline">Sign out</span>
-      </button>
+        <button
+          onClick={handleSignOut}
+          title="Sign out"
+          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:flex"
+        >
+          <LogOut size={16} className="shrink-0" />
+        </button>
+      </div>
     </aside>
   );
 }

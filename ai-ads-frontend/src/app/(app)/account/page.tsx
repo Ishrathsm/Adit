@@ -42,7 +42,7 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-md flex-col px-6 py-10 sm:px-10">
+    <main className="relative mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10 sm:px-10">
       <BackLink href="/projects" label="Projects" />
 
       <div className="mt-8 flex flex-col gap-2">
@@ -51,27 +51,27 @@ export default function AccountPage() {
       </div>
 
       {loading ? (
-        <div className="mt-8 h-32 animate-pulse rounded-2xl border border-border-subtle bg-surface" />
+        <div className="mt-8 h-56 animate-pulse rounded-2xl border border-border-subtle bg-surface" />
       ) : (
-        <div className="mt-8 flex flex-col gap-4">
-          <div className="rgb-border flex flex-col gap-4 p-5">
+        <div className="rgb-border mt-8 grid divide-y divide-border-subtle md:grid-cols-2 md:divide-x md:divide-y-0">
+          <div className="flex flex-col gap-5 p-6">
             <div className="flex items-center gap-3">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- remote Google profile photo
                 <img
                   src={avatarUrl}
                   alt=""
-                  className="h-10 w-10 shrink-0 rounded-full border border-border-strong object-cover"
+                  className="h-12 w-12 shrink-0 rounded-full border border-border-strong object-cover"
                 />
               ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong">
-                  <User size={16} />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong">
+                  <User size={18} />
                 </div>
               )}
               <div className="min-w-0">
                 {name ? (
                   <>
-                    <p className="truncate text-sm font-medium">{name}</p>
+                    <p className="truncate text-base font-medium">{name}</p>
                     <p className="truncate text-xs text-muted">{email ?? "—"}</p>
                   </>
                 ) : (
@@ -82,6 +82,7 @@ export default function AccountPage() {
                 )}
               </div>
             </div>
+
             {account && (
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong">
@@ -95,18 +96,22 @@ export default function AccountPage() {
             )}
           </div>
 
-          <Button variant="ghost" onClick={handleSignOut} disabled={signingOut} className="self-start">
-            <LogOut size={14} />
-            {signingOut ? "Signing out…" : "Sign out"}
-          </Button>
+          <div className="flex flex-col gap-3 p-6">
+            <p className="text-xs font-medium tracking-wide text-muted uppercase">Quick links</p>
 
-          <div className="flex gap-4 text-xs text-muted">
-            <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
-              Terms
-            </a>
-            <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
-              Privacy Policy
-            </a>
+            <Button variant="ghost" onClick={handleSignOut} disabled={signingOut} className="self-start">
+              <LogOut size={14} />
+              {signingOut ? "Signing out…" : "Sign out"}
+            </Button>
+
+            <div className="mt-auto flex gap-4 pt-4 text-xs text-muted">
+              <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+                Terms
+              </a>
+              <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+                Privacy Policy
+              </a>
+            </div>
           </div>
         </div>
       )}

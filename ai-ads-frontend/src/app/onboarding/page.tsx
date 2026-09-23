@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
-import { createAccount, getAccount, type AccountType } from "@/lib/api";
+import { createAccount, getAccount, listProducts, type AccountType } from "@/lib/api";
 
 const OPTIONS: {
   id: AccountType;
@@ -40,12 +40,19 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     getAccount()
-      .then(({ account }) => {
+      .then(async ({ account }) => {
         if (!account) {
           setCheckingAccount(false);
           return;
         }
-        router.replace(account.account_type === "organisation" ? "/onboarding/organisation" : "/projects");
+        if (account.account_type === "individual") {
+          router.replace("/projects");
+          return;
+        }
+        // Organisations only need the product picker before they have a first brand —
+        // once they have one, land straight on the home page like everyone else.
+        const { products } = await listProducts();
+        router.replace(products.length > 0 ? "/projects" : "/onboarding/organisation");
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : String(err));

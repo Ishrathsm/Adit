@@ -52,6 +52,14 @@ export async function createProduct(userId: string, name: string): Promise<Produ
   return data;
 }
 
+// Individual accounts have exactly one implicit brand kit — this resolves it, creating it on
+// first use, so projects can be linked to it without the user ever seeing a product picker.
+export async function getOrCreateDefaultProduct(userId: string): Promise<ProductRow> {
+  const existing = await listProducts(userId);
+  if (existing[0]) return existing[0];
+  return createProduct(userId, "My brand");
+}
+
 export async function completeQuestionnaire(userId: string, id: string, brand: BrandKitInput): Promise<ProductRow> {
   const { data, error } = await supabase
     .from("products")
