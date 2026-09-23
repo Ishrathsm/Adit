@@ -19,6 +19,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { AnimatedFolder } from "@/components/ui/3d-folder";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { BackLink } from "@/components/back-link";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CreateHero } from "@/components/create-hero";
@@ -91,6 +92,8 @@ function ProjectsPageInner() {
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [renameFolderValue, setRenameFolderValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [previewSelection, setPreviewSelection] = useState<{ index: number; sourceRect: DOMRect } | null>(null);
+  const previewCardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   function refreshProjects() {
     listProjects({ productId: productId ?? undefined, folderId: folderId ?? undefined })
@@ -184,6 +187,20 @@ function ProjectsPageInner() {
       if (previews.length < 4) previews.push(project);
       folderPreviews.set(project.folder_id, previews);
     }
+  }
+
+  const previewableProjects = (projects ?? [])
+    .filter((p) => p.preview_url)
+    .map((p) => ({ id: p.id, image: p.preview_url as string, title: p.name, mediaType: p.preview_type }));
+
+  function openPreview(project: Project) {
+    const index = previewableProjects.findIndex((p) => p.id === project.id);
+    const cardEl = previewCardRefs.current[project.id];
+    if (index === -1 || !cardEl) {
+      router.push(`/projects/${project.id}`);
+      return;
+    }
+    setPreviewSelection({ index, sourceRect: cardEl.getBoundingClientRect() });
   }
 
   async function handleCreateFolder() {
@@ -431,7 +448,10 @@ function ProjectsPageInner() {
             {projects.map((project) => (
             <div key={project.id} className="rgb-border flex flex-col gap-3 p-3">
               <button
-                onClick={() => router.push(`/projects/${project.id}`)}
+                ref={(el) => {
+                  previewCardRefs.current[project.id] = el;
+                }}
+                onClick={() => openPreview(project)}
                 className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface"
               >
                 {project.preview_url ? (
@@ -615,6 +635,16 @@ function ProjectsPageInner() {
         }
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ImageLightbox
+        projects={previewableProjects}
+        currentIndex={previewSelection?.index ?? 0}
+        isOpen={previewSelection !== null}
+        sourceRect={previewSelection?.sourceRect ?? null}
+        onClose={() => setPreviewSelection(null)}
+        onCloseComplete={() => setPreviewSelection(null)}
+        onNavigate={(index) => setPreviewSelection((prev) => (prev ? { ...prev, index } : prev))}
       />
     </main>
   );
