@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   CheckCircle2,
-  Clapperboard,
   Upload,
   Download,
   Image as ImageIcon,
@@ -104,11 +103,19 @@ export default function ProjectDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!project) return;
+    // Video is made on the storyboard page (quick single shot or full ad) — this page is the poster
+    // editor only. Redirect before touching the landing-page hand-off, so the storyboard page is
+    // the one that picks the prompt up.
+    if (project.type !== "poster") {
+      router.replace(`/projects/${id}/storyboard`);
+      return;
+    }
     // Reading a one-time hand-off from sessionStorage into state, not an external subscription.
     const prefill = consumePrefillForProject(id);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (prefill) setPrompt(prefill);
-  }, [id]);
+  }, [project, id, router]);
 
   useEffect(() => {
     if (!project) return;
@@ -198,49 +205,6 @@ export default function ProjectDetailPage() {
       {project && (
         <>
           <h1 className="mt-8 text-2xl font-semibold tracking-tight">{project.name}</h1>
-
-          {!isPoster && (
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <button
-                onClick={() => router.push(`/projects/${id}/storyboard?mode=quick`)}
-                disabled={!has("video_quick")}
-                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
-                  <Sparkles size={14} />
-                </div>
-                <p className="text-sm font-medium">Text → Video</p>
-                <p className="text-xs text-muted">One quick shot with music and a branded end card.</p>
-              </button>
-              <button
-                onClick={() => router.push(`/projects/${id}/storyboard`)}
-                disabled={!has("video_ad")}
-                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
-                  <Clapperboard size={14} />
-                </div>
-                <p className="text-sm font-medium">Text → Storyboard → Video</p>
-                <p className="text-xs text-muted">Pick a look per shot, then stitch the final cut.</p>
-              </button>
-              <div className="flex flex-col gap-2 rounded-[1.75rem] border border-border-subtle bg-surface p-4 opacity-50">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
-                  <Sparkles size={14} />
-                </div>
-                <p className="text-sm font-medium">Motion Poster · Coming soon</p>
-                <p className="text-xs text-muted">Upload a poster, animate it into a GIF.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Video is made on the storyboard page now (quick single shot or full ad); this page only
-              shows the latest older-style quick video, if there is one. */}
-          {!isPoster && job && (
-            <div className="rgb-border mt-8 flex flex-col gap-3 p-5">
-              <p className="text-sm font-medium">Latest quick video</p>
-              <JobStatusCard job={job} />
-            </div>
-          )}
 
           {isPoster && (
           <div className="rgb-border mt-8 grid divide-y divide-border-subtle md:grid-cols-2 md:divide-x md:divide-y-0">

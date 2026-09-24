@@ -9,6 +9,8 @@ import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
   getAccount,
+  getLatestJobForProject,
+  getLatestStoryboard,
   getStoryboard,
   regenerateStoryboardAsset,
   startStoryboard,
@@ -35,6 +37,7 @@ import {
   type AdTone,
   type AssetKind,
   type Features,
+  type Job,
   type ReferenceImageRole,
   type StoryboardAsset,
   type Storyboard,
@@ -93,6 +96,14 @@ function mockStoryboard(status: Storyboard["status"], shotCount: number): Storyb
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+}
+
+// Provider errors arrive as raw JSON ("Veo generation failed: {"code":3,"message":"…"}") — show
+// just the human-readable message.
+function readableError(error: string | null): string {
+  if (!error) return "unknown error";
+  const message = error.match(/"message"\s*:\s*"([^"]+)"/)?.[1];
+  return message ?? error;
 }
 
 function pillClass(active: boolean) {
@@ -159,6 +170,35 @@ export default function StoryboardPage() {
     else if (format === "ad" && !features.video_ad && features.video_quick) setFormat("single");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the switches arrive
   }, [features]);
+
+  // Reopening a video project resumes its latest ad; older projects made with the previous quick
+  // Text -> Video flow show that video instead. ?mode=quick / fresh projects have neither.
+  const [resuming, setResuming] = useState(true);
+  const [legacyJob, setLegacyJob] = useState<Job | null>(null);
+  useEffect(() => {
+    getLatestStoryboard(id)
+      .then(async ({ storyboard: latest, shots: latestShots, assets: latestAssets }) => {
+        if (latest) {
+          setStoryboard(latest);
+          setShots(latestShots);
+          setAssets(latestAssets);
+          return;
+        }
+        const { job } = await getLatestJobForProject(id);
+        if (job?.output_type === "video" && job.status === "completed" && job.output_url) setLegacyJob(job);
+      })
+      .catch(() => {
+        /* nothing to resume — the form is shown */
+      })
+      .finally(() => setResuming(false));
+  }, [id]);
+
+  function startNewAd() {
+    setStoryboard(null);
+    setShots([]);
+    setAssets([]);
+    setLegacyJob(null);
+  }
 
   // Reference assets + character sheet (future Pro features; not gated until tiers are decided).
   const [proAssets, setProAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string; description: string }[]>([]);
@@ -311,15 +351,30 @@ export default function StoryboardPage() {
 
   return (
     <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10 sm:px-10">
-      <BackLink href={`/projects/${id}`} label="Project" />
+      <BackLink href="/projects" label="Projects" />
 
-      <div className="mt-8 flex flex-col gap-2">
-        <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Text → Storyboard → Video</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Storyboard</h1>
+      <div className="mt-8 flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Video</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{storyboard ? "Your ad" : "New video ad"}</h1>
+        </div>
+        {storyboard && !isMock && (
+          <Button onClick={startNewAd} variant="ghost" className="shrink-0">
+            New ad
+          </Button>
+        )}
       </div>
 
-      {!storyboard ? (
+      {resuming ? (
+        <div className="mt-8 h-56 animate-pulse rounded-2xl border border-border-subtle bg-surface" />
+      ) : !storyboard ? (
         <div className="mt-8 flex flex-col gap-4">
+          {legacyJob?.output_url && (
+            <div className="rgb-border flex flex-col gap-3 p-5">
+              <p className="text-sm font-medium">Earlier quick video</p>
+              <video src={legacyJob.output_url} controls className="max-h-80 w-full rounded-xl bg-black object-contain" />
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
               <label htmlFor="concept" className="text-sm font-medium">
@@ -785,9 +840,19 @@ export default function StoryboardPage() {
                             alt="Selected"
                             className="aspect-square w-full object-cover"
                           />
-                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/60">
-                            <Loader2 size={16} className="animate-spin" />
-                            <p className="text-xs font-medium">Generating video…</p>
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 p-3">
+                            {shot.status === "failed" ? (
+                              // A picked shot whose video failed — show why (swap the keyframe to retry).
+                              <p className="flex w-full items-start gap-1.5 rounded-lg bg-background/80 p-2 text-left text-xs text-red-400">
+                                <XCircle size={14} className="mt-0.5 shrink-0" />
+                                <span className="line-clamp-4">Video failed: {readableError(shot.error)}</span>
+                              </p>
+                            ) : (
+                              <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <p className="text-xs font-medium">Generating video…</p>
+                              </>
+                            )}
                           </div>
                         </>
                       )}

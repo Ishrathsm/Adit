@@ -531,6 +531,13 @@ export function getStoryboard(id: string) {
   return request<{ storyboard: Storyboard; shots: StoryboardShot[]; assets: StoryboardAsset[] }>(`/api/storyboards/${id}`);
 }
 
+// The project's most recent storyboard (null if none) — reopening a video project resumes it.
+export function getLatestStoryboard(projectId: string) {
+  return request<{ storyboard: Storyboard | null; shots: StoryboardShot[]; assets: StoryboardAsset[] }>(
+    `/api/storyboards?projectId=${encodeURIComponent(projectId)}`,
+  );
+}
+
 // Approve the generated character sheet and start the shots.
 export function startStoryboard(id: string) {
   return request<{ storyboard: Storyboard }>(`/api/storyboards/${id}/start`, { method: "POST" });
