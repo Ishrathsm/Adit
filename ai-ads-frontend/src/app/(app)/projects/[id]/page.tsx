@@ -22,10 +22,12 @@ import {
   ASPECT_RATIOS,
   MAX_POSTER_ASSETS,
   createJob,
+  getAccount,
   uploadStoryboardReferenceImage,
   type AdLook,
   type AdTone,
   type AssetKind,
+  type Features,
   getJob,
   getLatestJobForProject,
   getProject,
@@ -66,6 +68,14 @@ export default function ProjectDetailPage() {
   const [audience, setAudience] = useState("");
   const [mustShow, setMustShow] = useState("");
   const [avoid, setAvoid] = useState("");
+  // Feature switches (plan defaults + admin overrides); null until loaded = treat as available.
+  const [features, setFeatures] = useState<Features | null>(null);
+  useEffect(() => {
+    getAccount()
+      .then(({ features }) => setFeatures(features))
+      .catch(() => setFeatures(null));
+  }, []);
+  const has = (key: keyof Features) => features?.[key] ?? true;
   const [posterAssets, setPosterAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string }[]>([]);
 
   const [job, setJob] = useState<Job | null>(null);
@@ -193,7 +203,8 @@ export default function ProjectDetailPage() {
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <button
                 onClick={() => router.push(`/projects/${id}/storyboard?mode=quick`)}
-                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90"
+                disabled={!has("video_quick")}
+                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
                   <Sparkles size={14} />
@@ -203,7 +214,8 @@ export default function ProjectDetailPage() {
               </button>
               <button
                 onClick={() => router.push(`/projects/${id}/storyboard`)}
-                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90"
+                disabled={!has("video_ad")}
+                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
                   <Clapperboard size={14} />
@@ -453,7 +465,8 @@ export default function ProjectDetailPage() {
                         </button>
                       </div>
                     ))}
-                    {posterAssets.length < MAX_POSTER_ASSETS && (
+                    {!has("reference_assets") && <p className="text-xs text-muted">Reference uploads aren&apos;t enabled on your account.</p>}
+                    {posterAssets.length < MAX_POSTER_ASSETS && has("reference_assets") && (
                       <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${busy ? "pointer-events-none opacity-50" : "hover:bg-white/5"}`}>
                         <Upload size={14} /> Upload a product, person, or location photo
                         <input
@@ -473,9 +486,10 @@ export default function ProjectDetailPage() {
                 </>
               )}
 
+              {!has("poster") && <p className="text-xs text-muted">Posters aren&apos;t enabled on your account.</p>}
               <Button
                 onClick={handleGenerate}
-                disabled={busy || !prompt.trim() || posterAssets.some((a) => !a.name.trim())}
+                disabled={busy || !has("poster") || !prompt.trim() || posterAssets.some((a) => !a.name.trim())}
                 className="self-start"
               >
                 {submitting ? "Starting…" : "Generate"}

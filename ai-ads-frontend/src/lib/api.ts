@@ -65,10 +65,20 @@ export interface Template {
 }
 
 export type AccountType = "individual" | "organisation";
+export type Plan = "free" | "pro";
+
+// Feature switches — mirrors ai-ads-backend/src/lib/features.ts. Plan gives defaults; admins can
+// override any feature per user.
+export type FeatureKey = "poster" | "video_quick" | "video_ad" | "long_ads" | "voiceover" | "reference_assets" | "character_sheet";
+export type Features = Record<FeatureKey, boolean>;
 
 export interface Account {
   user_id: string;
   account_type: AccountType;
+  plan: Plan;
+  is_admin: boolean;
+  disabled: boolean;
+  feature_overrides: Partial<Record<FeatureKey, boolean>>;
   created_at: string;
 }
 
@@ -117,7 +127,65 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getAccount() {
-  return request<{ account: Account | null }>("/api/account");
+  return request<{ account: Account | null; features: Features }>("/api/account");
+}
+
+// ---------- admin ----------
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  providers: string[];
+  createdAt: string;
+  lastSignInAt: string | null;
+  onboarded: boolean;
+  accountType: AccountType | null;
+  plan: Plan;
+  isAdmin: boolean;
+  disabled: boolean;
+  featureOverrides: Partial<Record<FeatureKey, boolean>>;
+  features: Features;
+  usage: { projects: number; posters: number; videos: number; storyboards: number };
+}
+
+export interface AdminAuditEntry {
+  id: string;
+  admin_user_id: string;
+  target_user_id: string;
+  action: string;
+  details: Record<string, { from: unknown; to: unknown }>;
+  created_at: string;
+}
+
+export interface AdminFeatureInfo {
+  key: FeatureKey;
+  label: string;
+  description: string;
+}
+
+export function adminListUsers() {
+  return request<{ users: AdminUser[] }>("/api/admin/users");
+}
+
+export function adminGetUser(id: string) {
+  return request<{ user: AdminUser; audit: AdminAuditEntry[] }>(`/api/admin/users/${id}`);
+}
+
+export function adminListFeatures() {
+  return request<{ features: AdminFeatureInfo[]; planDefaults: Record<Plan, Features> }>("/api/admin/features");
+}
+
+export interface AdminUserPatch {
+  plan?: Plan;
+  accountType?: AccountType;
+  disabled?: boolean;
+  isAdmin?: boolean;
+  // true/false sets an override; null clears it back to the plan default.
+  featureOverrides?: Partial<Record<FeatureKey, boolean | null>>;
+}
+
+export function adminUpdateUser(id: string, patch: AdminUserPatch) {
+  return request<{ account: Account; features: Features }>(`/api/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
 }
 
 export function createAccount(accountType: AccountType) {

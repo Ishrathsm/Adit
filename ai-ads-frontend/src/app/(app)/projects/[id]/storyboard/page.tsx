@@ -8,6 +8,7 @@ import { BackLink } from "@/components/back-link";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
+  getAccount,
   getStoryboard,
   regenerateStoryboardAsset,
   startStoryboard,
@@ -33,6 +34,7 @@ import {
   type AdPacing,
   type AdTone,
   type AssetKind,
+  type Features,
   type ReferenceImageRole,
   type StoryboardAsset,
   type Storyboard,
@@ -139,6 +141,24 @@ export default function StoryboardPage() {
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [shots, setShots] = useState<StoryboardShot[]>([]);
   const [assets, setAssets] = useState<StoryboardAsset[]>([]);
+
+  // Feature switches (plan defaults + admin overrides) — locked options are shown disabled; the
+  // server enforces the same switches. Null until loaded: treat everything as available meanwhile.
+  const [features, setFeatures] = useState<Features | null>(null);
+  useEffect(() => {
+    getAccount()
+      .then(({ features }) => setFeatures(features))
+      .catch(() => setFeatures(null));
+  }, []);
+  const has = (key: keyof Features) => features?.[key] ?? true;
+  // Opened in a format this account doesn't have (e.g. ?mode=quick without quick video) — switch.
+  useEffect(() => {
+    if (!features) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time correction once switches load
+    if (format === "single" && !features.video_quick && features.video_ad) setFormat("ad");
+    else if (format === "ad" && !features.video_ad && features.video_quick) setFormat("single");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the switches arrive
+  }, [features]);
 
   // Reference assets + character sheet (future Pro features; not gated until tiers are decided).
   const [proAssets, setProAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string; description: string }[]>([]);
@@ -378,10 +398,10 @@ export default function StoryboardPage() {
             <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
               <label className="text-sm font-medium">Format</label>
               <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={creating} onClick={() => setFormat("ad")} className={pillClass(format === "ad")}>
+                <button type="button" disabled={creating || !has("video_ad")} onClick={() => setFormat("ad")} className={pillClass(format === "ad")}>
                   Full ad (multiple shots)
                 </button>
-                <button type="button" disabled={creating} onClick={() => setFormat("single")} className={pillClass(format === "single")}>
+                <button type="button" disabled={creating || !has("video_quick")} onClick={() => setFormat("single")} className={pillClass(format === "single")}>
                   Quick single shot
                 </button>
               </div>
@@ -405,7 +425,7 @@ export default function StoryboardPage() {
                 <label className="text-sm font-medium">Ad length</label>
                 <div className="flex flex-wrap gap-2">
                   {AD_LENGTHS.map((length) => (
-                    <button key={length} type="button" disabled={creating} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
+                    <button key={length} type="button" disabled={creating || (length === 30 && !has("long_ads"))} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
                       {length}s
                     </button>
                   ))}
@@ -455,7 +475,7 @@ export default function StoryboardPage() {
                 <button type="button" disabled={creating} onClick={() => setVoiceover(false)} className={pillClass(!voiceover)}>
                   Music only
                 </button>
-                <button type="button" disabled={creating} onClick={() => setVoiceover(true)} className={pillClass(voiceover)}>
+                <button type="button" disabled={creating || !has("voiceover")} onClick={() => setVoiceover(true)} className={pillClass(voiceover)}>
                   Music + voiceover
                 </button>
               </div>
@@ -570,7 +590,8 @@ export default function StoryboardPage() {
                   </div>
                 </div>
               ))}
-              {proAssets.length < 6 && (
+              {!has("reference_assets") && <p className="text-xs text-muted">Reference uploads aren&apos;t enabled on your account.</p>}
+              {proAssets.length < 6 && has("reference_assets") && (
                 <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${creating ? "pointer-events-none" : "hover:bg-white/5"}`}>
                   <Upload size={14} /> Upload a product, person, or location photo
                   <input
@@ -587,7 +608,7 @@ export default function StoryboardPage() {
                 </label>
               )}
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={characterSheet} disabled={creating} onChange={(e) => setCharacterSheet(e.target.checked)} />
+                <input type="checkbox" checked={characterSheet} disabled={creating || !has("character_sheet")} onChange={(e) => setCharacterSheet(e.target.checked)} />
                 Generate a character sheet — review and approve the cast before any shot is made
               </label>
               <p className="text-xs text-muted">Your photos are used as references in every shot they appear in, so the real product, people, and places stay consistent.</p>
