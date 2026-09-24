@@ -28,7 +28,8 @@ export type GenerationTask =
   | { kind: "job"; jobId: string }
   | { kind: "storyboard-shot-choices"; shotId: string }
   | { kind: "storyboard-shot-video"; shotId: string }
-  | { kind: "storyboard-stitch"; storyboardId: string };
+  | { kind: "storyboard-stitch"; storyboardId: string }
+  | { kind: "storyboard-character"; assetId: string };
 
 async function enqueue(task: GenerationTask): Promise<void> {
   if (!generationQueue) {
@@ -51,4 +52,9 @@ export function enqueueShotVideo(shotId: string): Promise<void> {
 
 export function enqueueStoryboardStitch(storyboardId: string): Promise<void> {
   return enqueue({ kind: "storyboard-stitch", storyboardId });
+}
+
+// Pro character sheet: generate one character's reference image.
+export function enqueueCharacterReference(assetId: string): Promise<void> {
+  return enqueue({ kind: "storyboard-character", assetId });
 }

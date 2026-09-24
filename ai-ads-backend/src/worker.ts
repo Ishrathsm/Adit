@@ -21,9 +21,13 @@ import { extractLastFrame, stitchVideos } from "./lib/video-stitch";
 import {
   getShot,
   getStoryboardById,
+  type AssetKind,
+  getAsset,
+  listAssets,
   listShots,
   selectShotChoice,
   SHOT_CHOICE_COUNT,
+  updateAsset,
   updateShot,
   updateStoryboardStatus,
 } from "./lib/storyboards";
@@ -70,12 +74,12 @@ async function processGenerationJob(jobId: string): Promise<void> {
       template?.template_prompt,
       job.reference_image_role ?? undefined,
     );
-    // A "subject" reference is the user's own product photo — its real branding is expected.
     const image = await generateCleanImage(
       refinedPrompt,
       job.aspect_ratio,
       referenceImage ? [referenceImage] : [],
-      job.reference_image_role !== "subject",
+      // A "subject" reference is the user's own product photo — its genuine branding is allowed.
+      job.reference_image_role === "subject" && referenceImage ? [referenceImage] : [],
     );
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
@@ -110,6 +114,51 @@ async function processGenerationJob(jobId: string): Promise<void> {
   await updateJobStatus(jobId, { status: "completed", output_url: outputUrl });
 }
 
+type RefImage = { imageBytes: string; mimeType: string };
+
+const ASSET_REFERENCE_LIMIT = 3; // beyond ~3 subjects the image model starts blending them
+const ASSET_LABEL: Record<AssetKind, (name: string) => string> = {
+  character: (n) => `character "${n}" — reproduce this exact person: face, hair, skin tone, build, and wardrobe exactly as in the image (the image wins over any written description)`,
+  product: (n) => `product "${n}" — the client's real product: reproduce its exact shape, colors, materials, and genuine branding`,
+  location: (n) => `location "${n}" — the real place: keep its architecture, materials, and look`,
+};
+
+// The ready reference assets named in a shot, as labeled images (characters first, then product,
+// then location), plus the product images on their own for the mark check's allow-list.
+async function shotAssetReferences(storyboardId: string, names: string[], fetchImage: (url: string) => Promise<RefImage>) {
+  if (!names.length) return { refs: [] as { image: RefImage; label: string }[], productRefs: [] as RefImage[] };
+  const order: AssetKind[] = ["character", "product", "location"];
+  const assets = (await listAssets(storyboardId))
+    .filter((a) => names.includes(a.name) && a.status === "ready" && a.image_url)
+    .sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))
+    .slice(0, ASSET_REFERENCE_LIMIT);
+  const refs = await Promise.all(assets.map(async (a) => ({ image: await fetchImage(a.image_url!), label: ASSET_LABEL[a.kind](a.name), kind: a.kind })));
+  return { refs, productRefs: refs.filter((r) => r.kind === "product").map((r) => r.image) };
+}
+
+// Pro character sheet: one clean, full-length reference photo per recurring character, in the
+// film's look, so every shot featuring them reproduces the same person.
+async function processCharacterReference(assetId: string): Promise<void> {
+  const asset = await getAsset(assetId);
+  if (!asset) throw new Error(`asset ${assetId} not found`);
+  const storyboard = await getStoryboardById(asset.storyboard_id);
+  if (!storyboard) throw new Error(`storyboard ${asset.storyboard_id} not found`);
+
+  try {
+    // The film's look sheet is deliberately left out: passing it pulled the film's location into
+    // the reference (a garden instead of a studio). The character description already carries the
+    // wardrobe, and a clean studio reference transfers best into every shot.
+    const prompt = `Studio casting photograph of one person, photoreal. The person: ${asset.description ?? asset.name}.
+Full-length, facing the camera, standing naturally with a relaxed, friendly expression; the whole body and face clearly visible and sharp. Shot indoors in a photo studio against a plain, empty light-grey seamless paper backdrop — nothing else in the frame, no location, no props. Soft even studio light, true-to-life natural color and skin tones, plain unmarked clothing exactly as described.`;
+    const image = await generateCleanImage(prompt, "3:4");
+    const url = await uploadPoster(`${assetId}-character-${Date.now()}`, Buffer.from(image.imageBytes, "base64"));
+    await updateAsset(assetId, { image_url: url, status: "ready", error: null });
+  } catch (err) {
+    await updateAsset(assetId, { status: "failed", error: err instanceof Error ? err.message : String(err) });
+    throw err;
+  }
+}
+
 async function processShotChoices(shotId: string): Promise<void> {
   const shot = await getShot(shotId);
   if (!shot) throw new Error(`shot ${shotId} not found`);
@@ -120,26 +169,37 @@ async function processShotChoices(shotId: string): Promise<void> {
   try {
     const brand = await getBrandContextForProject(storyboard.project_id);
 
-    // Every shot grounds on the user's own reference image (if they gave one), and every shot
-    // after the first also on the previous shot's chosen frame — together they keep the product
-    // and the film's look consistent, rather than each shot drifting from text alone.
+    // References for this keyframe, labeled in order: the reference assets that appear in the
+    // shot (character sheet / the client's product and location photos), the user's older-style
+    // single reference image, and — after the first shot — the previous shot's chosen frame for
+    // continuity. Together they keep people, product, and place consistent across shots.
     const fetchImage = async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`failed to fetch reference image: ${res.status}`);
       return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
     };
-    const referenceImages: { imageBytes: string; mimeType: string }[] = [];
+    const { refs: assetRefs, productRefs } = await shotAssetReferences(storyboard.id, shot.asset_names, fetchImage);
+    const references = [...assetRefs];
     const userRole = storyboard.reference_image_url ? storyboard.reference_image_role ?? "subject" : undefined;
-    if (storyboard.reference_image_url) referenceImages.push(await fetchImage(storyboard.reference_image_url));
+    const userRef = storyboard.reference_image_url ? await fetchImage(storyboard.reference_image_url) : undefined;
+    if (userRef) {
+      references.push({
+        image: userRef,
+        label: userRole === "style" ? "style reference — match its mood, palette, and lighting, but not its content" : "the client's product/subject photo — reproduce it exactly",
+      });
+    }
+    let previousFrame: { imageBytes: string; mimeType: string } | undefined;
     if (shot.shot_index > 0) {
       const siblingShots = await listShots(shot.storyboard_id);
       const previous = siblingShots.find((s) => s.shot_index === shot.shot_index - 1);
       if (previous?.selected_choice !== null && previous?.selected_choice !== undefined && previous.choice_urls) {
-        referenceImages.push(await fetchImage(previous.choice_urls[previous.selected_choice]));
+        previousFrame = await fetchImage(previous.choice_urls[previous.selected_choice]);
+        references.push({ image: previousFrame, label: "the previous shot's chosen frame — keep continuity of people, wardrobe, place, light, and palette; the framing and action change" });
       }
     }
-    // A previous frame means "keep this subject"; otherwise the user's chosen role applies.
-    const referenceImageRole = shot.shot_index > 0 && referenceImages.length ? "subject" : userRole;
+    const referenceImages = references.map((r) => r.image);
+    // The client's own product photos (and an older-style subject photo) may show genuine branding.
+    const allowedMarks = [...productRefs, ...(userRole === "subject" && userRef ? [userRef] : [])];
 
     const refinedPrompt = await refineShotImagePrompt(
       shot.description,
@@ -148,15 +208,15 @@ async function processShotChoices(shotId: string): Promise<void> {
       storyboard.shot_count,
       storyboard.aspect_ratio,
       brand,
-      referenceImageRole,
+      userRole,
       storyboard.look_sheet,
       directionText(storyboard.creative_brief),
+      references.map((r) => r.label),
     );
-    // Sequential, not parallel — bursting the image API is what trips its rate limit. The mark
-    // check is skipped when the user's own product photo is a reference (real branding expected).
+    // Sequential, not parallel — bursting the image API is what trips its rate limit.
     const images = [];
     for (let i = 0; i < SHOT_CHOICE_COUNT; i++) {
-      images.push(await generateCleanImage(refinedPrompt, storyboard.aspect_ratio, referenceImages, userRole !== "subject"));
+      images.push(await generateCleanImage(refinedPrompt, storyboard.aspect_ratio, referenceImages, allowedMarks));
     }
     const urls = await Promise.all(
       images.map((image, i) => uploadPoster(`${shotId}-choice-${i}`, Buffer.from(image.imageBytes, "base64"))),
@@ -166,7 +226,6 @@ async function processShotChoices(shotId: string): Promise<void> {
     // Auto-pick the best candidate and keep the film moving: the next shot's choices first (so
     // every keyframe is visible early), then this shot's video. The user can override any pick
     // through PATCH, which regenerates just that shot's video.
-    const previousFrame = shot.shot_index > 0 ? referenceImages[referenceImages.length - 1] : undefined;
     const best = await pickBestKeyframe(images, shot.description, storyboard.look_sheet, previousFrame);
     await selectShotChoice(shotId, best);
     const next = (await listShots(shot.storyboard_id)).find((s) => s.shot_index === shot.shot_index + 1);
@@ -229,8 +288,13 @@ async function processShotVideo(shotId: string): Promise<void> {
     // The mark check is skipped when the user's own product photo is the reference (its real
     // branding would be flagged); the effects check is skipped for the surreal look.
     {
+      const { productRefs } = await shotAssetReferences(storyboard.id, shot.asset_names, async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`failed to fetch reference image: ${res.status}`);
+        return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
+      });
       const [marks, effects] = await Promise.all([
-        storyboard.reference_image_role !== "subject" ? findMarksInVideo(clip) : Promise.resolve([]),
+        storyboard.reference_image_role !== "subject" ? findMarksInVideo(clip, productRefs) : Promise.resolve([]),
         brief?.look !== "surreal" ? findSuddenEffects(clip) : Promise.resolve([]),
       ]);
       const findings = [...marks, ...effects];
@@ -369,6 +433,9 @@ const worker = new Worker(
         break;
       case "storyboard-stitch":
         await processStoryboardStitch(task.storyboardId);
+        break;
+      case "storyboard-character":
+        await processCharacterReference(task.assetId);
         break;
     }
   },

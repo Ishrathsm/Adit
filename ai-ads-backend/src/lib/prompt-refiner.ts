@@ -85,6 +85,14 @@ function referenceInstructionBlock(referenceImageRole?: ReferenceImageRole): str
   return "";
 }
 
+// Several labeled reference images (character sheet, the client's product/location photos, the
+// previous shot's frame), attached in this order — each gets a precise job so the image model
+// neither ignores one nor copies the wrong thing from it.
+function labeledReferencesBlock(labels?: string[]): string {
+  if (!labels?.length) return "";
+  return `\n\nReference images are attached, in this order — the shot must match each one exactly for what it defines, and your fields must describe these people/objects/places as they actually look in the images (where the look sheet or brief describes them differently, the image wins — e.g. describe the uniform the reference shows, not the one written above):\n${labels.map((l, i) => `${i + 1}. ${l}`).join("\n")}`;
+}
+
 // Storyboard shots are generated separately, so the film only holds together if every shot restates
 // the same fixed look sheet (from generateAdScript) instead of re-inventing product, palette, light.
 function lookSheetBlock(lookSheet?: string | null): string {
@@ -247,8 +255,10 @@ export async function refineShotImagePrompt(
   referenceImageRole?: ReferenceImageRole,
   lookSheet?: string | null,
   direction?: string | null,
+  // When given, replaces the single-role reference instruction with one line per attached image.
+  referenceLabels?: string[],
 ): Promise<string> {
-  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstructionBlock(referenceImageRole)}${lookSheetBlock(lookSheet)}
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceLabels?.length ? labeledReferencesBlock(referenceLabels) : referenceInstructionBlock(referenceImageRole)}${lookSheetBlock(lookSheet)}
 ${qualityBarBlock("image")}${directionBlock(direction)}
 ${brandContextBlock(brand)}
 

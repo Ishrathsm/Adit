@@ -7,15 +7,21 @@ import { type CreativeBrief, parseCreativeBrief, planShots } from "../lib/creati
 import { getProductById, toBrandContext } from "../lib/products";
 import { uploadReferenceImage } from "../lib/storage";
 import {
+  type AssetKind,
+  createAssets,
   createShots,
   createStoryboard,
+  getAsset,
   getStoryboard,
+  listAssets,
   listShots,
   selectShotChoice,
   SHOT_CHOICE_COUNT,
   type ReferenceImageRole,
+  updateAsset,
+  updateStoryboardStatus,
 } from "../lib/storyboards";
-import { enqueueShotChoices, enqueueShotVideo } from "../lib/queue";
+import { enqueueCharacterReference, enqueueShotChoices, enqueueShotVideo } from "../lib/queue";
 
 export const storyboardsRouter = Router();
 
@@ -43,7 +49,8 @@ storyboardsRouter.post("/reference-image", upload.single("image"), async (req: A
 });
 
 storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, concept, aspectRatio, brief: rawBrief, referenceImageUrl, referenceImageRole } = req.body ?? {};
+  const { projectId, concept, aspectRatio, brief: rawBrief, referenceImageUrl, referenceImageRole, assets: rawAssets, characterSheet } =
+    req.body ?? {};
 
   if (typeof projectId !== "string" || typeof concept !== "string" || !concept.trim()) {
     res.status(400).json({ error: "projectId and concept are required" });
@@ -70,6 +77,14 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     res.status(400).json({ error: `referenceImageRole must be one of ${REFERENCE_IMAGE_ROLES.join(", ")}` });
     return;
   }
+  let assets: UploadedAsset[];
+  try {
+    assets = parseAssets(rawAssets);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    return;
+  }
+  const wantsCharacterSheet = characterSheet === true;
 
   try {
     const project = await getProject(req.userId!, projectId);
@@ -79,22 +94,38 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     }
 
     const product = project.product_id ? await getProductById(project.product_id) : null;
-    const script = await generateAdScript(concept.trim(), brief, plan, toBrandContext(product));
+    const script = await generateAdScript(concept.trim(), brief, plan, {
+      brand: toBrandContext(product),
+      assets: assets.map((a) => ({ kind: a.kind, name: a.name, description: a.description })),
+      characterSheet: wantsCharacterSheet,
+    });
+    const casting = script.characters.length > 0;
     const storyboard = await createStoryboard(projectId, concept.trim(), plan.shotCount, plan.clipSeconds, {
       aspectRatio,
       referenceImageUrl: referenceImageUrl || null,
       referenceImageRole: referenceImageUrl ? referenceImageRole : null,
       lookSheet: script.lookSheet,
       creativeBrief: { ...brief, audio: { musicPrompt: script.musicPrompt, voiceoverScript: script.voiceoverScript } },
+      status: casting ? "casting" : "drafting",
     });
     const shots = await createShots(storyboard.id, script.shots);
+    const createdAssets = await createAssets(storyboard.id, [
+      ...assets.map((a) => ({ ...a, source: "uploaded" as const })),
+      ...script.characters.map((c) => ({ kind: "character" as const, name: c.name, description: c.description, imageUrl: null, source: "generated" as const })),
+    ]);
 
-    // Only kick off the first shot — the worker auto-picks its keyframe, then starts its video
-    // and the next shot's choices, so shots are generated one after another rather than
-    // bursting the image API into its rate limit. PATCH below lets the user override a pick.
-    await enqueueShotChoices(shots[0].id);
+    if (casting) {
+      // Character sheet first: generate each character's reference, then wait for the user to
+      // approve the cast (POST /:id/start) before any shot is generated.
+      for (const asset of createdAssets.filter((a) => a.status === "pending")) await enqueueCharacterReference(asset.id);
+    } else {
+      // Only kick off the first shot — the worker auto-picks its keyframe, then starts its video
+      // and the next shot's choices, so shots are generated one after another rather than
+      // bursting the image API into its rate limit. PATCH below lets the user override a pick.
+      await enqueueShotChoices(shots[0].id);
+    }
 
-    res.status(201).json({ storyboard, shots });
+    res.status(201).json({ storyboard, shots, assets: createdAssets });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -107,8 +138,8 @@ storyboardsRouter.get("/:id", async (req: AuthedRequest, res) => {
       res.status(404).json({ error: "storyboard not found" });
       return;
     }
-    const shots = await listShots(storyboard.id);
-    res.json({ storyboard, shots });
+    const [shots, assets] = await Promise.all([listShots(storyboard.id), listAssets(storyboard.id)]);
+    res.json({ storyboard, shots, assets });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -147,3 +178,82 @@ storyboardsRouter.patch("/:id/shots/:shotId", async (req: AuthedRequest, res) =>
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
+
+// Approve the character sheet and start generating shots.
+storyboardsRouter.post("/:id/start", async (req: AuthedRequest, res) => {
+  try {
+    const storyboard = await getStoryboard(req.userId!, req.params.id);
+    if (!storyboard) {
+      res.status(404).json({ error: "storyboard not found" });
+      return;
+    }
+    if (storyboard.status !== "casting") {
+      res.status(409).json({ error: "storyboard is not waiting for cast approval" });
+      return;
+    }
+    const assets = await listAssets(storyboard.id);
+    if (assets.some((a) => a.status !== "ready")) {
+      res.status(409).json({ error: "every character reference must be ready before starting" });
+      return;
+    }
+    await updateStoryboardStatus(storyboard.id, { status: "drafting" });
+    const shots = await listShots(storyboard.id);
+    await enqueueShotChoices(shots[0].id);
+    res.json({ storyboard: { ...storyboard, status: "drafting" } });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// Regenerate one generated character reference while the cast is still being reviewed.
+storyboardsRouter.post("/:id/assets/:assetId/regenerate", async (req: AuthedRequest, res) => {
+  try {
+    const storyboard = await getStoryboard(req.userId!, req.params.id);
+    if (!storyboard) {
+      res.status(404).json({ error: "storyboard not found" });
+      return;
+    }
+    const asset = await getAsset(req.params.assetId);
+    if (!asset || asset.storyboard_id !== storyboard.id || asset.source !== "generated") {
+      res.status(404).json({ error: "generated asset not found" });
+      return;
+    }
+    if (storyboard.status !== "casting") {
+      res.status(409).json({ error: "the cast can only be changed before shots start" });
+      return;
+    }
+    await updateAsset(asset.id, { status: "pending", error: null });
+    await enqueueCharacterReference(asset.id);
+    res.json({ asset: { ...asset, status: "pending" } });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+interface UploadedAsset {
+  kind: AssetKind;
+  name: string;
+  description: string | null;
+  imageUrl: string;
+}
+
+const ASSET_KINDS: AssetKind[] = ["character", "product", "location"];
+const MAX_ASSETS = 6;
+
+function parseAssets(raw: unknown): UploadedAsset[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new Error("assets must be a list");
+  if (raw.length > MAX_ASSETS) throw new Error(`at most ${MAX_ASSETS} assets`);
+  const assets = raw.map((a, i) => {
+    const { kind, name, description, imageUrl } = (a ?? {}) as Record<string, unknown>;
+    if (!ASSET_KINDS.includes(kind as AssetKind)) throw new Error(`assets[${i}].kind must be one of ${ASSET_KINDS.join(", ")}`);
+    if (typeof name !== "string" || !name.trim() || name.trim().length > 60) throw new Error(`assets[${i}].name is required (max 60 characters)`);
+    if (typeof imageUrl !== "string" || !imageUrl.startsWith("http")) throw new Error(`assets[${i}].imageUrl must be an uploaded image URL`);
+    if (description !== undefined && description !== null && (typeof description !== "string" || description.length > 300)) {
+      throw new Error(`assets[${i}].description must be text (max 300 characters)`);
+    }
+    return { kind: kind as AssetKind, name: name.trim(), description: (description as string | undefined)?.trim() || null, imageUrl };
+  });
+  if (new Set(assets.map((a) => a.name.toLowerCase())).size !== assets.length) throw new Error("asset names must be unique");
+  return assets;
+}

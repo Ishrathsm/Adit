@@ -3,7 +3,8 @@ import { supabase } from "./supabase";
 
 export const SHOT_CHOICE_COUNT = 2;
 
-export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "failed";
+// "casting": a generated character sheet is waiting for the user's approval before shots start.
+export type StoryboardStatus = "casting" | "drafting" | "generating_video" | "completed" | "failed";
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
 
 export type ReferenceImageRole = "subject" | "style";
@@ -34,6 +35,8 @@ export interface StoryboardShotRow {
   choice_urls: string[] | null;
   selected_choice: number | null;
   video_url: string | null;
+  // Names of the storyboard assets (characters / product / location) that appear in this shot.
+  asset_names: string[];
   status: ShotStatus;
   error: string | null;
   created_at: string;
@@ -46,6 +49,7 @@ export interface CreateStoryboardOptions {
   referenceImageRole?: ReferenceImageRole | null;
   lookSheet?: string | null;
   creativeBrief?: CreativeBrief | null;
+  status?: StoryboardStatus;
 }
 
 export async function createStoryboard(
@@ -67,6 +71,7 @@ export async function createStoryboard(
       reference_image_role: options.referenceImageRole ?? null,
       look_sheet: options.lookSheet ?? null,
       creative_brief: options.creativeBrief ?? null,
+      ...(options.status ? { status: options.status } : {}),
     })
     .select()
     .single();
@@ -74,11 +79,15 @@ export async function createStoryboard(
   return data;
 }
 
-export async function createShots(storyboardId: string, descriptions: string[]): Promise<StoryboardShotRow[]> {
-  const rows = descriptions.map((description, shot_index) => ({
+export async function createShots(
+  storyboardId: string,
+  shots: { description: string; assetNames: string[] }[],
+): Promise<StoryboardShotRow[]> {
+  const rows = shots.map((shot, shot_index) => ({
     storyboard_id: storyboardId,
     shot_index,
-    description,
+    description: shot.description,
+    asset_names: shot.assetNames,
   }));
   const { data, error } = await supabase.from("storyboard_shots").insert(rows).select();
   if (error) throw error;
@@ -147,6 +156,63 @@ export async function updateStoryboardStatus(
 ): Promise<void> {
   const { error } = await supabase
     .from("storyboards")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- reference assets (Pro) ----------
+
+export type AssetKind = "character" | "product" | "location";
+
+export interface StoryboardAssetRow {
+  id: string;
+  storyboard_id: string;
+  kind: AssetKind;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  source: "uploaded" | "generated";
+  status: "pending" | "ready" | "failed";
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createAssets(
+  storyboardId: string,
+  assets: { kind: AssetKind; name: string; description: string | null; imageUrl: string | null; source: "uploaded" | "generated" }[],
+): Promise<StoryboardAssetRow[]> {
+  if (!assets.length) return [];
+  const rows = assets.map((a) => ({
+    storyboard_id: storyboardId,
+    kind: a.kind,
+    name: a.name,
+    description: a.description,
+    image_url: a.imageUrl,
+    source: a.source,
+    status: a.imageUrl ? "ready" : "pending",
+  }));
+  const { data, error } = await supabase.from("storyboard_assets").insert(rows).select();
+  if (error) throw error;
+  return data;
+}
+
+export async function listAssets(storyboardId: string): Promise<StoryboardAssetRow[]> {
+  const { data, error } = await supabase.from("storyboard_assets").select().eq("storyboard_id", storyboardId).order("created_at");
+  if (error) throw error;
+  return data;
+}
+
+export async function getAsset(id: string): Promise<StoryboardAssetRow | null> {
+  const { data, error } = await supabase.from("storyboard_assets").select().eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAsset(id: string, patch: Partial<Pick<StoryboardAssetRow, "image_url" | "status" | "error">>): Promise<void> {
+  const { error } = await supabase
+    .from("storyboard_assets")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;

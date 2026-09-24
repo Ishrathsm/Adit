@@ -14,15 +14,27 @@ export interface MarkCheckResult {
 // headline lettering, and real competitors' marks (a Nike swoosh, Adidas stripes) onto products.
 // The brand's own logo/tagline get composited afterward, so anything like that already in the
 // raw image is wrong. This is a cheap vision read used to reject and regenerate those images.
-export async function checkForUnwantedMarks(imageBytes: string, mimeType: string): Promise<MarkCheckResult> {
+export async function checkForUnwantedMarks(
+  imageBytes: string,
+  mimeType: string,
+  // The client's real product photos: branding that genuinely appears on them is allowed (their own
+  // logo should stay), while anything else is still flagged.
+  allowedFrom: { imageBytes: string; mimeType: string }[] = [],
+): Promise<MarkCheckResult> {
   if (!genAI) return { clean: true, findings: [] };
 
   try {
+    const references = allowedFrom.flatMap((ref, i) => [
+      `REFERENCE ${i + 1} (the client's real product — its genuine markings are allowed):`,
+      { inlineData: { data: ref.imageBytes, mimeType: ref.mimeType } },
+    ]);
     const response = await genAI.models.generateContent({
       model: env.imageCheckModel,
       contents: [
+        ...references,
+        ...(references.length ? ["IMAGE TO INSPECT:"] : []),
         { inlineData: { data: imageBytes, mimeType } },
-        `Inspect this generated advertising image closely, including small details on products, clothing, props, and backgrounds. List every instance of:
+        `${references.length ? "Text, logos, and markings that genuinely appear on the product in the REFERENCE images, in the same place on the same product, are allowed — do not list them. " : ""}Inspect this generated advertising image closely, including small details on products, clothing, props, and backgrounds. List every instance of:
 1. Any written language — letters, words, numbers, or text-like glyphs/pseudo-lettering, however small or partial.
 2. Any logo, emblem, monogram, or recognizable trademark or trade-dress design of a real brand (e.g. a swoosh, three parallel stripes, a signature pattern).
 Ordinary design details that are not text or brand marks (plain seams, stitching, tread patterns, laces, abstract textures) do not count.

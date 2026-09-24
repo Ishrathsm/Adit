@@ -16,18 +16,55 @@ export interface AdScript {
   // as one film if the product, people, place, palette, light, and lens are described identically
   // each time (Google's own Veo 3.1 guidance for multi-shot consistency).
   lookSheet: string;
-  shots: string[];
+  // Each shot's description plus the names of the reference assets (characters / product /
+  // location) visible in it, so each keyframe is generated with just those references.
+  shots: { description: string; assetNames: string[] }[];
+  // Recurring people to generate a character sheet for (only when requested).
+  characters: { name: string; description: string }[];
   // Instrumental score description for the music model, matched to the film's arc and tone.
   musicPrompt: string;
   // Narration, only when the brief asked for a voiceover.
   voiceoverScript: string | null;
 }
 
+// Real reference images the client uploaded (Pro) — described so the director can build the film
+// around them.
+export interface ScriptAsset {
+  kind: "character" | "product" | "location";
+  name: string;
+  description: string | null;
+}
+
+export interface ScriptOptions {
+  brand?: BrandContext;
+  assets?: ScriptAsset[];
+  // Pro: define every recurring person so a character sheet can be generated before the shots.
+  characterSheet?: boolean;
+}
+
 const SCRIPT_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     look_sheet: { type: Type.STRING },
-    shots: { type: Type.ARRAY, items: { type: Type.STRING } },
+    shots: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          description: { type: Type.STRING },
+          assets: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ["description", "assets"],
+      },
+    },
+    characters: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: { name: { type: Type.STRING }, description: { type: Type.STRING } },
+        required: ["name", "description"],
+      },
+    },
     music_prompt: { type: Type.STRING },
     voiceover_script: { type: Type.STRING, nullable: true },
   },
@@ -43,7 +80,9 @@ function beatFor(index: number, count: number): string {
 
 // The single brief shared by the writing and critique passes, so both judge against the same
 // direction.
-function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, brand?: BrandContext): string {
+function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, options: ScriptOptions): string {
+  const { brand, assets = [] } = options;
+  const hasProductAsset = assets.some((a) => a.kind === "product");
   const lines = [
     `Client concept: "${concept}"`,
     `Length: ${brief.lengthSeconds}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
@@ -59,6 +98,12 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, b
     brand?.productName && `Brand (context only — never write this name anywhere): ${brand.productName}`,
     brand?.primaryColor && `Brand colors to echo subtly in the palette: ${[brand.primaryColor, brand.secondaryColor].filter(Boolean).join(", ")}`,
     brand?.brandRules && `MANDATORY brand rules: ${brand.brandRules}`,
+    assets.length > 0 &&
+      `REFERENCE ASSETS — real photos the client supplied; every shot that shows one must match it exactly (its images are attached to those shots):\n${assets
+        .map((a) => `- ${a.kind} "${a.name}"${a.description ? `: ${a.description}` : ""}`)
+        .join("\n")}`,
+    options.characterSheet &&
+      "CHARACTER SHEET: every recurring person who is not already a reference asset must be listed in `characters` — a reference image is generated for each before shooting, so the same face, hair, and wardrobe carry through every shot.",
   ].filter(Boolean);
 
   const beats = Array.from({ length: plan.shotCount }, (_, i) => `Shot ${i + 1}: ${beatFor(i, plan.shotCount)}`).join("\n");
@@ -72,7 +117,7 @@ Hard rules:
 - Each shot is ONE simple, clear action that reads in ~${plan.cutSeconds.toFixed(1)}s (the AI video model renders ${plan.clipSeconds}s and the edit keeps the best part) — no multi-step choreography, no crowds doing complex things.
 - Consecutive shots must cut together as one film: same people, same product, same location, time of day, and weather; vary shot sizes (wide / medium / close / macro) and cut on motion like a real editor.
 - Nothing written or printed may appear on screen: no text, titles, labels, signage, screens with words, packaging copy, or numbers — express everything visually.
-- No brand names, logos, or real products' signature designs.
+- ${hasProductAsset ? "The product is the client's real product (see REFERENCE ASSETS) — keep its genuine design and branding exactly; no other brand names or logos anywhere." : "No brand names, logos, or real products' signature designs."}
 - The shots are silent footage: nobody speaks on camera, no lip-synced dialogue. Music${brief.voiceover ? " and a voiceover are" : " is"} added in the edit.`;
 }
 
@@ -93,10 +138,17 @@ async function generateJson(contents: string): Promise<AdScript> {
   });
   const text = response.text;
   if (!text) throw new Error("Ad script returned no text");
-  const parsed = JSON.parse(text) as { look_sheet: string; shots: string[]; music_prompt: string; voiceover_script?: string | null };
+  const parsed = JSON.parse(text) as {
+    look_sheet: string;
+    shots: { description: string; assets?: string[] }[];
+    characters?: { name: string; description: string }[];
+    music_prompt: string;
+    voiceover_script?: string | null;
+  };
   return {
     lookSheet: parsed.look_sheet,
-    shots: parsed.shots,
+    shots: (parsed.shots ?? []).map((shot) => ({ description: shot.description, assetNames: shot.assets ?? [] })),
+    characters: parsed.characters ?? [],
     musicPrompt: parsed.music_prompt,
     voiceoverScript: parsed.voiceover_script?.trim() || null,
   };
@@ -109,16 +161,18 @@ export async function generateAdScript(
   concept: string,
   brief: CreativeBrief,
   plan: ShotPlan,
-  brand?: BrandContext,
+  options: ScriptOptions = {},
 ): Promise<AdScript> {
   if (!genAI) {
     throw new Error("Text generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
 
-  const direction = directionBrief(concept, brief, plan, brand);
+  const direction = directionBrief(concept, brief, plan, options);
+  const assetNames = (options.assets ?? []).map((a) => `"${a.name}"`);
   const outputSpec = `Write:
 1. look_sheet (~500 characters): the fixed visual bible — the exact product/subject design (form, materials, colors; an original unbranded design with plain unmarked surfaces), every recurring person (age, ethnicity, build, hair, wardrobe — identical every shot), the location, time of day and weather, the color palette, lighting character (natural, true-to-life color unless the brief asks otherwise — no heavy orange/golden or teal casts), and lens/film look. Precise and concrete; it is repeated verbatim into every shot.
-2. shots: exactly ${plan.shotCount} shot descriptions in order, each ~250 characters: shot size and camera move, the one action, and the setting detail (visual only — no sound).
+2. shots: exactly ${plan.shotCount} shots in order. For each: "description" (~250 characters: shot size and camera move, the one action, and the setting detail — visual only, no sound) and "assets" (the exact names of the reference assets and characters visible in that shot${assetNames.length ? `, from: ${assetNames.join(", ")}${options.characterSheet ? " plus your characters" : ""}` : options.characterSheet ? ", i.e. your character names" : " — an empty list when there are none"}).
+${options.characterSheet ? `2b. characters: each recurring person not already a reference asset — "name" (a short first name) and "description" (~250 characters: age, ethnicity, build, face, hair, and exact wardrobe; identical to how the look sheet describes them).` : "2b. characters: an empty list."}
 3. music_prompt (~250 characters): an instrumental score for exactly this film — genre, instruments, tempo, and how it moves with the arc (e.g. starts sparse, swells at the turn, resolves on the payoff). Style direction for this tone: ${TONE_MUSIC[brief.tone]}. Instrumental only, no vocals.
 ${voiceoverSpec(brief, plan)}`;
 
@@ -143,15 +197,20 @@ Review checklist — fix every failure:
 - Any on-screen text, signage, screens with words, brand names, or on-camera dialogue? Remove it.
 - Does the music prompt fit the tone and the film's arc?${brief.voiceover && !brief.voiceoverScript ? " Is the voiceover natural, within the word limit, and does it land the key message?" : " Is voiceover_script null?"}
 - Is the look sheet concrete enough that two separately generated shots would match?
+- Does every shot's "assets" list name exactly the reference assets/characters visible in it (spelled exactly as given)?
 
 ${outputSpec}
 
 Director's plan to review:
-${JSON.stringify({ look_sheet: draft.lookSheet, shots: draft.shots, music_prompt: draft.musicPrompt, voiceover_script: draft.voiceoverScript }, null, 2)}`);
+${JSON.stringify({ look_sheet: draft.lookSheet, shots: draft.shots.map((s) => ({ description: s.description, assets: s.assetNames })), characters: draft.characters, music_prompt: draft.musicPrompt, voiceover_script: draft.voiceoverScript }, null, 2)}`);
 
   const script = reviewed.shots?.length === plan.shotCount && reviewed.lookSheet && reviewed.musicPrompt ? reviewed : draft;
   // The user's own narration always wins over anything the model wrote; none when not requested.
   script.voiceoverScript = brief.voiceover ? brief.voiceoverScript ?? script.voiceoverScript : null;
+  if (!options.characterSheet) script.characters = [];
+  // Asset names must match real assets/characters, or the shot would silently lose its references.
+  const known = new Set([...(options.assets ?? []).map((a) => a.name), ...script.characters.map((c) => c.name)]);
+  script.shots = script.shots.map((shot) => ({ ...shot, assetNames: shot.assetNames.filter((n) => known.has(n)) }));
   if (!Array.isArray(script.shots) || script.shots.length !== plan.shotCount) {
     throw new Error(`Expected ${plan.shotCount} shots, got ${script.shots?.length ?? 0}`);
   }

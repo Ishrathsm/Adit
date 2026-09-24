@@ -72,15 +72,14 @@ export async function generateCleanImage(
   prompt: string,
   aspectRatio: string,
   referenceImages: ReferenceImage[] = [],
-  // Off when a reference is the user's own product photo — its genuine branding would be
-  // flagged and every attempt rejected.
-  checkMarks = true,
+  // The client's real product photos among the references — their genuine branding is allowed
+  // through the check instead of getting every attempt rejected.
+  allowedMarksFrom: ReferenceImage[] = [],
 ): Promise<GeneratedImage & { clean: boolean }> {
   let image = await generateImage(prompt, aspectRatio, referenceImages);
-  if (!checkMarks) return { ...image, clean: true };
 
   for (let attempt = 1; ; attempt++) {
-    const { clean, findings } = await checkForUnwantedMarks(image.imageBytes, image.mimeType);
+    const { clean, findings } = await checkForUnwantedMarks(image.imageBytes, image.mimeType, allowedMarksFrom);
     if (clean) return { ...image, clean: true };
     console.warn(`[image-gen] attempt ${attempt}/${MAX_CLEAN_ATTEMPTS} rejected — unwanted marks:`, findings.join("; "));
     if (attempt === MAX_CLEAN_ATTEMPTS) return { ...image, clean: false };

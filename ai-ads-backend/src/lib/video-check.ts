@@ -10,9 +10,9 @@ const genAI = env.googleCloudProjectId
 // A clean keyframe isn't enough: Veo can paint marks in while animating (seen in testing — a logo
 // appeared on a runner's leggings that wasn't in the starting frame). Checks a few frames across
 // the clip with the same vision check used for images.
-export async function findMarksInVideo(clip: Buffer): Promise<string[]> {
+export async function findMarksInVideo(clip: Buffer, allowedFrom: { imageBytes: string; mimeType: string }[] = []): Promise<string[]> {
   const frames = await sampleFrames(clip);
-  const results = await Promise.all(frames.map((frame) => checkForUnwantedMarks(frame.toString("base64"), "image/png")));
+  const results = await Promise.all(frames.map((frame) => checkForUnwantedMarks(frame.toString("base64"), "image/png", allowedFrom)));
   return results.flatMap((r) => r.findings);
 }
 
