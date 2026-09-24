@@ -136,6 +136,8 @@ export function Sidebar() {
   const [account, setAccount] = useState<Account | null>(null);
   const [products, setProducts] = useState<Product[] | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Who's signed in: the Google profile name, else the part of the email before "@".
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [features, setFeatures] = useState<Features | null>(null);
   const [quickCreating, setQuickCreating] = useState<CreateTarget | null>(null);
   // Which "Create ads" categories are expanded in place.
@@ -164,6 +166,9 @@ export function Sidebar() {
       .auth.getUser()
       .then(({ data }) => {
         setAvatarUrl(data.user?.user_metadata?.avatar_url ?? data.user?.user_metadata?.picture ?? null);
+        setDisplayName(
+          data.user?.user_metadata?.full_name ?? data.user?.user_metadata?.name ?? data.user?.email?.split("@")[0] ?? null,
+        );
       });
   }, []);
 
@@ -327,7 +332,7 @@ export function Sidebar() {
         <Link
           href="/account"
           className={clsx(
-            "flex h-10 flex-1 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3",
+            "flex min-h-10 flex-1 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3 sm:py-1.5",
             pathname === "/account"
               ? "bg-button-bg text-button-fg"
               : "text-muted hover:bg-white/5 hover:text-foreground",
@@ -340,15 +345,20 @@ export function Sidebar() {
             <CircleUserRound size={16} className="shrink-0" />
           )}
           <span className="hidden min-w-0 flex-1 sm:flex sm:flex-col sm:items-start sm:leading-tight">
-            <span className="truncate">Account</span>
+            <span className="max-w-full truncate">{displayName ?? "Account"}</span>
             {account && (
-              <span
-                className={clsx(
-                  "truncate text-[10px] font-normal",
-                  pathname === "/account" ? "text-button-fg/70" : "text-muted",
-                )}
-              >
-                {account.account_type === "organisation" ? "Organisation" : "Individual"}
+              <span className="mt-0.5 flex items-center gap-1.5">
+                <span
+                  className={clsx(
+                    "truncate text-[10px] font-bold",
+                    pathname === "/account" ? "text-button-fg/80" : "text-foreground/80",
+                  )}
+                >
+                  {account.account_type === "organisation" ? "Organisation" : "Individual"}
+                </span>
+                <span className={clsx("plan-pill", account.plan === "pro" ? "plan-pill-pro" : "plan-pill-free")}>
+                  {account.plan === "pro" ? "Pro" : "Free"}
+                </span>
               </span>
             )}
           </span>

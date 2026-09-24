@@ -261,3 +261,55 @@ body {
   );
 }
 
+
+/* Plan badge in the sidebar: a small pill with a light sweep passing across it. Pro gets a warm
+   gold-to-violet fill; Free a quiet silver one. Honors reduced-motion (no sweep). */
+.plan-pill {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 1px 7px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+.plan-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.65) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: plan-shine 3.2s ease-in-out infinite;
+}
+.plan-pill-pro {
+  color: #1a1206;
+  background: linear-gradient(120deg, #f7d774, #f0a93b 45%, #c77dff);
+  box-shadow: 0 0 10px rgba(240, 169, 59, 0.35);
+}
+.plan-pill-free {
+  color: var(--foreground);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-strong);
+}
+.light .plan-pill-free {
+  background: linear-gradient(120deg, rgba(10, 10, 11, 0.08), rgba(10, 10, 11, 0.03));
+}
+@keyframes plan-shine {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-pill::after {
+    animation: none;
+    display: none;
+  }
+}

@@ -15,6 +15,16 @@ const DRAFT_TYPE_LABEL: Record<DraftPrompt["projectType"], string> = {
 
 type Mode = "sign-in" | "sign-up";
 
+const DISABLED_MESSAGE = "Your account has been disabled. If you think this is a mistake, please contact support.";
+
+// Supabase's raw auth errors, reworded where a user needs a clearer message.
+function friendlyAuthError(message: string): string {
+  if (/banned/i.test(message)) return DISABLED_MESSAGE;
+  if (/invalid login credentials/i.test(message)) return "That email and password don't match. Please try again.";
+  if (/email not confirmed/i.test(message)) return "Please confirm your email first — check your inbox for the link.";
+  return message;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -33,7 +43,15 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Disabled accounts: redirected here after being signed out (?disabled=1), or refused by Supabase
+  // at sign-in (email: "User is banned"; Google: sent back with ?error_description=...).
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get("disabled") === "1"
+      ? DISABLED_MESSAGE
+      : searchParams.get("error_description")
+        ? friendlyAuthError(searchParams.get("error_description")!)
+        : null,
+  );
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [exchangingCode, setExchangingCode] = useState(Boolean(code));
   const [draft, setDraft] = useState<DraftPrompt | null>(null);
@@ -49,7 +67,7 @@ function LoginForm() {
     const supabase = createClient();
     supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
       if (error) {
-        setError(error.message);
+        setError(friendlyAuthError(error.message));
         setExchangingCode(false);
         return;
       }
@@ -67,7 +85,7 @@ function LoginForm() {
     });
     // On success the browser navigates away to Google immediately — only a failure to even
     // start the redirect reaches this line.
-    if (error) setError(error.message);
+    if (error) setError(friendlyAuthError(error.message));
   }
 
   async function handleSubmit() {
@@ -104,7 +122,7 @@ function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setSubmitting(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error.message));
       return;
     }
     router.push("/onboarding");

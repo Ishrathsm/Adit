@@ -105,6 +105,9 @@ export interface BrandKitInput {
   brandRules: string;
 }
 
+// Must match the backend's disabled-account response (ai-ads-backend/src/middleware/auth.ts).
+const ACCOUNT_DISABLED_ERROR = "this account has been disabled";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const supabase = createClient();
   const {
@@ -120,6 +123,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   const data = await res.json().catch(() => ({}));
+  // An admin disabled this account while the user was signed in (their token is still valid until
+  // it expires) — sign them out and explain on the login page instead of failing call by call.
+  if (res.status === 403 && data.error === ACCOUNT_DISABLED_ERROR && typeof window !== "undefined") {
+    await supabase.auth.signOut();
+    // Full reload on purpose: drops every piece of in-memory app state along with the session.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login?disabled=1";
+    throw new Error(data.error);
+  }
   if (!res.ok) {
     throw new Error(data.error ?? `Request failed with status ${res.status}`);
   }
@@ -225,6 +237,15 @@ export async function uploadLogo(productId: string, file: File): Promise<{ logoU
     body: formData,
   });
   const data = await res.json().catch(() => ({}));
+  // An admin disabled this account while the user was signed in (their token is still valid until
+  // it expires) — sign them out and explain on the login page instead of failing call by call.
+  if (res.status === 403 && data.error === ACCOUNT_DISABLED_ERROR && typeof window !== "undefined") {
+    await supabase.auth.signOut();
+    // Full reload on purpose: drops every piece of in-memory app state along with the session.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login?disabled=1";
+    throw new Error(data.error);
+  }
   if (!res.ok) {
     throw new Error(data.error ?? `Request failed with status ${res.status}`);
   }
@@ -521,6 +542,15 @@ export async function uploadStoryboardReferenceImage(file: File): Promise<{ refe
     body: formData,
   });
   const data = await res.json().catch(() => ({}));
+  // An admin disabled this account while the user was signed in (their token is still valid until
+  // it expires) — sign them out and explain on the login page instead of failing call by call.
+  if (res.status === 403 && data.error === ACCOUNT_DISABLED_ERROR && typeof window !== "undefined") {
+    await supabase.auth.signOut();
+    // Full reload on purpose: drops every piece of in-memory app state along with the session.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login?disabled=1";
+    throw new Error(data.error);
+  }
   if (!res.ok) {
     throw new Error(data.error ?? `Request failed with status ${res.status}`);
   }
