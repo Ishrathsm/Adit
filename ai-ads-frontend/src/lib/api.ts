@@ -265,11 +265,74 @@ export const STORYBOARD_ASPECT_RATIOS = [
 ] as const;
 export type StoryboardAspectRatio = (typeof STORYBOARD_ASPECT_RATIOS)[number]["value"];
 
-export const STORYBOARD_SHOT_DURATIONS = [4, 6, 8] as const;
-export type StoryboardShotDuration = (typeof STORYBOARD_SHOT_DURATIONS)[number];
+// Creative brief for a video ad — mirrors ai-ads-backend/src/lib/creative-brief.ts.
+const END_CARD_SECONDS = 2.5;
+export const AD_LENGTHS = [15, 20, 30] as const;
+export type AdLength = (typeof AD_LENGTHS)[number];
 
-export const STORYBOARD_SHOT_COUNTS = [2, 3, 4] as const;
-export type StoryboardShotCount = (typeof STORYBOARD_SHOT_COUNTS)[number];
+export const AD_TONES = [
+  { value: "premium", label: "Premium & minimal" },
+  { value: "warm", label: "Warm & emotional" },
+  { value: "bold", label: "Bold & energetic" },
+  { value: "playful", label: "Playful" },
+  { value: "trustworthy", label: "Calm & trustworthy" },
+] as const;
+export type AdTone = (typeof AD_TONES)[number]["value"];
+
+export const AD_LOOKS = [
+  { value: "photoreal", label: "Photoreal" },
+  { value: "cinematic", label: "Stylized cinematic" },
+  { value: "surreal", label: "Surreal / effects" },
+] as const;
+export type AdLook = (typeof AD_LOOKS)[number]["value"];
+
+export const AD_PACINGS = [
+  { value: "calm", label: "Calm" },
+  { value: "balanced", label: "Balanced" },
+  { value: "fast", label: "Fast" },
+] as const;
+export type AdPacing = (typeof AD_PACINGS)[number]["value"];
+
+export const VOICEOVER_LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "hi", label: "Hindi" },
+  { value: "te", label: "Telugu" },
+  { value: "ta", label: "Tamil" },
+] as const;
+export type VoiceoverLanguage = (typeof VOICEOVER_LANGUAGES)[number]["value"];
+export type VoiceGender = "female" | "male";
+
+export const MAX_ON_SCREEN_LINES = 4;
+
+export interface CreativeBrief {
+  lengthSeconds: AdLength;
+  tone: AdTone;
+  look: AdLook;
+  pacing: AdPacing;
+  audience?: string | null;
+  keyMessage?: string | null;
+  mustShow?: string | null;
+  avoid?: string | null;
+  brandName?: string | null;
+  contactLine?: string | null;
+  onScreenText?: string[];
+  voiceover?: boolean;
+  voiceoverLanguage?: VoiceoverLanguage;
+  voiceGender?: VoiceGender;
+  voiceoverScript?: string | null;
+}
+
+// Same limit the backend enforces on a pasted voiceover (spoken pace x the ad's footage time).
+export function maxVoiceoverWords(lengthSeconds: AdLength): number {
+  return Math.floor((lengthSeconds - END_CARD_SECONDS) * 2.3 * 1.1);
+}
+
+// Same shot plan the backend derives from length + pacing (for the form's preview copy).
+const TARGET_CUT_SECONDS: Record<AdPacing, number> = { calm: 4.2, balanced: 3, fast: 2.4 };
+export function plannedShotCount(brief: Pick<CreativeBrief, "lengthSeconds" | "pacing">): number {
+  const footage = brief.lengthSeconds - END_CARD_SECONDS;
+  return Math.min(8, Math.max(3, Math.round(footage / TARGET_CUT_SECONDS[brief.pacing])));
+}
 
 export interface Storyboard {
   id: string;
@@ -280,6 +343,8 @@ export interface Storyboard {
   aspect_ratio: string;
   reference_image_url: string | null;
   reference_image_role: ReferenceImageRole | null;
+  look_sheet: string | null;
+  creative_brief: CreativeBrief | null;
   status: StoryboardStatus;
   output_url: string | null;
   error: string | null;
@@ -303,8 +368,7 @@ export interface StoryboardShot {
 
 export interface CreateStoryboardOptions {
   aspectRatio: StoryboardAspectRatio;
-  shotCount: StoryboardShotCount;
-  shotDurationSeconds: StoryboardShotDuration;
+  brief: CreativeBrief;
   referenceImageUrl?: string;
   referenceImageRole?: ReferenceImageRole;
 }

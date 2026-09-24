@@ -12,14 +12,24 @@ import {
   selectShotChoice,
   uploadStoryboardReferenceImage,
   STORYBOARD_ASPECT_RATIOS,
-  STORYBOARD_SHOT_COUNTS,
-  STORYBOARD_SHOT_DURATIONS,
+  AD_LENGTHS,
+  AD_LOOKS,
+  AD_PACINGS,
+  AD_TONES,
+  MAX_ON_SCREEN_LINES,
+  VOICEOVER_LANGUAGES,
+  maxVoiceoverWords,
+  plannedShotCount,
+  type VoiceGender,
+  type VoiceoverLanguage,
+  type AdLength,
+  type AdLook,
+  type AdPacing,
+  type AdTone,
   type ReferenceImageRole,
   type Storyboard,
   type StoryboardAspectRatio,
   type StoryboardShot,
-  type StoryboardShotCount,
-  type StoryboardShotDuration,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
@@ -64,6 +74,8 @@ function mockStoryboard(status: Storyboard["status"], shotCount: number): Storyb
     aspect_ratio: "9:16",
     reference_image_url: null,
     reference_image_role: null,
+    look_sheet: null,
+    creative_brief: null,
     status,
     output_url: status === "completed" ? MOCK_VIDEO_URL : null,
     error: null,
@@ -85,8 +97,26 @@ export default function StoryboardPage() {
 
   const [concept, setConcept] = useState("");
   const [aspectRatio, setAspectRatio] = useState<StoryboardAspectRatio>("9:16");
-  const [shotDurationSeconds, setShotDurationSeconds] = useState<StoryboardShotDuration>(4);
-  const [shotCount, setShotCount] = useState<StoryboardShotCount>(3);
+  // Creative brief — the ad's treatment adapts to the brand instead of one house style.
+  const [lengthSeconds, setLengthSeconds] = useState<AdLength>(20);
+  const [tone, setTone] = useState<AdTone>("premium");
+  const [look, setLook] = useState<AdLook>("photoreal");
+  const [pacing, setPacing] = useState<AdPacing>("balanced");
+  const [audience, setAudience] = useState("");
+  const [keyMessage, setKeyMessage] = useState("");
+  const [mustShow, setMustShow] = useState("");
+  const [avoid, setAvoid] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [contactLine, setContactLine] = useState("");
+  const [onScreenText, setOnScreenText] = useState<string[]>(["", ""]);
+  const [voiceover, setVoiceover] = useState(false);
+  const [voiceoverLanguage, setVoiceoverLanguage] = useState<VoiceoverLanguage>("en");
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
+  const [voiceoverScript, setVoiceoverScript] = useState("");
+  const scriptWords = voiceoverScript.trim() ? voiceoverScript.trim().split(/\s+/).length : 0;
+  const maxScriptWords = maxVoiceoverWords(lengthSeconds);
+  const scriptTooLong = voiceover && scriptWords > maxScriptWords;
+  const shotCount = plannedShotCount({ lengthSeconds, pacing });
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImageRole, setReferenceImageRole] = useState<ReferenceImageRole>("subject");
   const [creating, setCreating] = useState(false);
@@ -147,8 +177,23 @@ export default function StoryboardPage() {
       }
       const { storyboard, shots } = await createStoryboard(id, concept.trim(), {
         aspectRatio,
-        shotCount,
-        shotDurationSeconds,
+        brief: {
+          lengthSeconds,
+          tone,
+          look,
+          pacing,
+          audience: audience.trim() || null,
+          keyMessage: keyMessage.trim() || null,
+          mustShow: mustShow.trim() || null,
+          avoid: avoid.trim() || null,
+          brandName: brandName.trim() || null,
+          contactLine: contactLine.trim() || null,
+          onScreenText: onScreenText.map((line) => line.trim()).filter(Boolean),
+          voiceover,
+          voiceoverLanguage,
+          voiceGender,
+          voiceoverScript: voiceover ? voiceoverScript.trim() || null : null,
+        },
         referenceImageUrl,
         referenceImageRole: referenceImageUrl ? referenceImageRole : undefined,
       });
@@ -215,8 +260,9 @@ export default function StoryboardPage() {
                 className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
               />
               <p className="text-xs text-muted">
-                We&apos;ll split this into {shotCount} shots ({shotDurationSeconds}s each) and generate 2 visual
-                choices per shot, one shot at a time as you pick.
+                We&apos;ll write a {lengthSeconds}s, {shotCount}-shot script in the tone and look you choose below,
+                generate 2 keyframes per shot and auto-pick the best (you can swap any), animate each shot, and finish
+                with a branded end card.
               </p>
             </div>
 
@@ -275,42 +321,146 @@ export default function StoryboardPage() {
             </div>
 
             <div className="rgb-border flex flex-col gap-2 p-5">
-              <label className="text-sm font-medium">Shot duration</label>
-              <div className="flex gap-2">
-                {STORYBOARD_SHOT_DURATIONS.map((duration) => (
-                  <button
-                    key={duration}
-                    type="button"
-                    disabled={creating}
-                    onClick={() => setShotDurationSeconds(duration)}
-                    className={pillClass(shotDurationSeconds === duration)}
-                  >
-                    {duration}s
+              <label className="text-sm font-medium">Ad length</label>
+              <div className="flex flex-wrap gap-2">
+                {AD_LENGTHS.map((length) => (
+                  <button key={length} type="button" disabled={creating} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
+                    {length}s
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="rgb-border flex flex-col gap-2 p-5">
-              <label className="text-sm font-medium">Number of shots</label>
-              <div className="flex gap-2">
-                {STORYBOARD_SHOT_COUNTS.map((count) => (
-                  <button
-                    key={count}
-                    type="button"
-                    disabled={creating}
-                    onClick={() => setShotCount(count)}
-                    className={pillClass(shotCount === count)}
-                  >
-                    {count}
+              <label className="text-sm font-medium">Pacing</label>
+              <div className="flex flex-wrap gap-2">
+                {AD_PACINGS.map((option) => (
+                  <button key={option.value} type="button" disabled={creating} onClick={() => setPacing(option.value)} className={pillClass(pacing === option.value)}>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted">{shotCount} shots, about {((lengthSeconds - 2.5) / shotCount).toFixed(1)}s each</p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">Tone</label>
+              <div className="flex flex-wrap gap-2">
+                {AD_TONES.map((option) => (
+                  <button key={option.value} type="button" disabled={creating} onClick={() => setTone(option.value)} className={pillClass(tone === option.value)}>
+                    {option.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">Look</label>
+              <div className="flex flex-wrap gap-2">
+                {AD_LOOKS.map((option) => (
+                  <button key={option.value} type="button" disabled={creating} onClick={() => setLook(option.value)} className={pillClass(look === option.value)}>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted">Photoreal keeps everything filmable-real. Effects only appear with Surreal.</p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">Audio</label>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={creating} onClick={() => setVoiceover(false)} className={pillClass(!voiceover)}>
+                  Music only
+                </button>
+                <button type="button" disabled={creating} onClick={() => setVoiceover(true)} className={pillClass(voiceover)}>
+                  Music + voiceover
+                </button>
+              </div>
+              {voiceover && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {VOICEOVER_LANGUAGES.map((option) => (
+                      <button key={option.value} type="button" disabled={creating} onClick={() => setVoiceoverLanguage(option.value)} className={pillClass(voiceoverLanguage === option.value)}>
+                        {option.label}
+                      </button>
+                    ))}
+                    <span className="mx-1 self-center text-muted">·</span>
+                    {(["female", "male"] as const).map((gender) => (
+                      <button key={gender} type="button" disabled={creating} onClick={() => setVoiceGender(gender)} className={pillClass(voiceGender === gender)}>
+                        {gender === "female" ? "Female voice" : "Male voice"}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={voiceoverScript}
+                    onChange={(e) => setVoiceoverScript(e.target.value)}
+                    disabled={creating}
+                    rows={3}
+                    placeholder="Paste your voiceover script, or leave empty and we'll write one"
+                    className="resize-none rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                  />
+                  <p className={`text-xs ${scriptTooLong ? "text-red-400" : "text-muted"}`}>
+                    {scriptWords ? `${scriptWords} / ${maxScriptWords} words` : `Up to ${maxScriptWords} words fit a ${lengthSeconds}s ad`}
+                    {scriptTooLong && " — shorten it or pick a longer ad"}
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-muted">No one speaks on camera — music is composed for the ad, and narration is added only if you choose it.</p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">On-screen text <span className="font-normal text-muted">(optional)</span></label>
+              {onScreenText.map((line, index) => (
+                <input
+                  key={index}
+                  value={line}
+                  onChange={(e) => setOnScreenText((lines) => lines.map((l, i) => (i === index ? e.target.value : l)))}
+                  disabled={creating}
+                  maxLength={60}
+                  placeholder={index === 0 ? "CBSE curriculum" : "Smart classrooms"}
+                  className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                />
+              ))}
+              {onScreenText.length < MAX_ON_SCREEN_LINES && (
+                <button type="button" disabled={creating} onClick={() => setOnScreenText((lines) => [...lines, ""])} className="self-start text-xs text-muted underline-offset-2 hover:underline">
+                  + Add a line
+                </button>
+              )}
+              <p className="text-xs text-muted">Shown one line per shot, in order. This is the only text in the film besides the end card.</p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">End card</label>
+              {[
+                { id: "brand-name", label: "Brand name (defaults to your brand kit)", value: brandName, set: setBrandName, placeholder: "Saraswati Vidyalaya" },
+                { id: "key-message", label: "Key message", value: keyMessage, set: setKeyMessage, placeholder: "Admissions open for 2027" },
+                { id: "contact-line", label: "Contact line", value: contactLine, set: setContactLine, placeholder: "Road No. 36, Jubilee Hills, Hyderabad · 040 1234 5678" },
+              ].map((field) => (
+                <div key={field.id} className="flex flex-col gap-1">
+                  <label htmlFor={field.id} className="text-xs text-muted">{field.label}</label>
+                  <input id={field.id} value={field.value} onChange={(e) => field.set(e.target.value)} disabled={creating} maxLength={300} placeholder={field.placeholder} className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50" />
+                </div>
+              ))}
+              <p className="text-xs text-muted">The logo comes from the project&apos;s brand kit.</p>
+            </div>
+
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">Guidance <span className="font-normal text-muted">(optional)</span></label>
+              {[
+                { id: "audience", label: "Audience", value: audience, set: setAudience, placeholder: "Parents of school-age kids in Hyderabad" },
+                { id: "must-show", label: "Must show", value: mustShow, set: setMustShow, placeholder: "Our campus building, students in uniform" },
+                { id: "avoid", label: "Avoid", value: avoid, set: setAvoid, placeholder: "No crowds, no night scenes, no phones" },
+              ].map((field) => (
+                <div key={field.id} className="flex flex-col gap-1">
+                  <label htmlFor={field.id} className="text-xs text-muted">{field.label}</label>
+                  <input id={field.id} value={field.value} onChange={(e) => field.set(e.target.value)} disabled={creating} maxLength={300} placeholder={field.placeholder} className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50" />
+                </div>
+              ))}
+            </div>
           </div>
 
-          <Button onClick={handleCreate} disabled={creating || !concept.trim()} className="self-start">
-            {creating ? (referenceImageFile ? "Uploading reference…" : "Breaking into shots…") : "Create Storyboard"}
+          <Button onClick={handleCreate} disabled={creating || !concept.trim() || scriptTooLong} className="self-start">
+            {creating ? (referenceImageFile ? "Uploading reference…" : "Writing the script…") : "Create Storyboard"}
           </Button>
           {createError && <p className="text-sm text-red-400">{createError}</p>}
 
@@ -356,7 +506,7 @@ export default function StoryboardPage() {
                   {shot.status === "pending" && (
                     <div className="flex items-center gap-2 py-6">
                       {waitingOnPrevious ? (
-                        <p className="text-xs text-muted">Pick shot {index} first.</p>
+                        <p className="text-xs text-muted">Waiting for shot {index}…</p>
                       ) : (
                         <>
                           <Loader2 size={16} className="animate-spin text-muted" />
@@ -389,6 +539,25 @@ export default function StoryboardPage() {
                           />
                         </button>
                       ))}
+                    </div>
+                  )}
+
+                  {locked && shot.choice_urls!.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted">Swap keyframe:</p>
+                      {shot.choice_urls!.map((url, choiceIndex) =>
+                        choiceIndex === shot.selected_choice ? null : (
+                          <button
+                            key={choiceIndex}
+                            onClick={() => handleSelect(shot, choiceIndex)}
+                            title="Use this keyframe instead — regenerates this shot's video"
+                            className="overflow-hidden rounded-md border border-border-subtle transition-colors hover:border-border-strong"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
+                            <img src={url} alt={`Alternative ${choiceIndex + 1}`} className="h-12 w-12 object-cover" />
+                          </button>
+                        ),
+                      )}
                     </div>
                   )}
 
