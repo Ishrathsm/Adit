@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { CheckCircle2, Download, Loader2, Upload, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
@@ -18,6 +18,10 @@ import {
   AD_LOOKS,
   AD_PACINGS,
   AD_TONES,
+  SINGLE_SHOT_SECONDS,
+  footageSeconds,
+  type AdFormat,
+  type SingleShotSeconds,
   MAX_ON_SCREEN_LINES,
   VOICEOVER_LANGUAGES,
   maxVoiceoverWords,
@@ -103,6 +107,10 @@ export default function StoryboardPage() {
   const [concept, setConcept] = useState("");
   const [aspectRatio, setAspectRatio] = useState<StoryboardAspectRatio>("9:16");
   // Creative brief — the ad's treatment adapts to the brand instead of one house style.
+  // ?mode=quick (the project page's Text -> Video) starts on the single-shot format.
+  const searchParams = useSearchParams();
+  const [format, setFormat] = useState<AdFormat>(searchParams.get("mode") === "quick" ? "single" : "ad");
+  const [singleSeconds, setSingleSeconds] = useState<SingleShotSeconds>(8);
   const [lengthSeconds, setLengthSeconds] = useState<AdLength>(20);
   const [tone, setTone] = useState<AdTone>("premium");
   const [look, setLook] = useState<AdLook>("photoreal");
@@ -119,9 +127,10 @@ export default function StoryboardPage() {
   const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
   const [voiceoverScript, setVoiceoverScript] = useState("");
   const scriptWords = voiceoverScript.trim() ? voiceoverScript.trim().split(/\s+/).length : 0;
-  const maxScriptWords = maxVoiceoverWords(lengthSeconds);
+  const footage = footageSeconds({ format, singleSeconds, lengthSeconds });
+  const maxScriptWords = maxVoiceoverWords(footage);
   const scriptTooLong = voiceover && scriptWords > maxScriptWords;
-  const shotCount = plannedShotCount({ lengthSeconds, pacing });
+  const shotCount = plannedShotCount({ format, lengthSeconds, pacing });
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImageRole, setReferenceImageRole] = useState<ReferenceImageRole>("subject");
   const [creating, setCreating] = useState(false);
@@ -221,6 +230,8 @@ export default function StoryboardPage() {
         assets: uploadedAssets,
         characterSheet,
         brief: {
+          format,
+          singleSeconds,
           lengthSeconds,
           tone,
           look,
@@ -304,9 +315,9 @@ export default function StoryboardPage() {
                 className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
               />
               <p className="text-xs text-muted">
-                We&apos;ll write a {lengthSeconds}s, {shotCount}-shot script in the tone and look you choose below,
-                generate 2 keyframes per shot and auto-pick the best (you can swap any), animate each shot, and finish
-                with a branded end card.
+                {format === "single"
+                  ? `We'll plan one continuous ${singleSeconds}s shot in the tone and look you choose below, generate 2 keyframes and auto-pick the best (you can swap it), animate it, and finish with a branded end card.`
+                  : `We'll write a ${lengthSeconds}s, ${shotCount}-shot script in the tone and look you choose below, generate 2 keyframes per shot and auto-pick the best (you can swap any), animate each shot, and finish with a branded end card.`}
               </p>
             </div>
 
@@ -364,28 +375,56 @@ export default function StoryboardPage() {
               )}
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5">
-              <label className="text-sm font-medium">Ad length</label>
+            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+              <label className="text-sm font-medium">Format</label>
               <div className="flex flex-wrap gap-2">
-                {AD_LENGTHS.map((length) => (
-                  <button key={length} type="button" disabled={creating} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
-                    {length}s
-                  </button>
-                ))}
+                <button type="button" disabled={creating} onClick={() => setFormat("ad")} className={pillClass(format === "ad")}>
+                  Full ad (multiple shots)
+                </button>
+                <button type="button" disabled={creating} onClick={() => setFormat("single")} className={pillClass(format === "single")}>
+                  Quick single shot
+                </button>
               </div>
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5">
-              <label className="text-sm font-medium">Pacing</label>
-              <div className="flex flex-wrap gap-2">
-                {AD_PACINGS.map((option) => (
-                  <button key={option.value} type="button" disabled={creating} onClick={() => setPacing(option.value)} className={pillClass(pacing === option.value)}>
-                    {option.label}
-                  </button>
-                ))}
+            {format === "single" ? (
+              <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+                <label className="text-sm font-medium">Shot length</label>
+                <div className="flex flex-wrap gap-2">
+                  {SINGLE_SHOT_SECONDS.map((seconds) => (
+                    <button key={seconds} type="button" disabled={creating} onClick={() => setSingleSeconds(seconds)} className={pillClass(singleSeconds === seconds)}>
+                      {seconds}s
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted">Plus a short branded end card.</p>
               </div>
-              <p className="text-xs text-muted">{shotCount} shots, about {((lengthSeconds - 2.5) / shotCount).toFixed(1)}s each</p>
-            </div>
+            ) : (
+              <>
+              <div className="rgb-border flex flex-col gap-2 p-5">
+                <label className="text-sm font-medium">Ad length</label>
+                <div className="flex flex-wrap gap-2">
+                  {AD_LENGTHS.map((length) => (
+                    <button key={length} type="button" disabled={creating} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
+                      {length}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rgb-border flex flex-col gap-2 p-5">
+                <label className="text-sm font-medium">Pacing</label>
+                <div className="flex flex-wrap gap-2">
+                  {AD_PACINGS.map((option) => (
+                    <button key={option.value} type="button" disabled={creating} onClick={() => setPacing(option.value)} className={pillClass(pacing === option.value)}>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted">{shotCount} shots, about {((lengthSeconds - 2.5) / shotCount).toFixed(1)}s each</p>
+              </div>
+              </>
+            )}
 
             <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
               <label className="text-sm font-medium">Tone</label>
@@ -444,7 +483,7 @@ export default function StoryboardPage() {
                     className="resize-none rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
                   />
                   <p className={`text-xs ${scriptTooLong ? "text-red-400" : "text-muted"}`}>
-                    {scriptWords ? `${scriptWords} / ${maxScriptWords} words` : `Up to ${maxScriptWords} words fit a ${lengthSeconds}s ad`}
+                    {scriptWords ? `${scriptWords} / ${maxScriptWords} words` : `Up to ${maxScriptWords} words fit ${Math.round(footage)}s of footage`}
                     {scriptTooLong && " — shorten it or pick a longer ad"}
                   </p>
                 </div>

@@ -30,41 +30,13 @@ import {
   getLatestJobForProject,
   getProject,
   listTemplates,
-  VIDEO_DURATIONS,
   type AspectRatio,
   type Job,
-  type JobStatus,
   type Project,
   type Template,
-  type VideoDuration,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
-
-// Reuses a video we already generated and paid for — lets you check every UI state
-// (queued/processing/completed/failed) without spending any Veo credits.
-const PREVIEW_VIDEO_URL =
-  "https://cbjnnyfevxwktfmxdtqi.supabase.co/storage/v1/object/public/generated-media/8aa5874d-e00c-4336-8050-b1189f79522e.mp4";
-
-function mockJob(status: JobStatus): Job {
-  return {
-    id: `preview-${status}`,
-    project_id: "preview",
-    status,
-    prompt: "Preview job — not a real generation",
-    output_type: "video",
-    aspect_ratio: "16:9",
-    duration_seconds: 8,
-    tagline: null,
-    template_id: null,
-    output_url: status === "completed" ? PREVIEW_VIDEO_URL : null,
-    error: status === "failed" ? "Simulated failure for UI preview — not a real error." : null,
-    reference_image_url: null,
-    reference_image_role: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-}
 
 function chipClass(active: boolean) {
   return `rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
@@ -83,7 +55,6 @@ export default function ProjectDetailPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
-  const [durationSeconds, setDurationSeconds] = useState<VideoDuration>(8);
   // Poster brief: structured copy + style + guidance + reference photos.
   const [headline, setHeadline] = useState("");
   const [subline, setSubline] = useState("");
@@ -191,7 +162,8 @@ export default function ProjectDetailPage() {
           }
         : undefined;
       const { job: newJob } = await createJob(id, prompt.trim(), {
-        ...(isPoster ? { aspectRatio, posterBrief } : { durationSeconds }),
+        aspectRatio,
+        posterBrief,
         templateId: templateId ?? undefined,
         ...(referenceImageUrl ? { referenceImageUrl, referenceImageRole: "subject" as const } : {}),
       });
@@ -219,13 +191,16 @@ export default function ProjectDetailPage() {
 
           {!isPoster && (
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rgb-border flex flex-col gap-2 p-4">
+              <button
+                onClick={() => router.push(`/projects/${id}/storyboard?mode=quick`)}
+                className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90"
+              >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong">
                   <Sparkles size={14} />
                 </div>
                 <p className="text-sm font-medium">Text → Video</p>
-                <p className="text-xs text-muted">One prompt, straight to a finished clip.</p>
-              </div>
+                <p className="text-xs text-muted">One quick shot with music and a branded end card.</p>
+              </button>
               <button
                 onClick={() => router.push(`/projects/${id}/storyboard`)}
                 className="rgb-border flex flex-col gap-2 p-4 text-left transition-opacity hover:opacity-90"
@@ -246,6 +221,16 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {/* Video is made on the storyboard page now (quick single shot or full ad); this page only
+              shows the latest older-style quick video, if there is one. */}
+          {!isPoster && job && (
+            <div className="rgb-border mt-8 flex flex-col gap-3 p-5">
+              <p className="text-sm font-medium">Latest quick video</p>
+              <JobStatusCard job={job} />
+            </div>
+          )}
+
+          {isPoster && (
           <div className="rgb-border mt-8 grid divide-y divide-border-subtle md:grid-cols-2 md:divide-x md:divide-y-0">
             <div className="flex flex-col gap-4 p-5">
               {canUseReference && (
@@ -488,30 +473,6 @@ export default function ProjectDetailPage() {
                 </>
               )}
 
-              {!isPoster && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Duration</label>
-                  <div className="flex flex-wrap gap-2">
-                    {VIDEO_DURATIONS.map((seconds) => (
-                      <button
-                        key={seconds}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => setDurationSeconds(seconds)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
-                          durationSeconds === seconds
-                            ? "border-transparent bg-button-bg text-button-fg"
-                            : "border-border-strong text-foreground hover:bg-white/5"
-                        }`}
-                      >
-                        {seconds}s
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted">8s is Veo&apos;s max for a single generation.</p>
-                </div>
-              )}
-
               <Button
                 onClick={handleGenerate}
                 disabled={busy || !prompt.trim() || posterAssets.some((a) => !a.name.trim())}
@@ -523,21 +484,6 @@ export default function ProjectDetailPage() {
             </div>
 
             <div className="flex flex-col gap-4 p-5">
-              {process.env.NODE_ENV !== "production" && !isPoster && (
-                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border-strong p-3 text-xs text-muted">
-                  <span className="font-medium">Preview (no credits used):</span>
-                  {(["queued", "processing", "completed", "failed"] satisfies JobStatus[]).map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => setJob(mockJob(status))}
-                      className="rounded-full border border-border-strong px-3 py-1 transition-colors hover:bg-white/5"
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {job ? (
                 <JobStatusCard job={job} />
               ) : (
@@ -551,6 +497,7 @@ export default function ProjectDetailPage() {
               )}
             </div>
           </div>
+          )}
         </>
       )}
     </main>

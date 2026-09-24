@@ -323,7 +323,14 @@ export type VoiceGender = "female" | "male";
 
 export const MAX_ON_SCREEN_LINES = 4;
 
+// "ad": multi-shot film; "single": one continuous 4/6/8s shot (the quick Text -> Video).
+export type AdFormat = "ad" | "single";
+export const SINGLE_SHOT_SECONDS = [4, 6, 8] as const;
+export type SingleShotSeconds = (typeof SINGLE_SHOT_SECONDS)[number];
+
 export interface CreativeBrief {
+  format?: AdFormat;
+  singleSeconds?: SingleShotSeconds;
   lengthSeconds: AdLength;
   tone: AdTone;
   look: AdLook;
@@ -341,14 +348,20 @@ export interface CreativeBrief {
   voiceoverScript?: string | null;
 }
 
-// Same limit the backend enforces on a pasted voiceover (spoken pace x the ad's footage time).
-export function maxVoiceoverWords(lengthSeconds: AdLength): number {
-  return Math.floor((lengthSeconds - END_CARD_SECONDS) * 2.3 * 1.1);
+// Seconds of footage (before the end card) — what a voiceover has to fit into.
+export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds">): number {
+  return brief.format === "single" ? (brief.singleSeconds ?? 8) : brief.lengthSeconds - END_CARD_SECONDS;
+}
+
+// Same limit the backend enforces on a pasted voiceover (spoken pace x footage time).
+export function maxVoiceoverWords(footage: number): number {
+  return Math.floor(footage * 2.3 * 1.1);
 }
 
 // Same shot plan the backend derives from length + pacing (for the form's preview copy).
 const TARGET_CUT_SECONDS: Record<AdPacing, number> = { calm: 4.2, balanced: 3, fast: 2.4 };
-export function plannedShotCount(brief: Pick<CreativeBrief, "lengthSeconds" | "pacing">): number {
+export function plannedShotCount(brief: Pick<CreativeBrief, "format" | "lengthSeconds" | "pacing">): number {
+  if (brief.format === "single") return 1;
   const footage = brief.lengthSeconds - END_CARD_SECONDS;
   return Math.min(8, Math.max(3, Math.round(footage / TARGET_CUT_SECONDS[brief.pacing])));
 }
