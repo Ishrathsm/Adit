@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { type PosterBrief, parsePosterBrief } from "../lib/poster-brief";
-import type { AuthedRequest } from "../middleware/auth";
+import { type AuthedRequest, checkFeature } from "../middleware/auth";
 import { enqueueGenerationJob } from "../lib/queue";
 import { createJob, getJob, type ReferenceImageRole } from "../lib/jobs";
 import { getProject } from "../lib/projects";
@@ -55,6 +55,7 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
     }
 
     const outputType = project.type === "poster" ? "poster" : "video";
+    if (!checkFeature(req, res, outputType === "poster" ? "poster" : "video_quick", outputType === "poster" ? "Posters" : "Quick video")) return;
 
     let posterBrief: PosterBrief | null = null;
     if (outputType === "poster" && rawPosterBrief !== undefined && rawPosterBrief !== null) {
@@ -64,6 +65,7 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
         res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
         return;
       }
+      if (posterBrief.assets.length && !checkFeature(req, res, "reference_assets", "Reference assets")) return;
     }
 
     if (outputType === "video" && aspectRatio !== undefined && !VIDEO_ASPECT_RATIOS.includes(aspectRatio)) {

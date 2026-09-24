@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import type { AuthedRequest } from "../middleware/auth";
+import { type AuthedRequest, checkFeature } from "../middleware/auth";
 import { getProject } from "../lib/projects";
 import { generateAdScript } from "../lib/text-gen";
 import { type CreativeBrief, parseCreativeBrief, planShots } from "../lib/creative-brief";
@@ -85,6 +85,13 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     return;
   }
   const wantsCharacterSheet = characterSheet === true;
+
+  // Access control: each part of the brief maps to a feature switch (plan defaults + admin overrides).
+  if (!checkFeature(req, res, brief.format === "single" ? "video_quick" : "video_ad", brief.format === "single" ? "Quick video" : "Full video ads")) return;
+  if (brief.format === "ad" && brief.lengthSeconds === 30 && !checkFeature(req, res, "long_ads", "30-second ads")) return;
+  if (brief.voiceover && !checkFeature(req, res, "voiceover", "Voiceover")) return;
+  if (assets.length && !checkFeature(req, res, "reference_assets", "Reference assets")) return;
+  if (wantsCharacterSheet && !checkFeature(req, res, "character_sheet", "Character sheet")) return;
 
   try {
     const project = await getProject(req.userId!, projectId);

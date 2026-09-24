@@ -1,13 +1,15 @@
 import { Router } from "express";
 import type { AuthedRequest } from "../middleware/auth";
 import { createAccount, getAccount } from "../lib/accounts";
+import { effectiveFeatures } from "../lib/features";
 
 export const accountRouter = Router();
 
 accountRouter.get("/", async (req: AuthedRequest, res) => {
   try {
     const account = await getAccount(req.userId!);
-    res.json({ account });
+    // Effective feature switches, so the UI can show locked options instead of failing on submit.
+    res.json({ account, features: effectiveFeatures(account) });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

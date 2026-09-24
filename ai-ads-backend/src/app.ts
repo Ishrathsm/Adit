@@ -1,9 +1,10 @@
 import cors from "cors";
 import express from "express";
 import { env } from "./lib/env";
-import { requireAuth } from "./middleware/auth";
+import { requireAdmin, requireAuth } from "./middleware/auth";
 import { rateLimitGenerations } from "./middleware/rate-limit";
 import { accountRouter } from "./routes/account";
+import { adminRouter } from "./routes/admin";
 import { foldersRouter } from "./routes/folders";
 import { healthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
@@ -21,6 +22,7 @@ export function createApp() {
 
   app.use("/health", healthRouter);
   app.use("/api/account", requireAuth, accountRouter);
+  app.use("/api/admin", requireAuth, requireAdmin, adminRouter);
   app.use("/api/folders", requireAuth, foldersRouter);
   app.use("/api/products", requireAuth, productsRouter);
   app.use("/api/projects", requireAuth, projectsRouter);
