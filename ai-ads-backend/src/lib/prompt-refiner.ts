@@ -51,7 +51,11 @@ Non-negotiables:
 - Avoid every default AI-generation tell: waxy/plastic skin, warped hands or limbs, mismatched or dead-eyed gazes, generic gradient-mesh backdrops, dead-center symmetric "product on a table" staging, stock-photo smiling, flat beauty-lighting with no shadow character.
 - Earn a genuine hook: an unexpected angle, a surprising juxtaposition, exaggerated scale, motion frozen mid-action, a bold crop, a visual pun — something a real art director would greenlight because it's interesting, not merely competent.
 - Push materials and light to be specific and tactile (name the exact material and exactly how light catches it) instead of leaning on vague quality adjectives like "high quality" or "stunning."
-- Do not render any text, letters, numbers, or logos into the frame — the brand's logo and tagline are composited on afterward.`;
+- The frame must be completely free of written language and brand marks — the brand's logo and tagline are composited on afterward. Image/video models paint whatever names and words they are given, and a bare "no text" instruction reliably fails, so achieve this through what you write, not by forbidding things:
+  - NEVER write the brand or product name anywhere in your output. Refer to the product only by its physical form ("a running sneaker", "a glass perfume bottle", "a school campus"), never "a <Brand> sneaker".
+  - Describe the product as an original, unbranded design with plain, unmarked surfaces (e.g. "seamless single-color knit upper with smooth, unmarked side panels"), so it cannot default to a famous real product's look — no swooshes, stripes, monograms, or signature silhouettes of real brands.
+  - Never mention signage, posters, banners, billboards, labels, screens, packaging copy, jerseys with numbers, or typography of any kind. If the concept says "sale", "announcement", "poster", or "campaign", express that purely as visual energy and composition — those words must not appear in your output.
+  - Do not list the things to avoid (the words "text", "logo", "lettering" in your output make the model more likely to draw them); describe clean surfaces and backgrounds positively instead.`;
 
   // Posters get a real logo + tagline composited on afterward (see poster-overlay.ts) at fixed,
   // known zones — telling the model exactly where those land (not just "leave some space
@@ -73,7 +77,7 @@ export type ReferenceImageRole = "subject" | "style";
 
 function referenceInstructionBlock(referenceImageRole?: ReferenceImageRole): string {
   if (referenceImageRole === "subject") {
-    return `\n\nA reference image is attached. Every scene must keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this brief.`;
+    return `\n\nA reference image is attached. Every scene must keep the exact same subject/product appearance, materials, colors, and overall visual style as that reference — only the pose, action, framing, and setting should change to match this brief. (The product's own genuine markings in that reference may stay; the plain-unmarked-surfaces rule above applies to everything else in the frame.)`;
   }
   if (referenceImageRole === "style") {
     return `\n\nA style reference image is attached. Match that reference's mood, color palette, lighting character, and overall visual style — but the subject and scene must be an original creation for this brief, not a literal reproduction of whatever is depicted in the reference.`;
@@ -91,12 +95,14 @@ function brandContextBlock(brand?: BrandContext): string {
     ? `\n\nMANDATORY BRAND RULES — non-negotiable creative constraints, not suggestions. Every scene (subject, setting, palette, tone, mood, composition) MUST comply with these, even where they conflict with your own creative instincts or the guidance above:\n"${brand.brandRules}"`
     : "";
 
+  // Name and tagline are context only — any name that reaches the image model gets painted onto
+  // the product. The font is left out entirely: it's only used by the overlay, and a typography
+  // cue in a text-free image just invites lettering.
   const facts = [
-    brand.productName && `Product/brand name: ${brand.productName}`,
-    brand.tagline && `Tagline (for later compositing — do not render as on-image text): ${brand.tagline}`,
+    brand.productName && `Brand name (context only — NEVER write this name in your output): ${brand.productName}`,
+    brand.tagline && `Brand tagline (context for tone only — NEVER quote it in your output): ${brand.tagline}`,
     brand.primaryColor && `Primary brand color: ${brand.primaryColor}`,
     brand.secondaryColor && `Secondary brand color: ${brand.secondaryColor}`,
-    brand.font && `Brand font style cue: ${brand.font}`,
   ].filter(Boolean);
   const factsBlock = facts.length
     ? `\n\nBrand facts to reflect in the scene (weave in naturally — do not just list them):\n${facts.join("\n")}`
@@ -153,13 +159,12 @@ ${brandBlock}
 
 Expand the concept into a JSON object with this exact schema. The character counts in parentheses are per-field targets — hit them, and the total will land in the required ${MIN_CHARS}-${MAX_CHARS} character range; count as you write and trim before responding, this is a hard ceiling, not a suggestion:
 {
-  "subject": "the exact subject — appearance, materials, textures, pose, product details, and what it's doing (~400 chars)",
+  "subject": "the exact subject — appearance, materials, textures, pose, product details as an original design with plain unmarked surfaces, and what it's doing (~470 chars)",
   "composition_camera": "angle, lens choice, depth of field, framing (~280 chars)",
   "lighting_atmosphere": "direction, quality, color temperature, mood (~280 chars)",
-  "background_environment": "setting, set dressing, props (~280 chars)",
+  "background_environment": "setting, set dressing, props — every surface plain and unmarked (~330 chars)",
   "style_medium": "photography/render style, color grading, film stock or quality descriptors (~280 chars)",
-  "aspect_ratio": "${aspectRatio}",
-  "negative_prompt": "a short comma-separated list of what to avoid, from the non-negotiables above (~120 chars)"${brandBlock ? ',\n  "brand_rules": "restated mandatory brand rules, verbatim or near-verbatim (~150 chars)"' : ""}
+  "aspect_ratio": "${aspectRatio}"${brandBlock ? ',\n  "brand_rules": "restated mandatory brand rules, verbatim or near-verbatim (~150 chars)"' : ""}
 }
 ${templateBlock(styleTemplate)}
 
@@ -232,13 +237,12 @@ ${brandContextBlock(brand)}
 
 Expand this shot's brief into a JSON object with this exact schema. The character counts in parentheses are per-field targets — hit them, and the total will land in the required ${MIN_CHARS}-${MAX_CHARS} character range; count as you write and trim before responding, this is a hard ceiling, not a suggestion:
 {
-  "subject": "the exact subject — appearance, materials, textures, pose, product details (~400 chars)",
+  "subject": "the exact subject — appearance, materials, textures, pose, product details as an original design with plain unmarked surfaces (~470 chars)",
   "composition_camera": "angle, lens choice, depth of field, framing (~280 chars)",
   "lighting_atmosphere": "direction, quality, color temperature (~280 chars)",
-  "background_environment": "setting, set dressing, props (~280 chars)",
+  "background_environment": "setting, set dressing, props — every surface plain and unmarked (~330 chars)",
   "style_medium": "photography style, color grading, film stock or quality descriptors — keep this visually consistent with a shot ${shotIndex + 1}-of-${shotCount} position in the same ad, same product, same color story, same setting family unless the concept calls for a scene change (~280 chars)",
-  "aspect_ratio": "${aspectRatio}",
-  "negative_prompt": "a short comma-separated list of what to avoid, from the non-negotiables above (~120 chars)"
+  "aspect_ratio": "${aspectRatio}"
 }
 
 ${JSON_OUTPUT_RULE}`;

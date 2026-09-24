@@ -42,4 +42,7 @@ export const env = {
   // on output quality (brand-rule adherence, actually following the user's brief), worth the
   // extra cost/latency over the budget tier.
   textModel: process.env.TEXT_MODEL ?? "gemini-2.5-pro",
+  // Post-generation check for stray text / real-brand marks in generated images — a yes/no
+  // vision read on every image, so the budget tier is plenty.
+  imageCheckModel: process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",
 };

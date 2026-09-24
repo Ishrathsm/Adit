@@ -3,7 +3,7 @@ import { Worker } from "bullmq";
 import { type GenerationTask, enqueueStoryboardStitch, redisConnection } from "./lib/queue";
 import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
-import { generateImage } from "./lib/image-gen";
+import { generateCleanImage } from "./lib/image-gen";
 import { type BrandContext, refineImagePrompt, refineShotImagePrompt, refineShotVideoPrompt, refineVideoPrompt } from "./lib/prompt-refiner";
 import { applyBrandOverlay } from "./lib/poster-overlay";
 import { getProjectById } from "./lib/projects";
@@ -74,7 +74,13 @@ async function processGenerationJob(jobId: string): Promise<void> {
       template?.template_prompt,
       job.reference_image_role ?? undefined,
     );
-    const image = await generateImage(refinedPrompt, job.aspect_ratio, referenceImage);
+    // A "subject" reference is the user's own product photo — its real branding is expected.
+    const image = await generateCleanImage(
+      refinedPrompt,
+      job.aspect_ratio,
+      referenceImage,
+      job.reference_image_role !== "subject",
+    );
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
     const finalBuffer = await applyBrandOverlay(rawBuffer, {
@@ -154,7 +160,14 @@ async function processShotChoices(shotId: string): Promise<void> {
     );
     const images = await Promise.all(
       Array.from({ length: SHOT_CHOICE_COUNT }, () =>
-        generateImage(refinedPrompt, storyboard.aspect_ratio, referenceImage),
+        // Shot 0's reference is the user's own upload (real branding expected); later shots
+        // reference an earlier generated choice, which should itself be clean.
+        generateCleanImage(
+          refinedPrompt,
+          storyboard.aspect_ratio,
+          referenceImage,
+          !(shot.shot_index === 0 && referenceImageRole === "subject"),
+        ),
       ),
     );
     const urls = await Promise.all(

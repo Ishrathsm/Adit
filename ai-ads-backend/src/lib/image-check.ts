@@ -1,0 +1,54 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import { env } from "./env";
+
+const genAI = env.googleCloudProjectId
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  : null;
+
+export interface MarkCheckResult {
+  clean: boolean;
+  findings: string[];
+}
+
+// Nano Banana doesn't reliably obey "no text/logos" — it paints brand names it was given, fake
+// headline lettering, and real competitors' marks (a Nike swoosh, Adidas stripes) onto products.
+// The brand's own logo/tagline get composited afterward, so anything like that already in the
+// raw image is wrong. This is a cheap vision read used to reject and regenerate those images.
+export async function checkForUnwantedMarks(imageBytes: string, mimeType: string): Promise<MarkCheckResult> {
+  if (!genAI) return { clean: true, findings: [] };
+
+  try {
+    const response = await genAI.models.generateContent({
+      model: env.imageCheckModel,
+      contents: [
+        { inlineData: { data: imageBytes, mimeType } },
+        `Inspect this generated advertising image closely, including small details on products, clothing, props, and backgrounds. List every instance of:
+1. Any written language — letters, words, numbers, or text-like glyphs/pseudo-lettering, however small or partial.
+2. Any logo, emblem, monogram, or recognizable trademark or trade-dress design of a real brand (e.g. a swoosh, three parallel stripes, a signature pattern).
+Ordinary design details that are not text or brand marks (plain seams, stitching, tread patterns, laces, abstract textures) do not count.`,
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            findings: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "One short description per instance found (what and where); empty if none.",
+            },
+          },
+          required: ["findings"],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text ?? "{}") as { findings?: string[] };
+    const findings = Array.isArray(parsed.findings) ? parsed.findings : [];
+    return { clean: findings.length === 0, findings };
+  } catch (err) {
+    // A checker outage shouldn't fail an otherwise-finished generation — let the image through.
+    console.warn("[image-check] check failed, accepting image unchecked:", err instanceof Error ? err.message : err);
+    return { clean: true, findings: [] };
+  }
+}
