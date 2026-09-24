@@ -107,6 +107,22 @@ export async function getStoryboard(userId: string, id: string): Promise<Storybo
   return storyboard;
 }
 
+// The most recent storyboard in a project (owner-scoped), so reopening a video project resumes it.
+export async function getLatestStoryboardForProject(userId: string, projectId: string): Promise<StoryboardRow | null> {
+  const { data, error } = await supabase
+    .from("storyboards")
+    .select("*, projects!inner(user_id)")
+    .eq("project_id", projectId)
+    .eq("projects.user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const { projects: _projects, ...storyboard } = data as StoryboardRow & { projects: unknown };
+  return storyboard;
+}
+
 // Unscoped lookup for internal use (worker), which has no authenticated user context.
 export async function getStoryboardById(id: string): Promise<StoryboardRow | null> {
   const { data, error } = await supabase.from("storyboards").select().eq("id", id).maybeSingle();

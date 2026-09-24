@@ -25,7 +25,10 @@ export async function rateLimitGenerations(req: AuthedRequest, res: Response, ne
   // Fails open (no limiter configured) rather than blocking all generation when the REST
   // credentials aren't set — matches how the rest of this codebase degrades gracefully when
   // optional infra isn't configured yet (see lib/queue.ts, lib/veo.ts).
-  if (!ratelimit) {
+  // Only requests that start generation count — reads (the storyboard page polls every few
+  // seconds) used to count too, so polling alone hit the limit within a minute and the page
+  // silently stopped updating.
+  if (!ratelimit || req.method === "GET") {
     next();
     return;
   }

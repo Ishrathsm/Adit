@@ -12,6 +12,7 @@ import {
   createShots,
   createStoryboard,
   getAsset,
+  getLatestStoryboardForProject,
   getStoryboard,
   listAssets,
   listShots,
@@ -133,6 +134,26 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     }
 
     res.status(201).json({ storyboard, shots, assets: createdAssets });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// Latest storyboard for a project (?projectId=...), or null — used to resume a video project.
+storyboardsRouter.get("/", async (req: AuthedRequest, res) => {
+  const projectId = req.query.projectId;
+  if (typeof projectId !== "string") {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+  try {
+    const storyboard = await getLatestStoryboardForProject(req.userId!, projectId);
+    if (!storyboard) {
+      res.json({ storyboard: null, shots: [], assets: [] });
+      return;
+    }
+    const [shots, assets] = await Promise.all([listShots(storyboard.id), listAssets(storyboard.id)]);
+    res.json({ storyboard, shots, assets });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
