@@ -37,42 +37,38 @@ export default function AccountPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Change password (email + password accounts only). The current password is checked first so a
-  // left-open session can't be used to lock the owner out.
-  const [currentPassword, setCurrentPassword] = useState("");
+  // Password (email + password accounts only): masked by default; "Forgot password?" reveals the
+  // fields to set a new one. Stored passwords are hashed, so the real one can never be shown.
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
+  function closePasswordForm() {
+    setShowPasswordForm(false);
+    setNewPassword("");
+    setConfirmPassword("");
+  }
+
   async function handleChangePassword() {
     setPasswordMessage(null);
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      setPasswordMessage({ ok: false, text: `The new password needs at least ${MIN_PASSWORD_LENGTH} characters.` });
+      setPasswordMessage({ ok: false, text: `Use at least ${MIN_PASSWORD_LENGTH} characters.` });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ ok: false, text: "The new passwords don't match." });
+      setPasswordMessage({ ok: false, text: "The passwords don't match." });
       return;
     }
-    if (!email) return;
     setPasswordSaving(true);
-    const supabase = createClient();
-    const { error: checkError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
-    if (checkError) {
-      setPasswordSaving(false);
-      setPasswordMessage({ ok: false, text: "Your current password isn't right." });
-      return;
-    }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await createClient().auth.updateUser({ password: newPassword });
     setPasswordSaving(false);
     if (error) {
       setPasswordMessage({ ok: false, text: error.message });
       return;
     }
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    closePasswordForm();
     setPasswordMessage({ ok: true, text: "Password updated." });
   }
 
@@ -146,10 +142,11 @@ export default function AccountPage() {
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong">
               <KeyRound size={18} />
             </div>
-            <div>
-              <p className="text-xs text-muted">Signs in with</p>
-              <p className="text-sm font-medium">
-                {providers.length ? providers.map((p) => (p === "google" ? "Google" : p === "email" ? "Email & password" : p)).join(" · ") : "—"}
+            <div className="min-w-0">
+              <p className="text-xs text-muted">Signed in with</p>
+              <p className="truncate text-sm font-medium">
+                {providers.map((p) => (p === "google" ? "Google" : p === "email" ? "Email" : p)).join(" + ") || "—"}
+                <span className="font-normal text-muted"> · {email ?? "—"}</span>
               </p>
             </div>
           </div>
@@ -160,20 +157,42 @@ export default function AccountPage() {
                 <Lock size={18} />
               </div>
               <div className="flex w-full max-w-sm flex-col gap-2">
-                <p className="text-xs text-muted">Change password</p>
-                <PasswordInput id="current-password" value={currentPassword} onChange={setCurrentPassword} placeholder="Current password" autoComplete="current-password" disabled={passwordSaving} />
-                <PasswordInput id="new-password" value={newPassword} onChange={setNewPassword} placeholder={`New password (${MIN_PASSWORD_LENGTH}+ characters)`} autoComplete="new-password" disabled={passwordSaving} />
-                <PasswordInput id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Confirm new password" autoComplete="new-password" disabled={passwordSaving} />
+                <p className="text-xs text-muted">Password</p>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-medium tracking-[0.2em]">••••••••</p>
+                  {!showPasswordForm && (
+                    <button
+                      onClick={() => {
+                        setPasswordMessage(null);
+                        setShowPasswordForm(true);
+                      }}
+                      className="text-xs text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                {showPasswordForm && (
+                  <div className="mt-1 flex flex-col gap-2">
+                    <PasswordInput id="new-password" value={newPassword} onChange={setNewPassword} placeholder={`New password (${MIN_PASSWORD_LENGTH}+ characters)`} autoComplete="new-password" disabled={passwordSaving} />
+                    <PasswordInput id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Confirm new password" autoComplete="new-password" disabled={passwordSaving} />
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={passwordSaving || !newPassword || !confirmPassword}
+                        className="rounded-full bg-button-bg px-4 py-2 text-sm font-medium text-button-fg transition-opacity hover:opacity-90 disabled:opacity-40"
+                      >
+                        {passwordSaving ? "Saving…" : "Save new password"}
+                      </button>
+                      <button onClick={closePasswordForm} disabled={passwordSaving} className="text-xs text-muted hover:text-foreground">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {passwordMessage && (
                   <p className={`text-xs ${passwordMessage.ok ? "text-emerald-400" : "text-red-400"}`}>{passwordMessage.text}</p>
                 )}
-                <button
-                  onClick={handleChangePassword}
-                  disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword}
-                  className="self-start rounded-full bg-button-bg px-4 py-2 text-sm font-medium text-button-fg transition-opacity hover:opacity-90 disabled:opacity-40"
-                >
-                  {passwordSaving ? "Updating…" : "Update password"}
-                </button>
               </div>
             </div>
           )}

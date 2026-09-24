@@ -66,8 +66,8 @@ export default function ResetPasswordPage() {
         return !error;
       }
       // A reload after arriving from the link (the tokens are gone from the URL by then). Being
-      // merely signed in is NOT enough — otherwise a left-open session could set a new password
-      // here without the current-password check the profile page does.
+      // merely signed in isn't enough: this page is only for reset links — signed-in users change
+      // their password from the profile page.
       const { data } = await supabase.auth.getSession();
       return Boolean(data.session) && readVerified();
     }
