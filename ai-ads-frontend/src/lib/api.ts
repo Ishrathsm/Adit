@@ -253,7 +253,8 @@ export function listTemplates(type: TemplateType) {
   return request<{ templates: Template[] }>(`/api/templates?type=${type}`);
 }
 
-export type StoryboardStatus = "drafting" | "generating_video" | "completed" | "failed";
+// "casting": a generated character sheet is waiting for approval before shots start.
+export type StoryboardStatus = "casting" | "drafting" | "generating_video" | "completed" | "failed";
 export type ShotStatus = "pending" | "choices_ready" | "video_ready" | "failed";
 export type ReferenceImageRole = "subject" | "style";
 
@@ -360,21 +361,47 @@ export interface StoryboardShot {
   choice_urls: string[] | null;
   selected_choice: number | null;
   video_url: string | null;
+  asset_names: string[];
   status: ShotStatus;
   error: string | null;
   created_at: string;
   updated_at: string;
 }
 
+// Pro: reference assets (the client's real product / person / location photos) and generated
+// character sheets.
+export type AssetKind = "character" | "product" | "location";
+
+export interface StoryboardAsset {
+  id: string;
+  storyboard_id: string;
+  kind: AssetKind;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  source: "uploaded" | "generated";
+  status: "pending" | "ready" | "failed";
+  error: string | null;
+}
+
+export interface UploadedAssetInput {
+  kind: AssetKind;
+  name: string;
+  description?: string | null;
+  imageUrl: string;
+}
+
 export interface CreateStoryboardOptions {
   aspectRatio: StoryboardAspectRatio;
   brief: CreativeBrief;
+  assets?: UploadedAssetInput[];
+  characterSheet?: boolean;
   referenceImageUrl?: string;
   referenceImageRole?: ReferenceImageRole;
 }
 
 export function createStoryboard(projectId: string, concept: string, options: CreateStoryboardOptions) {
-  return request<{ storyboard: Storyboard; shots: StoryboardShot[] }>("/api/storyboards", {
+  return request<{ storyboard: Storyboard; shots: StoryboardShot[]; assets: StoryboardAsset[] }>("/api/storyboards", {
     method: "POST",
     body: JSON.stringify({ projectId, concept, ...options }),
   });
@@ -402,7 +429,16 @@ export async function uploadStoryboardReferenceImage(file: File): Promise<{ refe
 }
 
 export function getStoryboard(id: string) {
-  return request<{ storyboard: Storyboard; shots: StoryboardShot[] }>(`/api/storyboards/${id}`);
+  return request<{ storyboard: Storyboard; shots: StoryboardShot[]; assets: StoryboardAsset[] }>(`/api/storyboards/${id}`);
+}
+
+// Approve the generated character sheet and start the shots.
+export function startStoryboard(id: string) {
+  return request<{ storyboard: Storyboard }>(`/api/storyboards/${id}/start`, { method: "POST" });
+}
+
+export function regenerateStoryboardAsset(storyboardId: string, assetId: string) {
+  return request<{ asset: StoryboardAsset }>(`/api/storyboards/${storyboardId}/assets/${assetId}/regenerate`, { method: "POST" });
 }
 
 export function selectShotChoice(storyboardId: string, shotId: string, selectedChoice: number) {

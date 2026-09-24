@@ -9,6 +9,8 @@ import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
   getStoryboard,
+  regenerateStoryboardAsset,
+  startStoryboard,
   selectShotChoice,
   uploadStoryboardReferenceImage,
   STORYBOARD_ASPECT_RATIOS,
@@ -26,7 +28,9 @@ import {
   type AdLook,
   type AdPacing,
   type AdTone,
+  type AssetKind,
   type ReferenceImageRole,
+  type StoryboardAsset,
   type Storyboard,
   type StoryboardAspectRatio,
   type StoryboardShot,
@@ -54,6 +58,7 @@ function mockShot(index: number, opts: { picked?: boolean; withVideo?: boolean }
     storyboard_id: "mock-storyboard",
     shot_index: index,
     description: `Shot ${index + 1}: a dynamic close-up of the product in action, cinematic lighting.`,
+    asset_names: [],
     choice_urls: [MOCK_IMAGE_URL, MOCK_IMAGE_URL],
     selected_choice: opts.picked || opts.withVideo ? 0 : null,
     video_url: opts.withVideo ? MOCK_VIDEO_URL : null,
@@ -124,6 +129,12 @@ export default function StoryboardPage() {
 
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [shots, setShots] = useState<StoryboardShot[]>([]);
+  const [assets, setAssets] = useState<StoryboardAsset[]>([]);
+
+  // Reference assets + character sheet (future Pro features; not gated until tiers are decided).
+  const [proAssets, setProAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string; description: string }[]>([]);
+  const [characterSheet, setCharacterSheet] = useState(false);
+  const [starting, setStarting] = useState(false);
 
   const isMock = storyboard?.id === "mock-storyboard";
 
@@ -150,9 +161,10 @@ export default function StoryboardPage() {
 
     pollRef.current = setInterval(() => {
       getStoryboard(storyboard.id)
-        .then(({ storyboard: updated, shots: updatedShots }) => {
+        .then(({ storyboard: updated, shots: updatedShots, assets: updatedAssets }) => {
           setStoryboard(updated);
           setShots(updatedShots);
+          setAssets(updatedAssets ?? []);
         })
         .catch(() => {
           /* transient network errors during polling — next tick retries */
@@ -165,6 +177,27 @@ export default function StoryboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- polls on storyboard identity/status, not every shots mutation
   }, [storyboard, isMock]);
 
+  async function handleStart() {
+    if (!storyboard) return;
+    setStarting(true);
+    try {
+      const { storyboard: updated } = await startStoryboard(storyboard.id);
+      setStoryboard(updated);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function handleRegenerate(asset: StoryboardAsset) {
+    if (!storyboard) return;
+    setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, status: "pending" } : a)));
+    await regenerateStoryboardAsset(storyboard.id, asset.id).catch((err) =>
+      setCreateError(err instanceof Error ? err.message : String(err)),
+    );
+  }
+
   async function handleCreate() {
     if (!concept.trim()) return;
     setCreating(true);
@@ -175,8 +208,18 @@ export default function StoryboardPage() {
         const uploaded = await uploadStoryboardReferenceImage(referenceImageFile);
         referenceImageUrl = uploaded.referenceImageUrl;
       }
-      const { storyboard, shots } = await createStoryboard(id, concept.trim(), {
+      const uploadedAssets = await Promise.all(
+        proAssets.map(async (asset) => ({
+          kind: asset.kind,
+          name: asset.name.trim(),
+          description: asset.description.trim() || null,
+          imageUrl: (await uploadStoryboardReferenceImage(asset.file)).referenceImageUrl,
+        })),
+      );
+      const { storyboard, shots, assets: createdAssets } = await createStoryboard(id, concept.trim(), {
         aspectRatio,
+        assets: uploadedAssets,
+        characterSheet,
         brief: {
           lengthSeconds,
           tone,
@@ -199,6 +242,7 @@ export default function StoryboardPage() {
       });
       setStoryboard(storyboard);
       setShots(shots);
+      setAssets(createdAssets ?? []);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -457,9 +501,65 @@ export default function StoryboardPage() {
                 </div>
               ))}
             </div>
+
+            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">References &amp; cast</label>
+                <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>
+              </div>
+
+              {proAssets.map((asset, index) => (
+                <div key={index} className="flex flex-col gap-2 rounded-xl border border-border-subtle p-3 sm:flex-row sm:items-start">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
+                  <img src={asset.previewUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {(["product", "character", "location"] as const).map((kind) => (
+                        <button key={kind} type="button" disabled={creating} onClick={() => setProAssets((list) => list.map((a, i) => (i === index ? { ...a, kind } : a)))} className={pillClass(asset.kind === kind)}>
+                          {kind === "product" ? "Product" : kind === "character" ? "Person" : "Location"}
+                        </button>
+                      ))}
+                      <button type="button" disabled={creating} onClick={() => {
+                          URL.revokeObjectURL(asset.previewUrl);
+                          setProAssets((list) => list.filter((_, i) => i !== index));
+                        }} className="ml-auto text-xs text-muted hover:text-red-400">
+                        Remove
+                      </button>
+                    </div>
+                    <input value={asset.name} onChange={(e) => setProAssets((list) => list.map((a, i) => (i === index ? { ...a, name: e.target.value } : a)))} disabled={creating} maxLength={60} placeholder="Name (e.g. Aqua bottle, Ms. Rao, Main campus)" className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50" />
+                    <input value={asset.description} onChange={(e) => setProAssets((list) => list.map((a, i) => (i === index ? { ...a, description: e.target.value } : a)))} disabled={creating} maxLength={300} placeholder="Short description (optional)" className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50" />
+                  </div>
+                </div>
+              ))}
+              {proAssets.length < 6 && (
+                <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${creating ? "pointer-events-none" : "hover:bg-white/5"}`}>
+                  <Upload size={14} /> Upload a product, person, or location photo
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    disabled={creating}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setProAssets((list) => [...list, { file, previewUrl: URL.createObjectURL(file), kind: "product", name: "", description: "" }]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={characterSheet} disabled={creating} onChange={(e) => setCharacterSheet(e.target.checked)} />
+                Generate a character sheet — review and approve the cast before any shot is made
+              </label>
+              <p className="text-xs text-muted">Your photos are used as references in every shot they appear in, so the real product, people, and places stay consistent.</p>
+            </div>
           </div>
 
-          <Button onClick={handleCreate} disabled={creating || !concept.trim() || scriptTooLong} className="self-start">
+          <Button
+            onClick={handleCreate}
+            disabled={creating || !concept.trim() || scriptTooLong || proAssets.some((a) => !a.name.trim())}
+            className="self-start"
+          >
             {creating ? (referenceImageFile ? "Uploading reference…" : "Writing the script…") : "Create Storyboard"}
           </Button>
           {createError && <p className="text-sm text-red-400">{createError}</p>}
@@ -490,6 +590,56 @@ export default function StoryboardPage() {
         </div>
       ) : (
         <div className="mt-8 flex flex-col gap-6">
+          {storyboard.status === "casting" && (
+            <div className="rgb-border flex flex-col gap-4 p-5">
+              <div>
+                <p className="text-sm font-medium">Review your cast</p>
+                <p className="text-xs text-muted">Every shot will use these references. Regenerate anyone who doesn&apos;t look right, then start.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {assets.map((asset) => (
+                  <div key={asset.id} className="flex flex-col gap-2">
+                    <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-white/5">
+                      {asset.image_url && asset.status !== "pending" && (
+                        // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
+                        <img src={asset.image_url} alt={asset.name} className="h-full w-full object-cover" />
+                      )}
+                      {asset.status === "pending" && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 size={16} className="animate-spin text-muted" />
+                        </div>
+                      )}
+                      {asset.status === "failed" && <p className="p-2 text-xs text-red-400">{asset.error}</p>}
+                    </div>
+                    <p className="text-xs font-medium">
+                      {asset.name} <span className="font-normal text-muted">· {asset.source === "uploaded" ? "your photo" : asset.kind}</span>
+                    </p>
+                    {asset.source === "generated" && (
+                      <button type="button" disabled={asset.status === "pending"} onClick={() => handleRegenerate(asset)} className="self-start text-xs text-muted underline-offset-2 hover:underline disabled:opacity-50">
+                        Regenerate
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleStart} disabled={starting || assets.some((a) => a.status !== "ready")} className="self-start">
+                {starting ? "Starting…" : "Approve cast & start"}
+              </Button>
+            </div>
+          )}
+
+          {storyboard.status !== "casting" && assets.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-muted">References:</p>
+              {assets.map((asset) =>
+                asset.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
+                  <img key={asset.id} src={asset.image_url} alt={asset.name} title={asset.name} className="h-10 w-10 rounded-md object-cover" />
+                ) : null,
+              )}
+            </div>
+          )}
+
           <div className={`grid grid-cols-1 gap-4 ${SHOT_GRID_COLS[shots.length] ?? "sm:grid-cols-2"}`}>
             {shots.map((shot, index) => {
               const previous = shots[index - 1];
@@ -505,7 +655,9 @@ export default function StoryboardPage() {
 
                   {shot.status === "pending" && (
                     <div className="flex items-center gap-2 py-6">
-                      {waitingOnPrevious ? (
+                      {storyboard.status === "casting" ? (
+                        <p className="text-xs text-muted">Starts after you approve the cast.</p>
+                      ) : waitingOnPrevious ? (
                         <p className="text-xs text-muted">Waiting for shot {index}…</p>
                       ) : (
                         <>
