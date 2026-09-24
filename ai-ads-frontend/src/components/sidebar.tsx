@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import {
   Building2,
+  ChevronRight,
   CircleUserRound,
   Clapperboard,
   FolderKanban,
@@ -24,7 +24,7 @@ import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
-import { createProject, getAccount, listProducts, type Account, type Product, type ProjectType } from "@/lib/api";
+import { createProject, getAccount, listProducts, type Account, type Features, type Product, type ProjectType } from "@/lib/api";
 
 function NavLink({
   href,
@@ -60,6 +60,33 @@ function NavLink({
   );
 }
 
+type CreateTarget = "poster" | "quick" | "ad";
+
+// "Create ads" in the sidebar: each category expands in place to its flows. Each flow is tied to a
+// feature switch, so options a user's plan/overrides don't include show greyed out.
+const CREATE_CATEGORIES: {
+  type: ProjectType;
+  label: string;
+  icon: typeof ImageIcon;
+  options: { target: CreateTarget; label: string; hint: string; icon: typeof ImageIcon; feature: keyof Features }[];
+}[] = [
+  {
+    type: "poster",
+    label: "Poster",
+    icon: ImageIcon,
+    options: [{ target: "poster", label: "New poster", hint: "Design a poster ad", icon: Plus, feature: "poster" }],
+  },
+  {
+    type: "video",
+    label: "Video",
+    icon: Video,
+    options: [
+      { target: "quick", label: "Quick video", hint: "One shot (4–8s) with music and an end card", icon: Sparkles, feature: "video_quick" },
+      { target: "ad", label: "Full ad", hint: "A scripted multi-shot ad (15–30s)", icon: Clapperboard, feature: "video_ad" },
+    ],
+  },
+];
+
 // Icon+label on sm: and up, collapses to a narrow icon-only rail below it — no slide-in
 // drawer/overlay, so it stays usable on mobile without the extra state/complexity that'd add.
 export function Sidebar() {
@@ -70,18 +97,19 @@ export function Sidebar() {
   const [account, setAccount] = useState<Account | null>(null);
   const [products, setProducts] = useState<Product[] | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [quickCreating, setQuickCreating] = useState<ProjectType | null>(null);
-  const [flowMenuOpenFor, setFlowMenuOpenFor] = useState<{ type: ProjectType; top: number; left: number } | null>(
-    null,
-  );
+  const [features, setFeatures] = useState<Features | null>(null);
+  const [quickCreating, setQuickCreating] = useState<CreateTarget | null>(null);
+  // Which "Create ads" categories are expanded in place.
+  const [expanded, setExpanded] = useState<Record<ProjectType, boolean>>({ poster: false, video: false });
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     getAccount()
-      .then(({ account }) => {
+      .then(({ account, features }) => {
         setAccount(account);
+        setFeatures(features);
         if (account?.account_type === "organisation") {
           listProducts()
             .then(({ products }) => setProducts(products))
@@ -100,31 +128,28 @@ export function Sidebar() {
       });
   }, []);
 
-  async function handleQuickCreate(type: ProjectType, storyboard = false) {
-    setFlowMenuOpenFor(null);
+  async function handleCreate(target: CreateTarget) {
     if (account?.account_type === "organisation") {
       // Org accounts need a product context first — the projects page already handles that flow.
       router.push("/projects");
       return;
     }
-    setQuickCreating(type);
+    setQuickCreating(target);
     try {
-      const name = type === "video" ? "Untitled Video Ad" : "Untitled Poster Ad";
-      const { project } = await createProject(name, type);
-      router.push(storyboard ? `/projects/${project.id}/storyboard` : `/projects/${project.id}`);
+      const type: ProjectType = target === "poster" ? "poster" : "video";
+      const { project } = await createProject(type === "video" ? "Untitled Video Ad" : "Untitled Poster Ad", type);
+      router.push(
+        target === "poster"
+          ? `/projects/${project.id}`
+          : target === "quick"
+            ? `/projects/${project.id}/storyboard?mode=quick`
+            : `/projects/${project.id}/storyboard`,
+      );
     } finally {
       setQuickCreating(null);
     }
   }
 
-  function toggleFlowMenu(e: MouseEvent<HTMLButtonElement>, type: ProjectType) {
-    if (flowMenuOpenFor?.type === type) {
-      setFlowMenuOpenFor(null);
-      return;
-    }
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFlowMenuOpenFor({ type, top: rect.top, left: rect.right + 8 });
-  }
 
   function handleTemplatesClick() {
     if (pathname === "/projects") {
@@ -195,59 +220,45 @@ export function Sidebar() {
       )}
 
       <p className="mt-5 mb-1 hidden px-3 text-[10px] font-medium tracking-wide text-muted uppercase sm:block">
-        Categories
+        Create ads
       </p>
-      <button
-        onClick={(e) => toggleFlowMenu(e, "poster")}
-        disabled={quickCreating !== null}
-        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
-      >
-        <ImageIcon size={16} className="shrink-0" />
-        <span className="hidden sm:inline">{quickCreating === "poster" ? "Creating…" : "Poster"}</span>
-      </button>
-      <button
-        onClick={(e) => toggleFlowMenu(e, "video")}
-        disabled={quickCreating !== null}
-        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50 sm:justify-start sm:px-3"
-      >
-        <Video size={16} className="shrink-0" />
-        <span className="hidden sm:inline">{quickCreating === "video" ? "Creating…" : "Video"}</span>
-      </button>
-      {flowMenuOpenFor &&
-        createPortal(
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setFlowMenuOpenFor(null)} />
-            <div
-              style={{ top: flowMenuOpenFor.top, left: flowMenuOpenFor.left }}
-              className="fixed z-50 w-48 rounded-2xl border border-border-strong bg-surface p-1.5 shadow-lg"
-            >
-              {flowMenuOpenFor.type === "poster" ? (
-                <button
-                  onClick={() => handleQuickCreate("poster")}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
-                >
-                  <ImageIcon size={12} /> New poster
-                </button>
-              ) : (
-                <>
+      {CREATE_CATEGORIES.map((category) => (
+        <div key={category.type} className="flex flex-col">
+          <button
+            onClick={() => setExpanded((e) => ({ ...e, [category.type]: !e[category.type] }))}
+            aria-expanded={expanded[category.type]}
+            className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+          >
+            <category.icon size={16} className="shrink-0" />
+            <span className="hidden flex-1 text-left sm:inline">{category.label}</span>
+            <ChevronRight
+              size={14}
+              className={clsx("hidden shrink-0 transition-transform sm:block", expanded[category.type] && "rotate-90")}
+            />
+          </button>
+          {expanded[category.type] && (
+            // Nested under its category: indented with a guide line (icon-only on the narrow rail).
+            <div className="flex flex-col gap-0.5 sm:ml-5 sm:border-l sm:border-border-subtle sm:pl-2">
+              {category.options.map((option) => {
+                // Null until the account loads — show as available; the server enforces anyway.
+                const locked = features ? !features[option.feature] : false;
+                return (
                   <button
-                    onClick={() => handleQuickCreate("video")}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                    key={option.target}
+                    onClick={() => handleCreate(option.target)}
+                    disabled={quickCreating !== null || locked}
+                    title={locked ? `${option.label} isn't enabled on your account` : option.hint}
+                    className="flex h-9 items-center justify-center gap-2 rounded-xl text-xs text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-40 sm:justify-start sm:px-3"
                   >
-                    <Video size={12} /> New video
+                    <option.icon size={14} className="shrink-0" />
+                    <span className="hidden sm:inline">{quickCreating === option.target ? "Creating…" : option.label}</span>
                   </button>
-                  <button
-                    onClick={() => handleQuickCreate("video", true)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
-                  >
-                    <Clapperboard size={12} /> Shot by shot
-                  </button>
-                </>
-              )}
+                );
+              })}
             </div>
-          </>,
-          document.body,
-        )}
+          )}
+        </div>
+      ))}
       <div
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted opacity-50 sm:justify-start sm:px-3"
         title="Motion Poster · Coming soon"
