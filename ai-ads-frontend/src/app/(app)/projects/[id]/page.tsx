@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Clapperboard,
+  Upload,
   Download,
   Image as ImageIcon,
   Loader2,
@@ -16,8 +17,15 @@ import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
+  AD_LOOKS,
+  AD_TONES,
   ASPECT_RATIOS,
+  MAX_POSTER_ASSETS,
   createJob,
+  uploadStoryboardReferenceImage,
+  type AdLook,
+  type AdTone,
+  type AssetKind,
   getJob,
   getLatestJobForProject,
   getProject,
@@ -58,6 +66,12 @@ function mockJob(status: JobStatus): Job {
   };
 }
 
+function chipClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
+    active ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-foreground hover:bg-white/5"
+  }`;
+}
+
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -70,7 +84,18 @@ export default function ProjectDetailPage() {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [durationSeconds, setDurationSeconds] = useState<VideoDuration>(8);
-  const [tagline, setTagline] = useState("");
+  // Poster brief: structured copy + style + guidance + reference photos.
+  const [headline, setHeadline] = useState("");
+  const [subline, setSubline] = useState("");
+  const [offer, setOffer] = useState("");
+  const [cta, setCta] = useState("");
+  const [contactLine, setContactLine] = useState("");
+  const [tone, setTone] = useState<AdTone>("premium");
+  const [look, setLook] = useState<AdLook>("photoreal");
+  const [audience, setAudience] = useState("");
+  const [mustShow, setMustShow] = useState("");
+  const [avoid, setAvoid] = useState("");
+  const [posterAssets, setPosterAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string }[]>([]);
 
   const [job, setJob] = useState<Job | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -144,10 +169,29 @@ export default function ProjectDetailPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const posterBrief = isPoster
+        ? {
+            headline: headline.trim() || null,
+            subline: subline.trim() || null,
+            offer: offer.trim() || null,
+            cta: cta.trim() || null,
+            contactLine: contactLine.trim() || null,
+            tone,
+            look,
+            audience: audience.trim() || null,
+            mustShow: mustShow.trim() || null,
+            avoid: avoid.trim() || null,
+            assets: await Promise.all(
+              posterAssets.map(async (asset) => ({
+                kind: asset.kind,
+                name: asset.name.trim(),
+                imageUrl: (await uploadStoryboardReferenceImage(asset.file)).referenceImageUrl,
+              })),
+            ),
+          }
+        : undefined;
       const { job: newJob } = await createJob(id, prompt.trim(), {
-        ...(isPoster
-          ? { aspectRatio, tagline: tagline.trim() || undefined }
-          : { durationSeconds }),
+        ...(isPoster ? { aspectRatio, posterBrief } : { durationSeconds }),
         templateId: templateId ?? undefined,
         ...(referenceImageUrl ? { referenceImageUrl, referenceImageRole: "subject" as const } : {}),
       });
@@ -318,17 +362,128 @@ export default function ProjectDetailPage() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="tagline" className="text-sm font-medium">
-                      Tagline <span className="text-muted">(optional)</span>
+                    <label className="text-sm font-medium">
+                      Poster copy <span className="text-muted">(optional)</span>
                     </label>
-                    <input
-                      id="tagline"
-                      value={tagline}
-                      onChange={(e) => setTagline(e.target.value)}
-                      disabled={busy}
-                      placeholder="e.g. 50% off this weekend only"
-                      className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                    />
+                    {[
+                      { id: "headline", value: headline, set: setHeadline, max: 60, placeholder: "Headline — e.g. Run further" },
+                      { id: "subline", value: subline, set: setSubline, max: 120, placeholder: "Supporting line — e.g. The lightest runner we've made" },
+                      { id: "offer", value: offer, set: setOffer, max: 24, placeholder: "Offer badge — e.g. 30% off" },
+                      { id: "cta", value: cta, set: setCta, max: 28, placeholder: "Button — e.g. Shop now, Enrol today" },
+                      { id: "contact", value: contactLine, set: setContactLine, max: 120, placeholder: "Contact line — address, phone, website" },
+                    ].map((field) => (
+                      <input
+                        key={field.id}
+                        value={field.value}
+                        onChange={(e) => field.set(e.target.value)}
+                        disabled={busy}
+                        maxLength={field.max}
+                        placeholder={field.placeholder}
+                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                      />
+                    ))}
+                    <p className="text-xs text-muted">Typeset exactly as written. The image itself never contains text.</p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium">Tone</label>
+                    <div className="flex flex-wrap gap-2">
+                      {AD_TONES.map((option) => (
+                        <button key={option.value} type="button" disabled={busy} onClick={() => setTone(option.value)} className={chipClass(tone === option.value)}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium">Look</label>
+                    <div className="flex flex-wrap gap-2">
+                      {AD_LOOKS.map((option) => (
+                        <button key={option.value} type="button" disabled={busy} onClick={() => setLook(option.value)} className={chipClass(look === option.value)}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium">
+                      Guidance <span className="text-muted">(optional)</span>
+                    </label>
+                    {[
+                      { id: "audience", value: audience, set: setAudience, placeholder: "Audience — e.g. Parents of school-age kids in Hyderabad" },
+                      { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show — e.g. our campus, students in uniform" },
+                      { id: "avoid", value: avoid, set: setAvoid, placeholder: "Avoid — e.g. no crowds, no night scenes" },
+                    ].map((field) => (
+                      <input
+                        key={field.id}
+                        value={field.value}
+                        onChange={(e) => field.set(e.target.value)}
+                        disabled={busy}
+                        maxLength={300}
+                        placeholder={field.placeholder}
+                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Reference photos</label>
+                      <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>
+                    </div>
+                    {posterAssets.map((asset, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
+                        <img src={asset.previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                        <select
+                          value={asset.kind}
+                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, kind: e.target.value as AssetKind } : a)))}
+                          disabled={busy}
+                          className="rounded-full border border-border-subtle bg-background px-3 py-2 text-xs outline-none"
+                        >
+                          <option value="product">Product</option>
+                          <option value="character">Person</option>
+                          <option value="location">Location</option>
+                        </select>
+                        <input
+                          value={asset.name}
+                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, name: e.target.value } : a)))}
+                          disabled={busy}
+                          maxLength={60}
+                          placeholder="Name"
+                          className="min-w-0 flex-1 rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                        />
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            URL.revokeObjectURL(asset.previewUrl);
+                            setPosterAssets((list) => list.filter((_, i) => i !== index));
+                          }}
+                          className="text-xs text-muted hover:text-red-400"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {posterAssets.length < MAX_POSTER_ASSETS && (
+                      <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${busy ? "pointer-events-none opacity-50" : "hover:bg-white/5"}`}>
+                        <Upload size={14} /> Upload a product, person, or location photo
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          disabled={busy}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setPosterAssets((list) => [...list, { file, previewUrl: URL.createObjectURL(file), kind: "product", name: "" }]);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    )}
                   </div>
                 </>
               )}
@@ -357,7 +512,11 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              <Button onClick={handleGenerate} disabled={busy || !prompt.trim()} className="self-start">
+              <Button
+                onClick={handleGenerate}
+                disabled={busy || !prompt.trim() || posterAssets.some((a) => !a.name.trim())}
+                className="self-start"
+              >
                 {submitting ? "Starting…" : "Generate"}
               </Button>
               {submitError && <p className="text-sm text-red-400">{submitError}</p>}

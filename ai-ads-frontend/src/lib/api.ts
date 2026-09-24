@@ -223,6 +223,23 @@ export function deleteFolder(id: string) {
   return request<void>(`/api/folders/${id}`, { method: "DELETE" });
 }
 
+// Poster brief — mirrors ai-ads-backend/src/lib/poster-brief.ts.
+export interface PosterBrief {
+  headline?: string | null;
+  subline?: string | null;
+  offer?: string | null;
+  cta?: string | null;
+  contactLine?: string | null;
+  tone: AdTone;
+  look: AdLook;
+  audience?: string | null;
+  mustShow?: string | null;
+  avoid?: string | null;
+  assets?: UploadedAssetInput[];
+}
+
+export const MAX_POSTER_ASSETS = 3;
+
 export function createJob(
   projectId: string,
   prompt: string,
@@ -233,6 +250,7 @@ export function createJob(
     templateId?: string;
     referenceImageUrl?: string;
     referenceImageRole?: "subject" | "style";
+    posterBrief?: PosterBrief;
   },
 ) {
   return request<{ job: Job }>("/api/jobs", {
