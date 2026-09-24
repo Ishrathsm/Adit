@@ -85,6 +85,21 @@ function referenceInstructionBlock(referenceImageRole?: ReferenceImageRole): str
   return "";
 }
 
+// Storyboard shots are generated separately, so the film only holds together if every shot restates
+// the same fixed look sheet (from generateAdScript) instead of re-inventing product, palette, light.
+function lookSheetBlock(lookSheet?: string | null): string {
+  if (!lookSheet) return "";
+  return `\n\nFIXED LOOK SHEET for the whole film — every shot must reproduce these details exactly (same product design, same person, same palette, same light, same lens look); restate the relevant specifics word-for-word in your fields rather than paraphrasing or varying them:\n"""\n${lookSheet}\n"""`;
+}
+
+// The creative brief's tone + look for a storyboard. The generic quality bar pushes for hooks,
+// exaggerated scale, and visual puns — right for a one-off poster, wrong for a restrained premium
+// or warm film — so the brief's direction wins wherever they conflict.
+function directionBlock(direction?: string | null): string {
+  if (!direction) return "";
+  return `\n\nFILM DIRECTION from the client's brief — this OVERRIDES the generic hook/scale/visual-pun guidance above wherever they conflict:\n${direction}`;
+}
+
 // Brand rules get their own hard-constraint framing, separate from the softer facts
 // (colors/font/tagline) — "weave in naturally" language let the model quietly drop them
 // when they competed with the quality-bar instructions instead of treating them as binding.
@@ -230,9 +245,11 @@ export async function refineShotImagePrompt(
   aspectRatio: string,
   brand?: BrandContext,
   referenceImageRole?: ReferenceImageRole,
+  lookSheet?: string | null,
+  direction?: string | null,
 ): Promise<string> {
-  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstructionBlock(referenceImageRole)}
-${qualityBarBlock("image")}
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}".${referenceInstructionBlock(referenceImageRole)}${lookSheetBlock(lookSheet)}
+${qualityBarBlock("image")}${directionBlock(direction)}
 ${brandContextBlock(brand)}
 
 Expand this shot's brief into a JSON object with this exact schema. The character counts in parentheses are per-field targets — hit them, and the total will land in the required ${MIN_CHARS}-${MAX_CHARS} character range; count as you write and trim before responding, this is a hard ceiling, not a suggestion:
@@ -260,12 +277,15 @@ export async function refineShotVideoPrompt(
   durationSeconds: number,
   aspectRatio: string,
   brand?: BrandContext,
+  lookSheet?: string | null,
+  direction?: string | null,
 ): Promise<string> {
-  const scenes = sceneCount(durationSeconds);
-  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model in image-to-video mode: a starting frame image is provided separately, and Veo will animate motion from it.
+  // Short storyboard shots are cut to ~2-4s in the edit, so a 4s clip is one continuous action.
+  const scenes = durationSeconds <= 4 ? 1 : sceneCount(durationSeconds);
+  const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model in image-to-video mode: a starting frame image is provided separately, and Veo will animate motion from it.${lookSheetBlock(lookSheet)}
 
-This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}". Structure this as ${scenes} distinct scene${scenes > 1 ? "s" : ""} — roughly one main action per 2-3 seconds of the ${durationSeconds}-second clip, each scene sized like a real single-shot prompt (concrete, specific, ~300-400 characters), not a half-second timestamp grid.
-${qualityBarBlock("video")}
+This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}". The clip must stay in the starting frame's world — same location, time of day, weather, and light as that frame; camera moves may reveal more of it but never transport to a different place or time.${shotIndex === shotCount - 1 ? " This is the final shot: its last beat must end on a clear hero close-up of the product itself." : ""} Structure this as ${scenes} distinct scene${scenes > 1 ? "s" : ""} — roughly one main action per 2-3 seconds of the ${durationSeconds}-second clip, each scene sized like a real single-shot prompt (concrete, specific, ~300-400 characters), not a half-second timestamp grid.
+${qualityBarBlock("video")}${directionBlock(direction)}
 ${brandContextBlock(brand)}
 
 Expand this into a JSON object with this exact schema. The character counts in parentheses are per-field targets — hit them, and the total will land in the required ${MIN_CHARS}-${MAX_CHARS} character range; count as you write and trim before responding, this is a hard ceiling, not a suggestion (it applies to the WHOLE JSON string, all ${scenes} scenes combined, not per scene on top of that):
@@ -276,10 +296,23 @@ Expand this into a JSON object with this exact schema. The character counts in p
     // exactly ${scenes} objects in this array, in order, each one's camera+action+framing fields combined totaling ~${Math.round(1300 / scenes)} chars
   ],
   "aspect_ratio": "${aspectRatio}",
-  "negative_prompt": "a short comma-separated list of what to avoid, from the non-negotiables above (~120 chars)"
+  "negative_prompt": "a short comma-separated list of what to avoid (~120 chars) — this one field is sent to Veo's dedicated negative-prompt parameter, not the prompt, so here (and only here) DO list the unwanted things plainly: on-screen text, subtitles, logos, watermarks, people talking, plus the visual tells above"
 }
 
 ${JSON_OUTPUT_RULE}`;
 
   return refine(metaPrompt);
+}
+
+// Refined video prompts carry a `negative_prompt` field; Veo takes that through its own parameter,
+// so lift it out of the prompt text (leaving it in would put the unwanted words in the prompt).
+export function splitNegativePrompt(refined: string): { prompt: string; negativePrompt?: string } {
+  try {
+    const parsed = JSON.parse(refined) as Record<string, unknown>;
+    const negative = typeof parsed.negative_prompt === "string" ? parsed.negative_prompt : undefined;
+    delete parsed.negative_prompt;
+    return { prompt: JSON.stringify(parsed, null, 2), negativePrompt: negative };
+  } catch {
+    return { prompt: refined };
+  }
 }

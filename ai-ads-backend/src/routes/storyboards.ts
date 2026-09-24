@@ -2,7 +2,9 @@ import { Router } from "express";
 import multer from "multer";
 import type { AuthedRequest } from "../middleware/auth";
 import { getProject } from "../lib/projects";
-import { generateShotDescriptions } from "../lib/text-gen";
+import { generateAdScript } from "../lib/text-gen";
+import { type CreativeBrief, parseCreativeBrief, planShots } from "../lib/creative-brief";
+import { getProductById, toBrandContext } from "../lib/products";
 import { uploadReferenceImage } from "../lib/storage";
 import {
   createShots,
@@ -23,10 +25,6 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 // image-choice step AND Veo's image-to-video step, and Veo rejects anything outside these two
 // (e.g. "Invalid aspect ratio: 1:1").
 const ASPECT_RATIOS = ["9:16", "16:9"];
-const MIN_SHOT_COUNT = 2;
-const MAX_SHOT_COUNT = 4;
-// Veo's image-to-video feature only supports these — anything else gets rejected outright.
-const SHOT_DURATIONS = [4, 6, 8];
 const REFERENCE_IMAGE_ROLES: ReferenceImageRole[] = ["subject", "style"];
 
 storyboardsRouter.post("/reference-image", upload.single("image"), async (req: AuthedRequest, res) => {
@@ -45,8 +43,7 @@ storyboardsRouter.post("/reference-image", upload.single("image"), async (req: A
 });
 
 storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, concept, aspectRatio, shotCount, shotDurationSeconds, referenceImageUrl, referenceImageRole } =
-    req.body ?? {};
+  const { projectId, concept, aspectRatio, brief: rawBrief, referenceImageUrl, referenceImageRole } = req.body ?? {};
 
   if (typeof projectId !== "string" || typeof concept !== "string" || !concept.trim()) {
     res.status(400).json({ error: "projectId and concept are required" });
@@ -56,14 +53,15 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     res.status(400).json({ error: `aspectRatio must be one of ${ASPECT_RATIOS.join(", ")}` });
     return;
   }
-  if (typeof shotCount !== "number" || shotCount < MIN_SHOT_COUNT || shotCount > MAX_SHOT_COUNT) {
-    res.status(400).json({ error: `shotCount must be between ${MIN_SHOT_COUNT} and ${MAX_SHOT_COUNT}` });
+  let brief: CreativeBrief;
+  try {
+    brief = parseCreativeBrief(rawBrief);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     return;
   }
-  if (typeof shotDurationSeconds !== "number" || !SHOT_DURATIONS.includes(shotDurationSeconds)) {
-    res.status(400).json({ error: `shotDurationSeconds must be one of ${SHOT_DURATIONS.join(", ")}` });
-    return;
-  }
+  // Shot count and per-shot clip length follow from the brief's length + pacing.
+  const plan = planShots(brief);
   if (referenceImageUrl !== undefined && typeof referenceImageUrl !== "string") {
     res.status(400).json({ error: "referenceImageUrl must be a string" });
     return;
@@ -80,17 +78,20 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
       return;
     }
 
-    const storyboard = await createStoryboard(projectId, concept.trim(), shotCount, shotDurationSeconds, {
+    const product = project.product_id ? await getProductById(project.product_id) : null;
+    const script = await generateAdScript(concept.trim(), brief, plan, toBrandContext(product));
+    const storyboard = await createStoryboard(projectId, concept.trim(), plan.shotCount, plan.clipSeconds, {
       aspectRatio,
       referenceImageUrl: referenceImageUrl || null,
       referenceImageRole: referenceImageUrl ? referenceImageRole : null,
+      lookSheet: script.lookSheet,
+      creativeBrief: { ...brief, audio: { musicPrompt: script.musicPrompt, voiceoverScript: script.voiceoverScript } },
     });
-    const descriptions = await generateShotDescriptions(concept.trim(), shotCount);
-    const shots = await createShots(storyboard.id, descriptions);
+    const shots = await createShots(storyboard.id, script.shots);
 
-    // Only kick off the first shot — each next shot's choices are enqueued once its
-    // predecessor gets a selection (see PATCH below), so we don't burst the image API
-    // and hit its rate limit generating all shots' choices at once.
+    // Only kick off the first shot — the worker auto-picks its keyframe, then starts its video
+    // and the next shot's choices, so shots are generated one after another rather than
+    // bursting the image API into its rate limit. PATCH below lets the user override a pick.
     await enqueueShotChoices(shots[0].id);
 
     res.status(201).json({ storyboard, shots });

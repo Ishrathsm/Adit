@@ -1,3 +1,4 @@
+import type { BrandContext } from "./prompt-refiner";
 import { supabase } from "./supabase";
 
 export interface ProductRow {
@@ -12,6 +13,18 @@ export interface ProductRow {
   tagline: string | null;
   brand_rules: string | null;
   created_at: string;
+}
+
+export function toBrandContext(product: ProductRow | null): BrandContext | undefined {
+  if (!product) return undefined;
+  return {
+    productName: product.name,
+    primaryColor: product.primary_color,
+    secondaryColor: product.secondary_color,
+    font: product.font,
+    tagline: product.tagline,
+    brandRules: product.brand_rules,
+  };
 }
 
 export interface BrandKitInput {

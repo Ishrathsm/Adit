@@ -25,7 +25,8 @@ export async function checkForUnwantedMarks(imageBytes: string, mimeType: string
         `Inspect this generated advertising image closely, including small details on products, clothing, props, and backgrounds. List every instance of:
 1. Any written language — letters, words, numbers, or text-like glyphs/pseudo-lettering, however small or partial.
 2. Any logo, emblem, monogram, or recognizable trademark or trade-dress design of a real brand (e.g. a swoosh, three parallel stripes, a signature pattern).
-Ordinary design details that are not text or brand marks (plain seams, stitching, tread patterns, laces, abstract textures) do not count.`,
+Ordinary design details that are not text or brand marks (plain seams, stitching, tread patterns, laces, abstract textures) do not count.
+Each finding must name something physically visible in the image — quote the exact characters you can read, or name the specific mark and where it is. Never describe the scene, its mood, or what it means; if you find nothing, return an empty list.`,
       ],
       config: {
         responseMimeType: "application/json",

@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 
 export const veoEnabled = Boolean(env.googleCloudProjectId);
 
@@ -29,6 +30,9 @@ export interface GenerateVideoOptions {
   // Conditions the clip on a starting frame — used for the Storyboard flow, where a shot's
   // chosen candidate image becomes the first frame of that shot's video.
   image?: { imageBytes: string; mimeType: string };
+  // Veo's dedicated negative-prompt parameter — unlike Nano Banana, Veo has a real one, so things
+  // to avoid belong here rather than in the prompt text (where naming them primes them).
+  negativePrompt?: string;
 }
 
 // Veo generation is a long-running operation — kick it off, then poll until done.
@@ -37,18 +41,21 @@ export async function generateVideo(prompt: string, options: GenerateVideoOption
     throw new Error("Veo is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
 
-  const { generateAudio = true, durationSeconds = 8, aspectRatio = "16:9", image } = options;
+  const { generateAudio = true, durationSeconds = 8, aspectRatio = "16:9", image, negativePrompt } = options;
 
-  let operation = await genAI.models.generateVideos({
-    model: env.veoModel,
-    source: { prompt, image },
-    config: {
-      numberOfVideos: 1,
-      aspectRatio,
-      durationSeconds,
-      generateAudio,
-    },
-  });
+  let operation = await withRateLimitRetry("veo", () =>
+    genAI.models.generateVideos({
+      model: env.veoModel,
+      source: { prompt, image },
+      config: {
+        numberOfVideos: 1,
+        aspectRatio,
+        durationSeconds,
+        generateAudio,
+        ...(negativePrompt ? { negativePrompt } : {}),
+      },
+    }),
+  );
 
   while (!operation.done) {
     await new Promise((resolve) => setTimeout(resolve, 10_000));

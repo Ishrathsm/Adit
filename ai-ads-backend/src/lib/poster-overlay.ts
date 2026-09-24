@@ -20,7 +20,7 @@ type Align = "left" | "right" | "center";
 
 interface Box { x: number; y: number; w: number; h: number }
 
-function escapeXml(value: string): string {
+export function escapeXml(value: string): string {
   return value.replace(/[<>&'"]/g, (char) => {
     switch (char) {
       case "<": return "&lt;";
@@ -34,7 +34,7 @@ function escapeXml(value: string): string {
 
 // ---------- color ----------
 
-function hexToRgb(hex: string): Rgb | null {
+export function hexToRgb(hex: string): Rgb | null {
   const m = hex.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (!m) return null;
   const h = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
@@ -44,7 +44,7 @@ function hexToRgb(hex: string): Rgb | null {
 const rgbToHex = (c: Rgb) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
 
 // WCAG relative luminance / contrast ratio.
-function luminance([r, g, b]: Rgb): number {
+export function luminance([r, g, b]: Rgb): number {
   const lin = (v: number) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
@@ -52,7 +52,7 @@ function luminance([r, g, b]: Rgb): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-function contrast(a: number, b: number): number {
+export function contrast(a: number, b: number): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
@@ -106,16 +106,16 @@ const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y <
 
 const WEIGHT_NAMES: Record<number, string> = { 400: "Normal", 500: "Medium", 700: "Bold", 800: "Ultra-Bold" };
 
-interface Face { family: string; weight: number; file: string | null }
+export interface Face { family: string; weight: number; file: string | null }
 
-async function face(font: string | null | undefined, weight: number): Promise<Face> {
+export async function face(font: string | null | undefined, weight: number): Promise<Face> {
   const file = font ? await resolveFontFile(font, weight) : null;
   return { family: file && font ? font : "sans-serif", weight, file };
 }
 
 // One line of Pango markup rendered to a transparent PNG. Pango (unlike SVG <text> via librsvg)
 // accepts the font as a file, so brand fonts don't need to be installed on the host.
-async function renderLine(markup: string, f: Face, size: number): Promise<{ buf: Buffer; w: number; h: number }> {
+export async function renderLine(markup: string, f: Face, size: number): Promise<{ buf: Buffer; w: number; h: number }> {
   const buf = await sharp({
     text: {
       text: markup,
@@ -130,7 +130,7 @@ async function renderLine(markup: string, f: Face, size: number): Promise<{ buf:
 }
 
 // Split into two lines at the space that best balances their lengths.
-function balance(text: string): string[] {
+export function balance(text: string): string[] {
   const spaces = [...text.matchAll(/ /g)].map((m) => m.index!);
   if (!spaces.length) return [text];
   const split = spaces.reduce((best, i) => (Math.abs(i - text.length / 2) < Math.abs(best - text.length / 2) ? i : best));
@@ -227,7 +227,7 @@ async function buildCopyBlock(
 
 // Soft blurred silhouette of an overlay element, composited just under it so it separates from
 // the image without a backing plate or band.
-async function withShadow(element: Buffer, darkShadow: boolean, blur: number, strength = 0.5): Promise<{ input: Buffer; pad: number }> {
+export async function withShadow(element: Buffer, darkShadow: boolean, blur: number, strength = 0.5): Promise<{ input: Buffer; pad: number }> {
   const { width = 0, height = 0 } = await sharp(element).metadata();
   const pad = Math.max(4, Math.round(blur * 2));
   const padded = await sharp(element).ensureAlpha()
@@ -245,13 +245,13 @@ async function withShadow(element: Buffer, darkShadow: boolean, blur: number, st
 
 // A brand-kit "logo" that is one flat color with no transparency (e.g. a placeholder square)
 // reads as a glitch on the poster, not a mark — leave it off rather than stamp a colored box.
-async function isPlaceholderLogo(logo: Buffer): Promise<boolean> {
+export async function isPlaceholderLogo(logo: Buffer): Promise<boolean> {
   const { channels } = await sharp(logo).ensureAlpha().stats();
   return channels.every((c) => c.stdev < 4);
 }
 
 // Alpha-weighted luminance of the logo's visible pixels.
-async function logoLuminance(logo: Buffer): Promise<number> {
+export async function logoLuminance(logo: Buffer): Promise<number> {
   const { data } = await sharp(logo).resize(32, 32, { fit: "inside" }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let sum = 0, weight = 0;
   for (let i = 0; i < data.length; i += 4) {
@@ -264,7 +264,7 @@ async function logoLuminance(logo: Buffer): Promise<number> {
 
 // Knockout version (all white or all black, same alpha) — what designers use when a full-color
 // logo would disappear against the photo behind it.
-async function knockout(logo: Buffer, white: boolean): Promise<Buffer> {
+export async function knockout(logo: Buffer, white: boolean): Promise<Buffer> {
   const { width = 0, height = 0 } = await sharp(logo).metadata();
   const alpha = await sharp(logo).ensureAlpha().extractChannel(3).toBuffer();
   const v = white ? 255 : 0;

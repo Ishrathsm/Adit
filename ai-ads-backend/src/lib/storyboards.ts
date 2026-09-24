@@ -1,3 +1,4 @@
+import type { CreativeBrief } from "./creative-brief";
 import { supabase } from "./supabase";
 
 export const SHOT_CHOICE_COUNT = 2;
@@ -16,6 +17,8 @@ export interface StoryboardRow {
   aspect_ratio: string;
   reference_image_url: string | null;
   reference_image_role: ReferenceImageRole | null;
+  look_sheet: string | null;
+  creative_brief: CreativeBrief | null;
   status: StoryboardStatus;
   output_url: string | null;
   error: string | null;
@@ -41,6 +44,8 @@ export interface CreateStoryboardOptions {
   aspectRatio: string;
   referenceImageUrl?: string | null;
   referenceImageRole?: ReferenceImageRole | null;
+  lookSheet?: string | null;
+  creativeBrief?: CreativeBrief | null;
 }
 
 export async function createStoryboard(
@@ -60,6 +65,8 @@ export async function createStoryboard(
       aspect_ratio: options.aspectRatio,
       reference_image_url: options.referenceImageUrl ?? null,
       reference_image_role: options.referenceImageRole ?? null,
+      look_sheet: options.lookSheet ?? null,
+      creative_brief: options.creativeBrief ?? null,
     })
     .select()
     .single();

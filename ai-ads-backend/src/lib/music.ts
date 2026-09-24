@@ -1,0 +1,35 @@
+import { GoogleAuth } from "google-auth-library";
+import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
+
+// Background score for video ads, from Google's Lyria on the same Vertex project as Veo — no extra
+// vendor or plan (ElevenLabs' music API needs a paid tier). Lyria returns a ~32s instrumental WAV;
+// the stitch step trims and fades it to the ad's length.
+const auth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/cloud-platform"] });
+
+export async function generateMusic(prompt: string): Promise<Buffer> {
+  if (!env.googleCloudProjectId) {
+    throw new Error("Music generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
+  }
+
+  const url = `https://${env.musicLocation}-aiplatform.googleapis.com/v1/projects/${env.googleCloudProjectId}/locations/${env.musicLocation}/publishers/google/models/${env.musicModel}:predict`;
+  const token = await auth.getAccessToken();
+
+  const body = await withRateLimitRetry("music", async () => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instances: [{ prompt, negative_prompt: "vocals, singing, spoken words, lyrics" }],
+        parameters: {},
+      }),
+    });
+    const text = await res.text();
+    if (!res.ok) throw Object.assign(new Error(`Lyria ${res.status}: ${text.slice(0, 300)}`), { status: res.status });
+    return JSON.parse(text) as { predictions?: { bytesBase64Encoded?: string }[] };
+  });
+
+  const audio = body.predictions?.[0]?.bytesBase64Encoded;
+  if (!audio) throw new Error("Lyria returned no audio");
+  return Buffer.from(audio, "base64");
+}

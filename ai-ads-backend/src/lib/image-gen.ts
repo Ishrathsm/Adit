@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "./env";
 import { checkForUnwantedMarks } from "./image-check";
+import { withRateLimitRetry } from "./rate-limit-retry";
 
 export const imageGenEnabled = Boolean(env.googleCloudProjectId);
 
@@ -27,26 +28,29 @@ export interface ReferenceImage {
 export async function generateImage(
   prompt: string,
   aspectRatio: string,
-  // A prior shot's chosen image, attached so Nano Banana edits/matches it (image-to-image)
-  // instead of generating a fresh, potentially inconsistent-looking subject from text alone.
-  referenceImage?: ReferenceImage,
+  // Images attached so Nano Banana matches them (image-to-image) instead of generating a fresh,
+  // potentially inconsistent-looking subject from text alone — e.g. a storyboard shot gets both
+  // the user's product photo and the previous shot's chosen frame.
+  referenceImages: ReferenceImage[] = [],
 ): Promise<GeneratedImage> {
   if (!genAI) {
     throw new Error("Image generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
 
-  const contents = referenceImage
-    ? [{ inlineData: { data: referenceImage.imageBytes, mimeType: referenceImage.mimeType } }, prompt]
+  const contents = referenceImages.length
+    ? [...referenceImages.map((ref) => ({ inlineData: { data: ref.imageBytes, mimeType: ref.mimeType } })), prompt]
     : prompt;
 
-  const response = await genAI.models.generateContent({
-    model: env.imageModel,
-    contents,
-    config: {
-      responseModalities: ["IMAGE"],
-      imageConfig: { aspectRatio },
-    },
-  });
+  const response = await withRateLimitRetry("image-gen", () =>
+    genAI.models.generateContent({
+      model: env.imageModel,
+      contents,
+      config: {
+        responseModalities: ["IMAGE"],
+        imageConfig: { aspectRatio },
+      },
+    }),
+  );
 
   const parts = response.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((part) => part.inlineData?.data);
@@ -67,12 +71,12 @@ const MAX_CLEAN_ATTEMPTS = 3;
 export async function generateCleanImage(
   prompt: string,
   aspectRatio: string,
-  referenceImage?: ReferenceImage,
-  // Off when the reference is the user's own product photo — its genuine branding would be
+  referenceImages: ReferenceImage[] = [],
+  // Off when a reference is the user's own product photo — its genuine branding would be
   // flagged and every attempt rejected.
   checkMarks = true,
 ): Promise<GeneratedImage & { clean: boolean }> {
-  let image = await generateImage(prompt, aspectRatio, referenceImage);
+  let image = await generateImage(prompt, aspectRatio, referenceImages);
   if (!checkMarks) return { ...image, clean: true };
 
   for (let attempt = 1; ; attempt++) {
@@ -81,7 +85,7 @@ export async function generateCleanImage(
     console.warn(`[image-gen] attempt ${attempt}/${MAX_CLEAN_ATTEMPTS} rejected — unwanted marks:`, findings.join("; "));
     if (attempt === MAX_CLEAN_ATTEMPTS) return { ...image, clean: false };
     try {
-      image = await generateImage(prompt, aspectRatio, referenceImage);
+      image = await generateImage(prompt, aspectRatio, referenceImages);
     } catch (err) {
       // Nano Banana 429s easily; a failed regeneration shouldn't fail a job that already has an image.
       console.warn("[image-gen] regeneration failed, keeping flagged image:", err instanceof Error ? err.message : err);

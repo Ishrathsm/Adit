@@ -47,4 +47,9 @@ export const env = {
   imageCheckModel: process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",
   // Splits a poster tagline into headline/subline roles — tiny structured task, budget tier.
   copyModel: process.env.COPY_MODEL ?? "gemini-2.5-flash",
+  // Background music for video ads (Vertex Lyria; returns ~32s instrumental WAV).
+  musicModel: process.env.MUSIC_MODEL ?? "lyria-002",
+  musicLocation: process.env.MUSIC_LOCATION ?? "us-central1",
+  // Voiceover TTS (only used when a brief asks for narration) — Gemini TTS on Vertex.
+  voiceoverModel: process.env.VOICEOVER_MODEL ?? "gemini-2.5-flash-tts",
 };
