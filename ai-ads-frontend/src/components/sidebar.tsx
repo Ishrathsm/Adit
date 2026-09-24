@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
@@ -11,6 +12,7 @@ import {
   Clapperboard,
   FolderKanban,
   Image as ImageIcon,
+  Info,
   LayoutTemplate,
   LogOut,
   Moon,
@@ -57,6 +59,43 @@ function NavLink({
         )}
       </span>
     </Link>
+  );
+}
+
+// Small (i) beside a sidebar flow: shows what the flow does on hover, focus, or tap. Rendered in a
+// portal with fixed positioning so the sidebar's own overflow can't clip it.
+function InfoTip({ text, label }: { text: string; label: string }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const show = (el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    setPos({ top: rect.top + rect.height / 2, left: rect.right + 8 });
+  };
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`About ${label}`}
+        onMouseEnter={(e) => show(e.currentTarget)}
+        onMouseLeave={() => setPos(null)}
+        onFocus={(e) => show(e.currentTarget)}
+        onBlur={() => setPos(null)}
+        onClick={(e) => (pos ? setPos(null) : show(e.currentTarget))}
+        className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground sm:flex"
+      >
+        <Info size={13} />
+      </button>
+      {pos &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{ top: pos.top, left: pos.left }}
+            className="pointer-events-none fixed z-50 w-52 -translate-y-1/2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-xs text-foreground shadow-lg"
+          >
+            {text}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -243,16 +282,17 @@ export function Sidebar() {
                 // Null until the account loads — show as available; the server enforces anyway.
                 const locked = features ? !features[option.feature] : false;
                 return (
-                  <button
-                    key={option.target}
-                    onClick={() => handleCreate(option.target)}
-                    disabled={quickCreating !== null || locked}
-                    title={locked ? `${option.label} isn't enabled on your account` : option.hint}
-                    className="flex h-9 items-center justify-center gap-2 rounded-xl text-xs text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-40 sm:justify-start sm:px-3"
-                  >
-                    <option.icon size={14} className="shrink-0" />
-                    <span className="hidden sm:inline">{quickCreating === option.target ? "Creating…" : option.label}</span>
-                  </button>
+                  <div key={option.target} className="flex items-center">
+                    <button
+                      onClick={() => handleCreate(option.target)}
+                      disabled={quickCreating !== null || locked}
+                      className="flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl text-xs text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-40 sm:justify-start sm:px-3"
+                    >
+                      <option.icon size={14} className="shrink-0" />
+                      <span className="hidden truncate sm:inline">{quickCreating === option.target ? "Creating…" : option.label}</span>
+                    </button>
+                    <InfoTip text={locked ? `${option.hint} — not enabled on your account.` : option.hint} label={option.label} />
+                  </div>
                 );
               })}
             </div>
