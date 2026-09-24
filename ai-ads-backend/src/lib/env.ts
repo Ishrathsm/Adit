@@ -45,4 +45,6 @@ export const env = {
   // Post-generation check for stray text / real-brand marks in generated images — a yes/no
   // vision read on every image, so the budget tier is plenty.
   imageCheckModel: process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",
+  // Splits a poster tagline into headline/subline roles — tiny structured task, budget tier.
+  copyModel: process.env.COPY_MODEL ?? "gemini-2.5-flash",
 };

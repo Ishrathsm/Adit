@@ -57,12 +57,12 @@ Non-negotiables:
   - Never mention signage, posters, banners, billboards, labels, screens, packaging copy, jerseys with numbers, or typography of any kind. If the concept says "sale", "announcement", "poster", or "campaign", express that purely as visual energy and composition — those words must not appear in your output.
   - Do not list the things to avoid (the words "text", "logo", "lettering" in your output make the model more likely to draw them); describe clean surfaces and backgrounds positively instead.`;
 
-  // Posters get a real logo + tagline composited on afterward (see poster-overlay.ts) at fixed,
-  // known zones — telling the model exactly where those land (not just "leave some space
-  // somewhere") is the difference between a composition that actually works once the overlay
-  // is added and one that gets a logo/tagline slapped over its most important detail.
+  // Posters get headline copy + a logo typeset afterward (see poster-overlay.ts), placed wherever
+  // the image is calmest — so the composition has to actually leave a calm area for that, the
+  // way a photographer shoots with copy space for the art director.
   const imageAddendum = `
-- Reserve two exact zones as calm, uncluttered negative space — nothing important (faces, product details, focal point) may fall inside them: a strip across the FULL WIDTH of the BOTTOM 12% of the frame (the tagline is set directly over the image there, centered, with no backing band — so that strip should be a calm, low-detail continuation of the scene such as floor, shadow, or soft background falloff, not a hard edge or empty void), and within that same bottom strip, the BOTTOM-LEFT corner in particular must also stay clear a little higher up — the logo is composited there too, roughly 8% of the frame's height, anchored to the bottom-left with a small margin.`;
+- Shoot with deliberate copy space: roughly a third of the frame on one side (left, right, top, or bottom) must be calm, low-detail continuation of the scene — clean wall, sky, soft background falloff, shadowed floor — where headline copy will be set afterward. Keep the focal subject in the other two-thirds, never centered across the whole frame. It should read as intentional breathing room in the scene, not a blank strip, border, or hard-edged empty band.
+- Keep at least one corner calm and uncluttered too — the logo is placed there.`;
 
   const videoAddendum =
     "\n- Avoid AI-video tells too: rubbery or inconsistent physics, morphing geometry between frames, drifting continuity errors, aimless camera motion. Every camera move should be a deliberate choice building toward one clear payoff moment.";

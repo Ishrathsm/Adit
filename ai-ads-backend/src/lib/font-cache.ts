@@ -21,12 +21,18 @@ async function fetchTtfUrl(family: string, weight?: number): Promise<string | nu
   return match ? match[1] : null;
 }
 
-async function download(family: string): Promise<string | null> {
-  const path = join(CACHE_DIR, `${family.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.ttf`);
+async function download(family: string, weight: number): Promise<string | null> {
+  const path = join(CACHE_DIR, `${family.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${weight}.ttf`);
   if (existsSync(path)) return path;
 
-  // Bold first (the tagline is set bold); families with no 700 weight 400 on that request.
-  const url = (await fetchTtfUrl(family, 700)) ?? (await fetchTtfUrl(family));
+  // Families without the requested weight 400 on that request — step toward 700, then take
+  // whatever the family's default is.
+  const fallbacks = [weight, ...(weight > 700 ? [700] : []), undefined];
+  let url: string | null = null;
+  for (const w of fallbacks) {
+    url = await fetchTtfUrl(family, w);
+    if (url) break;
+  }
   if (!url) return null;
 
   const res = await fetch(url);
@@ -36,11 +42,11 @@ async function download(family: string): Promise<string | null> {
   return path;
 }
 
-export function resolveFontFile(family: string): Promise<string | null> {
-  const key = family.trim();
+export function resolveFontFile(family: string, weight = 700): Promise<string | null> {
+  const key = `${family.trim()}:${weight}`;
   let entry = resolved.get(key);
   if (!entry) {
-    entry = download(key).catch((err) => {
+    entry = download(family.trim(), weight).catch((err) => {
       console.warn(`[font-cache] could not load "${key}":`, err instanceof Error ? err.message : err);
       return null;
     });
