@@ -180,11 +180,20 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
 
     // ---- on-screen text: super i over shot i + 1, fading in after the dissolve settles ----
     let video = joined;
-    (options.supers ?? []).forEach((png, i) => {
-      const shot = i + 1;
-      if (shot >= clipPaths.length) return;
-      const a = starts[shot] + T * 0.6 + 0.1;
-      const b = (starts[shot + 1] ?? total) - 0.1;
+    const supers = options.supers ?? [];
+    supers.forEach((png, i) => {
+      let a: number, b: number;
+      if (clipPaths.length === 1) {
+        // Single-shot video: the lines take turns within the one shot.
+        const slot = (segments[0].length - 0.4) / supers.length;
+        a = 0.3 + i * slot;
+        b = a + slot - 0.15;
+      } else {
+        const shot = i + 1;
+        if (shot >= clipPaths.length) return;
+        a = starts[shot] + T * 0.6 + 0.1;
+        b = (starts[shot + 1] ?? total) - 0.1;
+      }
       if (b - a < 0.8) return;
       const fade = 0.3;
       const idx = addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", `${dir}/super-${i}.png`);

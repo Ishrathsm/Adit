@@ -3,6 +3,10 @@
 // script, the shot count and cut length, the color grade, and the end card line.
 
 export const AD_LENGTHS = [15, 20, 30] as const;
+// "ad": a multi-shot film (length + pacing). "single": one continuous shot of 4/6/8s — the old
+// quick Text -> Video, now through the same pipeline (checks, music, end card).
+export const FORMATS = ["ad", "single"] as const;
+export const SINGLE_SHOT_SECONDS = [4, 6, 8] as const;
 export const TONES = ["premium", "warm", "bold", "playful", "trustworthy"] as const;
 export const LOOKS = ["photoreal", "cinematic", "surreal"] as const;
 export const PACINGS = ["calm", "balanced", "fast"] as const;
@@ -10,6 +14,8 @@ export const VOICEOVER_LANGUAGES = ["en", "hi", "te", "ta"] as const;
 export const VOICE_GENDERS = ["female", "male"] as const;
 
 export type AdLength = (typeof AD_LENGTHS)[number];
+export type Format = (typeof FORMATS)[number];
+export type SingleShotSeconds = (typeof SINGLE_SHOT_SECONDS)[number];
 export type Tone = (typeof TONES)[number];
 export type Look = (typeof LOOKS)[number];
 export type Pacing = (typeof PACINGS)[number];
@@ -19,6 +25,9 @@ export type VoiceGender = (typeof VOICE_GENDERS)[number];
 export const VOICEOVER_LANGUAGE_NAMES: Record<VoiceoverLanguage, string> = { en: "English", hi: "Hindi", te: "Telugu", ta: "Tamil" };
 
 export interface CreativeBrief {
+  format: Format;
+  // Only for the "single" format.
+  singleSeconds: SingleShotSeconds;
   lengthSeconds: AdLength;
   tone: Tone;
   look: Look;
@@ -47,6 +56,8 @@ export interface CreativeBrief {
 }
 
 export const DEFAULT_BRIEF: CreativeBrief = {
+  format: "ad",
+  singleSeconds: 8,
   lengthSeconds: 20,
   tone: "premium",
   look: "photoreal",
@@ -89,6 +100,8 @@ function text(value: unknown, field: string): string | null {
 export function parseCreativeBrief(raw: unknown): CreativeBrief {
   const b = (raw ?? {}) as Record<string, unknown>;
   return {
+    format: pick(b.format, FORMATS, DEFAULT_BRIEF.format, "format"),
+    singleSeconds: pick(b.singleSeconds, SINGLE_SHOT_SECONDS, DEFAULT_BRIEF.singleSeconds, "singleSeconds"),
     lengthSeconds: pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds"),
     tone: pick(b.tone, TONES, DEFAULT_BRIEF.tone, "tone"),
     look: pick(b.look, LOOKS, DEFAULT_BRIEF.look, "look"),
@@ -122,10 +135,13 @@ function voiceoverScriptFor(b: Record<string, unknown>): string | null {
   if (typeof b.voiceoverScript !== "string") throw new Error("voiceoverScript must be a string");
   const script = b.voiceoverScript.trim();
   if (!script) return null;
-  const length = pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds");
-  const maxWords = Math.floor((length - END_CARD_SECONDS) * VOICEOVER_WORDS_PER_SECOND * 1.1);
+  const single = b.format === "single";
+  const footage = single
+    ? pick(b.singleSeconds, SINGLE_SHOT_SECONDS, DEFAULT_BRIEF.singleSeconds, "singleSeconds")
+    : pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds") - END_CARD_SECONDS;
+  const maxWords = Math.floor(footage * VOICEOVER_WORDS_PER_SECOND * 1.1);
   const words = script.split(/\s+/).length;
-  if (words > maxWords) throw new Error(`voiceover script is ${words} words — a ${length}s ad fits about ${maxWords}. Shorten it or pick a longer ad.`);
+  if (words > maxWords) throw new Error(`voiceover script is ${words} words — ${Math.round(footage)}s of footage fits about ${maxWords}. Shorten it or pick a longer ad.`);
   return script;
 }
 
@@ -146,6 +162,7 @@ export interface ShotPlan {
 // Real ads cut every 2-4 seconds; Veo's shortest clip is 4s. So generate a little longer than
 // each cut needs and trim in the edit, with shot count set by length and pacing.
 export function planShots(brief: CreativeBrief): ShotPlan {
+  if (brief.format === "single") return { shotCount: 1, cutSeconds: brief.singleSeconds, clipSeconds: brief.singleSeconds };
   const footage = brief.lengthSeconds - END_CARD_SECONDS;
   const shotCount = Math.min(8, Math.max(3, Math.round(footage / TARGET_CUT_SECONDS[brief.pacing])));
   const cutSeconds = footage / shotCount;

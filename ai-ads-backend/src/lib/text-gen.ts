@@ -73,6 +73,7 @@ const SCRIPT_SCHEMA = {
 
 // Each shot's job in a short ad, by position — hook the scroll, build, land on the product.
 function beatFor(index: number, count: number): string {
+  if (count === 1) return "SINGLE SHOT — one continuous shot that hooks immediately and ENDS on a clear hero shot of the product";
   if (index === 0) return "HOOK — an arresting first image that stops the scroll within a second";
   if (index === count - 1) return "PAYOFF — resolves the idea and ENDS on a hero shot of the product itself (clearly visible, filling much of the frame)";
   return index === count - 2 ? "TURN — the key moment of the idea, the benefit felt" : "BUILD — develops the idea, one new piece of the story";
@@ -85,7 +86,9 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
   const hasProductAsset = assets.some((a) => a.kind === "product");
   const lines = [
     `Client concept: "${concept}"`,
-    `Length: ${brief.lengthSeconds}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
+    brief.format === "single"
+      ? `Length: ONE continuous ${plan.clipSeconds}s shot (no cuts), then a branded end card (logo + key message) is added automatically, so the shot must not attempt one.`
+      : `Length: ${brief.lengthSeconds}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
     `Tone: ${TONE_DIRECTION[brief.tone]}`,
     `Look: ${LOOK_DIRECTION[brief.look]}`,
     brief.audience && `Audience: ${brief.audience} — cast, setting, and emotional angle should feel true to them.`,
@@ -93,7 +96,7 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
     brief.mustShow && `MUST SHOW (include these concretely across the shots): ${brief.mustShow}`,
     brief.avoid && `MUST AVOID (the client explicitly does not want any of this anywhere in the film): ${brief.avoid}`,
     brief.onScreenText.length > 0 &&
-      `On-screen text the editor will typeset over the footage (one line per shot, starting with shot 2): ${brief.onScreenText.map((l) => `"${l}"`).join(", ")} — those shots need calm, uncluttered areas where a line of text can sit, and their visuals should support what the line says.`,
+      `On-screen text the editor will typeset over the footage (${brief.format === "single" ? "one line after another over the shot" : "one line per shot, starting with shot 2"}): ${brief.onScreenText.map((l) => `"${l}"`).join(", ")} — ${brief.format === "single" ? "the shot needs a calm, uncluttered area in its lower third" : "those shots need calm, uncluttered areas where a line of text can sit, and their visuals should support what the line says"}.`,
     brief.voiceoverScript && `FIXED NARRATION (the client's own voiceover, spoken over the film — the visuals must follow and support it, beat by beat): "${brief.voiceoverScript}"`,
     brand?.productName && `Brand (context only — never write this name anywhere): ${brand.productName}`,
     brand?.primaryColor && `Brand colors to echo subtly in the palette: ${[brand.primaryColor, brand.secondaryColor].filter(Boolean).join(", ")}`,
