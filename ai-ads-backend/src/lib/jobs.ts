@@ -1,3 +1,4 @@
+import type { PosterBrief } from "./poster-brief";
 import { supabase } from "./supabase";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
@@ -18,6 +19,7 @@ export interface JobRow {
   error: string | null;
   reference_image_url: string | null;
   reference_image_role: ReferenceImageRole | null;
+  poster_brief: PosterBrief | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +32,7 @@ export interface CreateJobOptions {
   templateId?: string;
   referenceImageUrl?: string | null;
   referenceImageRole?: ReferenceImageRole | null;
+  posterBrief?: PosterBrief | null;
 }
 
 export async function createJob(projectId: string, prompt: string, options: CreateJobOptions): Promise<JobRow> {
@@ -45,6 +48,7 @@ export async function createJob(projectId: string, prompt: string, options: Crea
       template_id: options.templateId ?? null,
       reference_image_url: options.referenceImageUrl ?? null,
       reference_image_role: options.referenceImageUrl ? (options.referenceImageRole ?? null) : null,
+      poster_brief: options.posterBrief ?? null,
     })
     .select()
     .single();

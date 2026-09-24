@@ -38,8 +38,7 @@ async function fittedLines(text: string, font: string, weight: number, size: num
   let parts = await Promise.all(lines.map((l) => renderLine(markup(l), f, size)));
   const widest = () => Math.max(...parts.map((p) => p.w));
   if (widest() > maxWidth && text.includes(" ")) {
-    // Drop a separator left dangling at the wrap point ("CBSE curriculum ·" / "Smart classrooms").
-    lines = balance(text).map((l) => l.replace(/^\s*[·•|–—-]\s*|\s*[·•|–—,-]\s*$/g, "").trim());
+    lines = balance(text);
     parts = await Promise.all(lines.map((l) => renderLine(markup(l), f, size)));
   }
   if (widest() > maxWidth) {

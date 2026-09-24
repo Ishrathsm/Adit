@@ -61,7 +61,7 @@ Non-negotiables:
   // the image is calmest — so the composition has to actually leave a calm area for that, the
   // way a photographer shoots with copy space for the art director.
   const imageAddendum = `
-- Shoot with deliberate copy space: roughly a third of the frame on one side (left, right, top, or bottom) must be calm, low-detail continuation of the scene — clean wall, sky, soft background falloff, shadowed floor — where headline copy will be set afterward. Keep the focal subject in the other two-thirds, never centered across the whole frame. It should read as intentional breathing room in the scene, not a blank strip, border, or hard-edged empty band.
+- Shoot with deliberate copy space: a clear 40% of the frame on one side (left, right, top, or bottom) must be calm, low-detail continuation of the scene — clean wall, sky, soft background falloff, lawn, shadowed floor — where headline copy, a button, and a contact line will be set afterward. Keep every person and the product fully inside the other 60%; no limb, garment, or prop may reach into the copy side. It should read as intentional breathing room in the scene, not a blank strip, border, or hard-edged empty band.
 - Keep at least one corner calm and uncluttered too — the logo is placed there.`;
 
   const videoAddendum =
@@ -90,7 +90,12 @@ function referenceInstructionBlock(referenceImageRole?: ReferenceImageRole): str
 // neither ignores one nor copies the wrong thing from it.
 function labeledReferencesBlock(labels?: string[]): string {
   if (!labels?.length) return "";
-  return `\n\nReference images are attached, in this order — the shot must match each one exactly for what it defines, and your fields must describe these people/objects/places as they actually look in the images (where the look sheet or brief describes them differently, the image wins — e.g. describe the uniform the reference shows, not the one written above):\n${labels.map((l, i) => `${i + 1}. ${l}`).join("\n")}`;
+  const hasProduct = labels.some((l) => l.startsWith("product "));
+  return `\n\nReference images are attached, in this order — the shot must match each one exactly for what it defines, and your fields must describe these people/objects/places as they actually look in the images (where the look sheet or brief describes them differently, the image wins — e.g. describe the uniform the reference shows, not the one written above):\n${labels.map((l, i) => `${i + 1}. ${l}`).join("\n")}${
+    hasProduct
+      ? "\nThe product reference is the client's real product: describe it as it appears, genuine branding included. The unbranded / plain-surfaces rule above applies to everything else in the frame, not to it."
+      : ""
+  }`;
 }
 
 // Storyboard shots are generated separately, so the film only holds together if every shot restates
@@ -105,7 +110,7 @@ function lookSheetBlock(lookSheet?: string | null): string {
 // or warm film — so the brief's direction wins wherever they conflict.
 function directionBlock(direction?: string | null): string {
   if (!direction) return "";
-  return `\n\nFILM DIRECTION from the client's brief — this OVERRIDES the generic hook/scale/visual-pun guidance above wherever they conflict:\n${direction}`;
+  return `\n\nCREATIVE DIRECTION from the client's brief — this OVERRIDES the generic hook/scale/visual-pun guidance above wherever they conflict:\n${direction}`;
 }
 
 // Brand rules get their own hard-constraint framing, separate from the softer facts
@@ -174,10 +179,14 @@ export async function refineImagePrompt(
   brand?: BrandContext,
   styleTemplate?: string,
   referenceImageRole?: ReferenceImageRole,
+  // The poster brief's tone/look/guidance (overrides the generic hook guidance where they conflict).
+  direction?: string | null,
+  // Labeled reference images (the user's product / person / location photos), in attachment order.
+  referenceLabels?: string[],
 ): Promise<string> {
   const brandBlock = brandContextBlock(brand);
-  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on the hero shot for a real ad campaign. A user gave a short, vague one-line ad concept.${referenceInstructionBlock(referenceImageRole)}
-${qualityBarBlock("image")}
+  const metaPrompt = `You are an award-winning associate creative director and prompt engineer, briefing a state-of-the-art AI image generation model (Google's Gemini native image generation) on the hero shot for a real ad campaign. A user gave a short, vague one-line ad concept.${referenceLabels?.length ? labeledReferencesBlock(referenceLabels) : referenceInstructionBlock(referenceImageRole)}
+${qualityBarBlock("image")}${directionBlock(direction)}
 ${brandBlock}
 
 Expand the concept into a JSON object with this exact schema. The character counts in parentheses are per-field targets — hit them, and the total will land in the required ${MIN_CHARS}-${MAX_CHARS} character range; count as you write and trim before responding, this is a hard ceiling, not a suggestion:

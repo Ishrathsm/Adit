@@ -4,6 +4,7 @@ import { type GenerationTask, enqueueShotChoices, enqueueShotVideo, enqueueStory
 import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
 import { findMarksInVideo, findSuddenEffects } from "./lib/video-check";
+import { posterDirection } from "./lib/poster-brief";
 import { type CreativeBrief, directionText, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
@@ -67,27 +68,52 @@ async function processGenerationJob(jobId: string): Promise<void> {
   let outputUrl: string;
 
   if (job.output_type === "poster") {
+    const brief = job.poster_brief;
+    // References: the brief's product / person / location photos (labeled), plus an older-style
+    // single reference image. The user's own product photos may show genuine branding.
+    const assetRefs = await Promise.all(
+      (brief?.assets ?? []).map(async (asset) => {
+        const res = await fetch(asset.imageUrl);
+        if (!res.ok) throw new Error(`failed to fetch reference asset "${asset.name}": ${res.status}`);
+        return {
+          image: { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" },
+          label: ASSET_LABEL[asset.kind](asset.name),
+          kind: asset.kind,
+        };
+      }),
+    );
+    const references = [...assetRefs];
+    if (referenceImage) {
+      references.push({
+        image: referenceImage,
+        label: job.reference_image_role === "style" ? "style reference — match its mood, palette, and lighting, but not its content" : "the client's product/subject photo — reproduce it exactly",
+        kind: job.reference_image_role === "style" ? "location" : "product",
+      });
+    }
+    const allowedMarks = [
+      ...assetRefs.filter((r) => r.kind === "product").map((r) => r.image),
+      ...(job.reference_image_role === "subject" && referenceImage ? [referenceImage] : []),
+    ];
+
     const refinedPrompt = await refineImagePrompt(
       job.prompt,
       job.aspect_ratio,
       brand,
       template?.template_prompt,
       job.reference_image_role ?? undefined,
+      brief ? posterDirection(brief) : null,
+      brief?.assets.length ? references.map((r) => r.label) : undefined,
     );
-    const image = await generateCleanImage(
-      refinedPrompt,
-      job.aspect_ratio,
-      referenceImage ? [referenceImage] : [],
-      // A "subject" reference is the user's own product photo — its genuine branding is allowed.
-      job.reference_image_role === "subject" && referenceImage ? [referenceImage] : [],
-    );
+    const image = await generateCleanImage(refinedPrompt, job.aspect_ratio, references.map((r) => r.image), allowedMarks);
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
     const finalBuffer = await applyBrandOverlay(rawBuffer, {
       logoUrl: product?.logo_url,
       primaryColor: product?.primary_color,
       tagline: job.tagline,
-      font: product?.font,
+      copy: brief,
+      // Brand-kit font first, else the brief's tone font, so the type matches the poster's vibe.
+      font: product?.font || (brief ? TONE_FONT[brief.tone] : null),
     });
 
     outputUrl = await uploadPoster(jobId, finalBuffer);

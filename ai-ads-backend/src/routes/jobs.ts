@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { type PosterBrief, parsePosterBrief } from "../lib/poster-brief";
 import type { AuthedRequest } from "../middleware/auth";
 import { enqueueGenerationJob } from "../lib/queue";
 import { createJob, getJob, type ReferenceImageRole } from "../lib/jobs";
@@ -18,7 +19,7 @@ const REFERENCE_IMAGE_ROLES: ReferenceImageRole[] = ["subject", "style"];
 const VIDEO_DURATIONS = [4, 6, 8];
 
 jobsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, prompt, aspectRatio, durationSeconds, tagline, templateId, referenceImageUrl, referenceImageRole } =
+  const { projectId, prompt, aspectRatio, durationSeconds, tagline, templateId, referenceImageUrl, referenceImageRole, posterBrief: rawPosterBrief } =
     req.body ?? {};
 
   if (typeof projectId !== "string" || typeof prompt !== "string" || !prompt.trim()) {
@@ -55,6 +56,16 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
 
     const outputType = project.type === "poster" ? "poster" : "video";
 
+    let posterBrief: PosterBrief | null = null;
+    if (outputType === "poster" && rawPosterBrief !== undefined && rawPosterBrief !== null) {
+      try {
+        posterBrief = parsePosterBrief(rawPosterBrief);
+      } catch (err) {
+        res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+        return;
+      }
+    }
+
     if (outputType === "video" && aspectRatio !== undefined && !VIDEO_ASPECT_RATIOS.includes(aspectRatio)) {
       res.status(400).json({ error: `aspectRatio for video must be one of ${VIDEO_ASPECT_RATIOS.join(", ")}` });
       return;
@@ -83,6 +94,7 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
       templateId: typeof templateId === "string" ? templateId : undefined,
       referenceImageUrl: referenceImageUrl || null,
       referenceImageRole: referenceImageUrl ? referenceImageRole : null,
+      posterBrief,
     });
     await enqueueGenerationJob(job.id);
     res.status(201).json({ job });
