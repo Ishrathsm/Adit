@@ -6,8 +6,9 @@ import { FolderKanban, RotateCcw } from "lucide-react";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 
 // Catches unexpected errors thrown while rendering any page, so the user gets a way forward
-// instead of a blank screen. Same visual language as the 404 page (components/ui/not-found-2).
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+// instead of a blank screen; "Try again" uses retry(), which re-fetches and re-renders the page
+// (Next 16 prefers it over reset()). Same visual language as the 404 page (components/ui/not-found-2).
+export default function Error({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   useEffect(() => {
     console.error("[app] unexpected error:", error);
   }, [error]);
@@ -30,7 +31,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <EmptyContent>
           <div className="flex gap-2">
             <button
-              onClick={reset}
+              onClick={() => retry()}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-button-bg px-6 text-sm font-medium text-button-fg transition-opacity hover:opacity-90"
             >
               <RotateCcw className="size-4" />

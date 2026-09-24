@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import type { AuthedRequest } from "../middleware/auth";
 import { type AccountAdminPatch, type AccountRow, type AccountType, listAccounts, type Plan, updateAccount } from "../lib/accounts";
 import { effectiveFeatures, FEATURE_KEYS, FEATURES, type FeatureKey, PLAN_DEFAULTS } from "../lib/features";
+import { env } from "../lib/env";
 import { supabase } from "../lib/supabase";
 
 // Admin console API — mounted behind requireAuth + requireAdmin (see app.ts), so every route here
@@ -183,6 +184,34 @@ adminRouter.patch("/users/:id", async (req: AuthedRequest, res) => {
     if (auditError) console.error("[admin] failed to write audit log:", auditError.message);
 
     res.json({ account: updated, features: effectiveFeatures(updated) });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// Emails the user a secure link to set a new password (Supabase sends it). Passwords are stored
+// only as one-way hashes, so this is how an admin helps someone who's locked out — nobody can
+// view an existing password. Only for accounts that actually sign in with email + password.
+adminRouter.post("/users/:id/password-reset", async (req: AuthedRequest, res) => {
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(req.params.id);
+    if (error || !data.user) return void res.status(404).json({ error: "user not found" });
+    if (!data.user.email) return void res.status(400).json({ error: "this user has no email address" });
+    if (!providers(data.user).includes("email")) {
+      return void res.status(400).json({ error: "this user signs in with Google only, so there's no password to reset" });
+    }
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(data.user.email, {
+      redirectTo: `${env.frontendUrl}/reset-password`,
+    });
+    if (resetError) throw resetError;
+
+    const { error: auditError } = await supabase
+      .from("admin_audit_log")
+      .insert({ admin_user_id: req.userId, target_user_id: req.params.id, action: "send_password_reset", details: { email: { from: null, to: data.user.email } } });
+    if (auditError) console.error("[admin] failed to write audit log:", auditError.message);
+
+    res.json({ sent: true, email: data.user.email });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

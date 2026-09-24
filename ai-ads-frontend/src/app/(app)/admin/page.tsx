@@ -7,6 +7,7 @@ import {
   adminGetUser,
   adminListFeatures,
   adminListUsers,
+  adminSendPasswordReset,
   adminUpdateUser,
   type AccountType,
   type AdminAuditEntry,
@@ -249,6 +250,22 @@ function UserPanel({
   const [error, setError] = useState<string | null>(null);
   // Two-step confirm for disabling instead of a browser dialog.
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [resetStatus, setResetStatus] = useState<string | null>(null);
+
+  async function sendReset() {
+    setSaving(true);
+    setError(null);
+    setResetStatus(null);
+    try {
+      const { email } = await adminSendPasswordReset(userId);
+      setResetStatus(`Password reset email sent to ${email}.`);
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function refresh() {
     adminGetUser(userId)
@@ -396,6 +413,21 @@ function UserPanel({
             </section>
 
             <section className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted uppercase">Password</p>
+              {user.providers.includes("email") ? (
+                <>
+                  <p className="text-xs text-muted">Passwords are stored encrypted and can&apos;t be viewed. Send a secure link so they can set a new one.</p>
+                  <button disabled={saving} onClick={sendReset} className={`self-start ${pillClass(false)}`}>
+                    Send password reset email
+                  </button>
+                  {resetStatus && <p className="text-xs text-emerald-400">{resetStatus}</p>}
+                </>
+              ) : (
+                <p className="text-xs text-muted">Signs in with Google only — no password to reset.</p>
+              )}
+            </section>
+
+            <section className="flex flex-col gap-2">
               <p className="text-xs font-medium text-muted uppercase">History</p>
               {audit.length === 0 ? (
                 <p className="text-xs text-muted">No admin changes yet.</p>
@@ -403,9 +435,11 @@ function UserPanel({
                 audit.map((entry) => (
                   <div key={entry.id} className="text-xs">
                     <span className="text-muted">{formatDate(entry.created_at)}</span>{" "}
-                    {Object.entries(entry.details)
-                      .map(([field, change]) => `${field}: ${JSON.stringify(change.from)} → ${JSON.stringify(change.to)}`)
-                      .join("; ")}
+                    {entry.action === "send_password_reset"
+                      ? "Password reset email sent"
+                      : Object.entries(entry.details)
+                          .map(([field, change]) => `${field}: ${JSON.stringify(change.from)} → ${JSON.stringify(change.to)}`)
+                          .join("; ")}
                   </div>
                 ))
               )}

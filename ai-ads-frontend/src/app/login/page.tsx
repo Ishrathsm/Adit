@@ -88,6 +88,30 @@ function LoginForm() {
     if (error) setError(friendlyAuthError(error.message));
   }
 
+  const [info, setInfo] = useState<string | null>(null);
+  const [sendingReset, setSendingReset] = useState(false);
+
+  // Emails a link to /reset-password. The message is the same whether or not an account exists,
+  // so the form can't be used to find out who has an account.
+  async function handleForgotPassword() {
+    setError(null);
+    setInfo(null);
+    if (!email.trim()) {
+      setError("Enter your email above first, then tap “Forgot password?”.");
+      return;
+    }
+    setSendingReset(true);
+    const { error } = await createClient().auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSendingReset(false);
+    if (error) {
+      setError(friendlyAuthError(error.message));
+      return;
+    }
+    setInfo("If an account exists for that email, we've sent a link to reset your password.");
+  }
+
   async function handleSubmit() {
     if (!email.trim() || !password) return;
     setSubmitting(true);
@@ -254,9 +278,20 @@ function LoginForm() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {mode === "sign-in" && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={sendingReset}
+                  className="self-end text-xs text-muted transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  {sendingReset ? "Sending…" : "Forgot password?"}
+                </button>
+              )}
             </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
+            {info && <p className="text-sm text-emerald-400">{info}</p>}
 
             <Button onClick={handleSubmit} disabled={submitting || !email.trim() || !password}>
               {submitting ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Sign up"}

@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, KeyRound, LogOut, User } from "lucide-react";
+import { Building2, KeyRound, Lock, LogOut, User } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { createClient } from "@/lib/supabase/client";
 import { getAccount, type Account } from "@/lib/api";
+import { MIN_PASSWORD_LENGTH, PasswordInput } from "@/components/ui/password-input";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -35,6 +36,45 @@ export default function AccountPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Change password (email + password accounts only). The current password is checked first so a
+  // left-open session can't be used to lock the owner out.
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function handleChangePassword() {
+    setPasswordMessage(null);
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordMessage({ ok: false, text: `The new password needs at least ${MIN_PASSWORD_LENGTH} characters.` });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ ok: false, text: "The new passwords don't match." });
+      return;
+    }
+    if (!email) return;
+    setPasswordSaving(true);
+    const supabase = createClient();
+    const { error: checkError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+    if (checkError) {
+      setPasswordSaving(false);
+      setPasswordMessage({ ok: false, text: "Your current password isn't right." });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordSaving(false);
+    if (error) {
+      setPasswordMessage({ ok: false, text: error.message });
+      return;
+    }
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordMessage({ ok: true, text: "Password updated." });
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -113,6 +153,30 @@ export default function AccountPage() {
               </p>
             </div>
           </div>
+
+          {providers.includes("email") && (
+            <div className="flex items-start gap-4 py-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong">
+                <Lock size={18} />
+              </div>
+              <div className="flex w-full max-w-sm flex-col gap-2">
+                <p className="text-xs text-muted">Change password</p>
+                <PasswordInput id="current-password" value={currentPassword} onChange={setCurrentPassword} placeholder="Current password" autoComplete="current-password" disabled={passwordSaving} />
+                <PasswordInput id="new-password" value={newPassword} onChange={setNewPassword} placeholder={`New password (${MIN_PASSWORD_LENGTH}+ characters)`} autoComplete="new-password" disabled={passwordSaving} />
+                <PasswordInput id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Confirm new password" autoComplete="new-password" disabled={passwordSaving} />
+                {passwordMessage && (
+                  <p className={`text-xs ${passwordMessage.ok ? "text-emerald-400" : "text-red-400"}`}>{passwordMessage.text}</p>
+                )}
+                <button
+                  onClick={handleChangePassword}
+                  disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword}
+                  className="self-start rounded-full bg-button-bg px-4 py-2 text-sm font-medium text-button-fg transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {passwordSaving ? "Updating…" : "Update password"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-4 py-5 text-xs text-muted">
             <a href="/terms" className="underline underline-offset-2 hover:text-foreground">

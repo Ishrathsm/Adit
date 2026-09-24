@@ -26,7 +26,11 @@ export async function proxy(request: NextRequest) {
   // Terms/Privacy are readable regardless of auth state — never bounced either direction,
   // unlike "/" and "/login" which are only meant for logged-out visitors.
   const isAlwaysAccessible =
-    request.nextUrl.pathname.startsWith("/terms") || request.nextUrl.pathname.startsWith("/privacy");
+    request.nextUrl.pathname.startsWith("/terms") ||
+    request.nextUrl.pathname.startsWith("/privacy") ||
+    // Opened from a reset email while logged out, and still needed right after the link signs
+    // the user in — so it's never bounced in either direction.
+    request.nextUrl.pathname.startsWith("/reset-password");
   if (isAlwaysAccessible) return response;
 
   const isPublicRoute = request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/login");

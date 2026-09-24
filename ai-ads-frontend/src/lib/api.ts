@@ -196,6 +196,11 @@ export interface AdminUserPatch {
   featureOverrides?: Partial<Record<FeatureKey, boolean | null>>;
 }
 
+// Emails the user a link to set a new password (passwords can't be viewed — they're stored hashed).
+export function adminSendPasswordReset(id: string) {
+  return request<{ sent: boolean; email: string }>(`/api/admin/users/${id}/password-reset`, { method: "POST" });
+}
+
 export function adminUpdateUser(id: string, patch: AdminUserPatch) {
   return request<{ account: Account; features: Features }>(`/api/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
 }

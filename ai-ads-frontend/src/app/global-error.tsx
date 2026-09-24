@@ -2,7 +2,7 @@
 
 // Last resort for errors in the root layout itself — it replaces the whole document, so it can't
 // rely on the app's layout, theme provider, or stylesheet; kept self-contained with inline styles.
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
     <html lang="en">
       <body
@@ -25,7 +25,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             Something went wrong on our side.{error.digest ? ` Reference: ${error.digest}.` : ""} Please try again.
           </p>
           <button
-            onClick={reset}
+            onClick={() => retry()}
             style={{ background: "#fff", color: "#0a0a0b", border: 0, borderRadius: 999, padding: "8px 20px", fontSize: 14, cursor: "pointer" }}
           >
             Try again
