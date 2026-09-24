@@ -85,7 +85,6 @@ async function processGenerationJob(jobId: string): Promise<void> {
 
     const finalBuffer = await applyBrandOverlay(rawBuffer, {
       logoUrl: product?.logo_url,
-      primaryColor: product?.primary_color,
       tagline: job.tagline,
       font: product?.font,
     });

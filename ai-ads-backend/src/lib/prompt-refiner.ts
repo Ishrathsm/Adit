@@ -62,7 +62,7 @@ Non-negotiables:
   // somewhere") is the difference between a composition that actually works once the overlay
   // is added and one that gets a logo/tagline slapped over its most important detail.
   const imageAddendum = `
-- Reserve two exact zones as calm, uncluttered negative space — nothing important (faces, product details, focal point) may fall inside them: a strip across the FULL WIDTH of the BOTTOM 12% of the frame (a solid-color tagline bar gets composited there, full-bleed), and within that same bottom strip, the BOTTOM-LEFT corner in particular must also stay clear a little higher up — the logo is composited there too, roughly 8% of the frame's height, anchored to the bottom-left with a small margin.`;
+- Reserve two exact zones as calm, uncluttered negative space — nothing important (faces, product details, focal point) may fall inside them: a strip across the FULL WIDTH of the BOTTOM 12% of the frame (the tagline is set directly over the image there, centered, with no backing band — so that strip should be a calm, low-detail continuation of the scene such as floor, shadow, or soft background falloff, not a hard edge or empty void), and within that same bottom strip, the BOTTOM-LEFT corner in particular must also stay clear a little higher up — the logo is composited there too, roughly 8% of the frame's height, anchored to the bottom-left with a small margin.`;
 
   const videoAddendum =
     "\n- Avoid AI-video tells too: rubbery or inconsistent physics, morphing geometry between frames, drifting continuity errors, aimless camera motion. Every camera move should be a deliberate choice building toward one clear payoff moment.";
