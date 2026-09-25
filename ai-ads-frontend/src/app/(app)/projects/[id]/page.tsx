@@ -62,6 +62,7 @@ export default function ProjectDetailPage() {
   const [offer, setOffer] = useState("");
   const [cta, setCta] = useState("");
   const [contactLine, setContactLine] = useState("");
+  const [featureList, setFeatureList] = useState<string[]>(["", "", "", ""]);
   const [tone, setTone] = useState<AdTone>("premium");
   const [look, setLook] = useState<AdLook>("photoreal");
   const [audience, setAudience] = useState("");
@@ -164,6 +165,7 @@ export default function ProjectDetailPage() {
             offer: offer.trim() || null,
             cta: cta.trim() || null,
             contactLine: contactLine.trim() || null,
+            features: featureList.map((f) => f.trim()).filter(Boolean),
             tone,
             look,
             audience: audience.trim() || null,
@@ -344,6 +346,24 @@ export default function ProjectDetailPage() {
                       />
                     ))}
                     <p className="text-xs text-muted">Typeset exactly as written. The image itself never contains text.</p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium">
+                      Feature list <span className="text-muted">(optional, up to 4)</span>
+                    </label>
+                    {featureList.map((value, i) => (
+                      <input
+                        key={i}
+                        value={value}
+                        onChange={(e) => setFeatureList((list) => list.map((f, j) => (j === i ? e.target.value : f)))}
+                        disabled={busy}
+                        maxLength={70}
+                        placeholder={i === 0 ? "e.g. Test Prep: SAT, ACT and AP" : `Feature ${i + 1}`}
+                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                      />
+                    ))}
+                    <p className="text-xs text-muted">Shown as bullets under the headline. Write &ldquo;Label: detail&rdquo; to set the label in bold.</p>
                   </div>
 
                   <div className="flex flex-col gap-2">

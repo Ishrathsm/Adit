@@ -324,6 +324,8 @@ export interface PosterBrief {
   offer?: string | null;
   cta?: string | null;
   contactLine?: string | null;
+  // Up to 4 short bullets for a features poster; "Label: detail" sets the label in bold.
+  features?: string[];
   tone: AdTone;
   look: AdLook;
   audience?: string | null;

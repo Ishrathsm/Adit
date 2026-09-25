@@ -21,6 +21,9 @@ export interface PosterBrief {
   // Call to action shown as a pill button, e.g. "Enrol now".
   cta: string | null;
   contactLine: string | null;
+  // Short feature bullets for a features poster, e.g. "Test Prep: SAT, ACT and AP". "Label: detail"
+  // renders the label in bold.
+  features: string[];
   tone: Tone;
   look: Look;
   audience: string | null;
@@ -29,7 +32,8 @@ export interface PosterBrief {
   assets: PosterAsset[];
 }
 
-const LIMITS = { headline: 60, subline: 120, offer: 24, cta: 28, contactLine: 120, guidance: 300 };
+const LIMITS = { headline: 60, subline: 120, offer: 24, cta: 28, contactLine: 120, feature: 70, guidance: 300 };
+const MAX_FEATURES = 4; // more than ~4 bullets stops reading as a poster
 const MAX_ASSETS = 3; // beyond ~3 subjects the image model starts blending them
 const ASSET_KINDS: PosterAssetKind[] = ["character", "product", "location"];
 
@@ -66,12 +70,20 @@ export function parsePosterBrief(raw: unknown): PosterBrief {
     };
   });
 
+  const rawFeatures = b.features ?? [];
+  if (!Array.isArray(rawFeatures)) throw new Error("features must be a list");
+  const features = rawFeatures
+    .map((f, i) => text(f, `features[${i}]`, LIMITS.feature))
+    .filter((f): f is string => Boolean(f));
+  if (features.length > MAX_FEATURES) throw new Error(`at most ${MAX_FEATURES} features per poster`);
+
   return {
     headline: text(b.headline, "headline", LIMITS.headline),
     subline: text(b.subline, "subline", LIMITS.subline),
     offer: text(b.offer, "offer", LIMITS.offer),
     cta: text(b.cta, "cta", LIMITS.cta),
     contactLine: text(b.contactLine, "contactLine", LIMITS.contactLine),
+    features,
     tone: pick(b.tone, TONES, "premium", "tone"),
     look: pick(b.look, LOOKS, "photoreal", "look"),
     audience: text(b.audience, "audience", LIMITS.guidance),

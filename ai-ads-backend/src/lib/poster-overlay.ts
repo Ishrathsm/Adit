@@ -30,6 +30,7 @@ export interface PosterCopyParts {
   offer?: string | null;
   cta?: string | null;
   contactLine?: string | null;
+  features?: string[] | null;
 }
 
 type Rgb = [number, number, number];
@@ -231,8 +232,8 @@ async function pill(text: string, f: Face, size: number, fill: string, radius: "
   return { buf, w, h };
 }
 
-// Builds the copy block (accent rule or offer badge, kicker, headline, subline, call-to-action
-// button, contact line) as one transparent image.
+// Builds the copy block (accent rule or offer badge, kicker, headline, subline, feature list,
+// call-to-action button, contact line) as one transparent image.
 async function buildCopyBlock(
   copy: PosterCopy,
   font: string | null | undefined,
@@ -241,7 +242,10 @@ async function buildCopyBlock(
   align: Align,
   ink: string,
   accent: string | null,
-  extras: Pick<PosterCopyParts, "offer" | "cta" | "contactLine"> = {},
+  extras: Pick<PosterCopyParts, "offer" | "cta" | "contactLine" | "features"> = {},
+  // Brand color for solid shapes (rule, bullets, CTA button). Shapes only need to be visible, so it
+  // holds where `accent` (colored text) would fail — Turito's red button on a light photo.
+  fill: string | null = accent,
 ): Promise<{ buf: Buffer; w: number; h: number }> {
   const [heavy, bold, medium, regular] = await Promise.all([face(font, 800), face(font, 700), face(font, 500), face(font, 400)]);
   const elements: Placed[] = [];
@@ -255,7 +259,7 @@ async function buildCopyBlock(
   } else {
     // Accent rule — a short thick bar that anchors the block and carries the brand color.
     const ruleW = Math.round(S * 0.075), ruleH = Math.max(3, Math.round(S * 0.009));
-    const rule = await sharp({ create: { width: ruleW, height: ruleH, channels: 4, background: accent ?? ink } }).png().toBuffer();
+    const rule = await sharp({ create: { width: ruleW, height: ruleH, channels: 4, background: fill ?? ink } }).png().toBuffer();
     elements.push({ buf: rule, w: ruleW, h: ruleH, top: y });
     y += ruleH + S * 0.022;
   }
@@ -308,9 +312,61 @@ async function buildCopyBlock(
     y += (parts.length - 1) * size * 1.25 + parts[parts.length - 1].h;
   }
 
+  if (extras.features?.length) {
+    // Feature list: a small accent square per row, "Label:" in bold and the detail in regular —
+    // flat type, same as the rest of the block. Rows share one size, shrunk to fit the widest.
+    y += S * 0.03;
+    let size = Math.min(S * 0.03, headSize * 0.34);
+    // "Label:" from the real bold font file, the detail from the regular one (Pango's bold markup
+    // on a single font file would be a synthetic bold).
+    const renderRow = async (item: string) => {
+      const colon = item.indexOf(":");
+      const label = colon > 0 ? item.slice(0, colon + 1) : null;
+      const detail = colon > 0 ? item.slice(colon + 1) : item;
+      // Rendered images are cropped to their ink, so a near-invisible "|" strut gives every row the
+      // same height (steady rhythm) and, leading the detail, keeps the space after the colon.
+      const strut = `<span foreground="${ink}" fgalpha="1%">|</span>`;
+      const parts = await Promise.all([
+        label ? renderLine(`<span foreground="${ink}">${escapeXml(label)}</span>${strut}`, bold, size) : null,
+        renderLine(`${strut}<span foreground="${ink}" fgalpha="88%">${escapeXml(label ? detail.trim() : detail)}</span>`, regular, size),
+      ]);
+      const [l, d] = parts;
+      if (!l) return d!;
+      const w = l.w + d!.w, h = Math.max(l.h, d!.h);
+      const buf = await sharp({ create: { width: w, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+        .composite([{ input: l.buf, left: 0, top: Math.round((h - l.h) / 2) }, { input: d!.buf, left: l.w, top: Math.round((h - d!.h) / 2) }])
+        .png()
+        .toBuffer();
+      return { buf, w, h };
+    };
+    const bulletGap = () => size * 0.8;
+    const renderRows = () => Promise.all(extras.features!.map(renderRow));
+    let rows = await renderRows();
+    const widest = Math.max(...rows.map((r) => r.w)) + size * 0.5 + bulletGap();
+    if (widest > maxWidth) {
+      size = Math.floor((size * maxWidth) / widest);
+      rows = await renderRows();
+    }
+    const dot = Math.max(4, Math.round(size * 0.32));
+    const bullet = await sharp({ create: { width: dot, height: dot, channels: 4, background: fill ?? ink } }).png().toBuffer();
+    const rowGap = size * 1.55;
+    for (const row of rows) {
+      // Bullet and text as one element so the block's alignment keeps them together.
+      const indent = Math.round(dot + bulletGap());
+      const rowW = indent + row.w, rowH = row.h;
+      const buf = await sharp({ create: { width: rowW, height: rowH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+        .composite([{ input: bullet, left: 0, top: Math.round(rowH / 2 - dot / 2) }, { input: row.buf, left: indent, top: 0 }])
+        .png()
+        .toBuffer();
+      elements.push({ buf, w: rowW, h: rowH, top: y });
+      y += rowGap;
+    }
+    y += rows[rows.length - 1].h - rowGap;
+  }
+
   if (extras.cta) {
     y += S * 0.032;
-    const button = await pill(extras.cta, bold, S * 0.03, accent ?? ink, "full");
+    const button = await pill(extras.cta, bold, S * 0.03, fill ?? ink, "full");
     elements.push({ ...button, top: y });
     y += button.h;
   }
@@ -340,22 +396,6 @@ async function buildCopyBlock(
   return { buf, w, h };
 }
 
-// Soft blurred silhouette of an overlay element, composited just under it so it separates from
-// the image without a backing plate or band.
-export async function withShadow(element: Buffer, darkShadow: boolean, blur: number, strength = 0.5): Promise<{ input: Buffer; pad: number }> {
-  const { width = 0, height = 0 } = await sharp(element).metadata();
-  const pad = Math.max(4, Math.round(blur * 2));
-  const padded = await sharp(element).ensureAlpha()
-    .extend({ top: pad, bottom: pad, left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .toBuffer();
-  const alpha = await sharp(padded).extractChannel(3).linear(strength, 0).blur(Math.max(0.3, blur)).toBuffer();
-  const shade = darkShadow ? 0 : 255;
-  const shadow = await sharp({ create: { width: width + pad * 2, height: height + pad * 2, channels: 3, background: { r: shade, g: shade, b: shade } } })
-    .joinChannel(alpha).png().toBuffer();
-  const input = await sharp(shadow).composite([{ input: padded, left: 0, top: 0 }]).png().toBuffer();
-  return { input, pad };
-}
-
 // ---------- logo ----------
 
 // A brand-kit "logo" that is one flat color with no transparency (e.g. a placeholder square)
@@ -379,18 +419,25 @@ export async function logoLuminance(logo: Buffer): Promise<number> {
 
 // Knockout version (all white or all black, same alpha) — what designers use when a full-color
 // logo would disappear against the photo behind it.
+// Only the neutral (black/grey/white) parts flip; brand colours stay — a two-colour logo like
+// Turito's black wordmark + red "T" becomes white + red, as a designer's reversed logo would.
+// An all-neutral logo still ends up fully white/black.
 export async function knockout(logo: Buffer, white: boolean): Promise<Buffer> {
-  const { width = 0, height = 0 } = await sharp(logo).metadata();
-  const alpha = await sharp(logo).ensureAlpha().extractChannel(3).toBuffer();
+  const { data, info } = await sharp(logo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const v = white ? 255 : 0;
-  return sharp({ create: { width, height, channels: 3, background: { r: v, g: v, b: v } } }).joinChannel(alpha).png().toBuffer();
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    // Absolute channel spread, not HSV saturation: near-black like #030202 reads as 33% saturated.
+    if (Math.max(r, g, b) - Math.min(r, g, b) < 48) data[i] = data[i + 1] = data[i + 2] = v;
+  }
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
 }
 
 // ---------- compose ----------
 
 export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlayOptions): Promise<Buffer> {
   const { logoUrl, primaryColor, tagline, font } = options;
-  const structured = options.copy && (options.copy.headline || options.copy.subline || options.copy.offer || options.copy.cta || options.copy.contactLine)
+  const structured = options.copy && (options.copy.headline || options.copy.subline || options.copy.offer || options.copy.cta || options.copy.contactLine || options.copy.features?.length)
     ? options.copy
     : null;
 
@@ -407,7 +454,7 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
     const copy: PosterCopy = structured
       ? { kicker: null, headline: structured.headline ?? "", subline: structured.subline ?? null }
       : await splitPosterCopy(tagline!);
-    const extras = structured ? { offer: structured.offer, cta: structured.cta, contactLine: structured.contactLine } : {};
+    const extras = structured ? { offer: structured.offer, cta: structured.cta, contactLine: structured.contactLine, features: structured.features } : {};
     const brandAccent = primaryColor ? hexToRgb(primaryColor) : null;
     const accentRgb = brandAccent ?? (await vividColor(baseImage));
 
@@ -449,9 +496,11 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
     const darkInk = bgLum > 0.62;
     const ink = darkInk ? "#141414" : "#ffffff";
     // Accent only where it actually reads against the background; otherwise stay monochrome.
-    const accent = contrast(luminance(accentRgb), bgLum ** 2.2) >= 2.6 ? rgbToHex(accentRgb) : null;
+    const accentContrast = contrast(luminance(accentRgb), bgLum ** 2.2);
+    const accent = accentContrast >= 2.6 ? rgbToHex(accentRgb) : null;
+    const fill = accentContrast >= 1.4 ? rgbToHex(accentRgb) : null;
 
-    const block = await buildCopyBlock(copy, font, typeScale, width * pick.probe.fraction, pick.align, ink, accent, extras);
+    const block = await buildCopyBlock(copy, font, typeScale, width * pick.probe.fraction, pick.align, ink, accent, extras, fill);
     const x = pick.align === "left" ? M : pick.align === "right" ? width - M - block.w : Math.round((width - block.w) / 2);
     const y = pick.box.y < height / 2 ? M : height - M - block.h;
     textBox = { x, y, w: block.w, h: block.h };
@@ -473,8 +522,8 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
       composites.push({ input: cropped, left: Math.max(0, sx), top: Math.max(0, sy) });
     }
 
-    const { input, pad } = await withShadow(block.buf, !darkInk, S * 0.006, 0.45);
-    composites.push({ input, left: x - pad, top: y - pad });
+    // Copy is placed flat — no shadow or glow; the soft scrim above carries the contrast.
+    composites.push({ input: block.buf, left: x, top: y });
   }
 
   if (logoUrl) {
@@ -499,8 +548,8 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
         .reduce((best, c) => (c.energy * (1 + subjectOverlap(c.c, subjects) * 8) < best.energy * (1 + subjectOverlap(best.c, subjects) * 8) ? c : best));
 
       if (contrast(await logoLuminance(logo), spot.lum ** 2.2) < 1.8) logo = await knockout(logo, spot.lum < 0.55);
-      const shadowed = await withShadow(logo, spot.lum < 0.55, S * 0.005, 0.4);
-      composites.push({ input: shadowed.input, left: Math.round(spot.c.x) - shadowed.pad, top: Math.round(spot.c.y) - shadowed.pad });
+      // Logo placed flat, no shadow — the knockout above handles contrast.
+      composites.push({ input: logo, left: Math.round(spot.c.x), top: Math.round(spot.c.y) });
     }
   }
 
