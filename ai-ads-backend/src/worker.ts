@@ -1,6 +1,7 @@
 import "./lib/gcp-credentials-bootstrap";
 import { Worker } from "bullmq";
 import { type GenerationTask, enqueueShotChoices, enqueueShotVideo, enqueueStoryboardStitch, redisConnection } from "./lib/queue";
+import { env } from "./lib/env";
 import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
 import { findMarksInVideo, findSuddenEffects } from "./lib/video-check";
@@ -384,7 +385,8 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
 
   const plan = planShots(brief);
   return stitchVideos(clips, {
-    endCard,
+    endCard: endCard.background,
+    endCardOverlay: endCard.overlay,
     cutSeconds: plan.cutSeconds,
     transitionSeconds: TRANSITION_SECONDS[brief.pacing],
     grade: TONE_GRADE[brief.tone],
@@ -467,6 +469,7 @@ const worker = new Worker(
   },
   {
     connection: redisConnection,
+    prefix: env.queuePrefix,
     concurrency: 1,
     // Default drainDelay (5s) means BullMQ re-polls Redis every 5 seconds even when the
     // queue is empty — on Upstash's pay-per-request billing that idle polling alone burns

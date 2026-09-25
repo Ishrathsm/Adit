@@ -1,18 +1,33 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import ffprobeInstaller from "@ffprobe-installer/ffprobe";
+import ffmpegStatic from "ffmpeg-static";
 import { END_CARD_SECONDS } from "./creative-brief";
+
+// The Railway image has no system ffmpeg (every storyboard shot failed there with
+// "spawn ffprobe ENOENT"), so use the npm-bundled binaries; fall back to PATH if a host's
+// install step didn't fetch them.
+const BINARIES: Record<string, string> = {
+  ffmpeg: ffmpegStatic && existsSync(ffmpegStatic) ? ffmpegStatic : "ffmpeg",
+  ffprobe: existsSync(ffprobeInstaller.path) ? ffprobeInstaller.path : "ffprobe",
+};
+console.log(`[video-stitch] ffmpeg: ${BINARIES.ffmpeg}, ffprobe: ${BINARIES.ffprobe}`);
 
 const FPS = 24; // Veo's output frame rate
 // Older storyboards keep each shot's native audio: short fades at every cut so each reads as an
 // edit rather than a pop, since those tracks are generated independently.
 const AUDIO_FADE_IN = 0.06;
 const AUDIO_FADE_OUT = 0.18;
+// Blur behind on-screen text, as a fraction of the short side — deliberately light: softens busy
+// detail so the line reads, without looking like a frosted panel.
+const SUPER_BLUR = 0.008;
 
 function run(cmd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args);
+    const proc = spawn(BINARIES[cmd] ?? cmd, args);
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (chunk) => { stdout += chunk; });
@@ -81,6 +96,9 @@ export async function sampleFrames(clip: Buffer, fractions = [0.2, 0.5, 0.85]): 
 export interface StitchOptions {
   // Still image held at the end with a slow push-in (logo + tagline card).
   endCard?: Buffer;
+  // Full-frame transparent PNG (text + logo) laid over the end card unscaled and ungraded, so the
+  // type stays crisp while the card behind it pushes in.
+  endCardOverlay?: Buffer;
   // Trim every clip to this length — clips are generated longer than the cut so the edit keeps
   // the best stretch. Omit to keep full clips.
   cutSeconds?: number;
@@ -88,8 +106,9 @@ export interface StitchOptions {
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
   grade?: string;
-  // Full-frame transparent PNGs of on-screen text; supers[i] is shown over shot i + 1.
-  supers?: Buffer[];
+  // On-screen text; supers[i] is shown over shot i + 1. `text` is a full-frame transparent PNG;
+  // `mask` (white = blur) marks where the footage behind it is lightly blurred.
+  supers?: { text: Buffer; mask: Buffer }[];
   // Soundtrack for the whole edit. When music or a voiceover is given, the clips' own audio is
   // dropped; otherwise the clips' audio is kept (older storyboards).
   music?: Buffer;
@@ -196,12 +215,32 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       }
       if (b - a < 0.8) return;
       const fade = 0.3;
-      const idx = addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", `${dir}/super-${i}.png`);
-      filters.push(`[${idx}:v]format=rgba,fade=t=in:st=${f3(a)}:d=${fade}:alpha=1,fade=t=out:st=${f3(b - fade)}:d=${fade}:alpha=1[s${i}]`);
-      filters.push(`[${video}][s${i}]overlay=0:0:enable='between(t,${f3(a)},${f3(b)})'[vs${i}]`);
+      const fades = `fade=t=in:st=${f3(a)}:d=${fade}:alpha=1,fade=t=out:st=${f3(b - fade)}:d=${fade}:alpha=1`;
+      const enable = `enable='between(t,${f3(a)},${f3(b)})'`;
+      const still = (name: string) => addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", `${dir}/${name}`);
+      const textIdx = still(`super-${i}.png`);
+      const maskIdx = still(`super-mask-${i}.png`);
+      // A light blur of the footage, shown only through the feathered mask behind the text.
+      filters.push(`[${video}]split[sb${i}][sk${i}]`);
+      filters.push(`[${maskIdx}:v]format=gray,scale=${width}:${height}[sm${i}]`);
+      filters.push(`[sk${i}]gblur=sigma=${f3(SUPER_BLUR * Math.min(width, height))},format=rgba[sg${i}]`);
+      filters.push(`[sg${i}][sm${i}]alphamerge,${fades}[sl${i}]`);
+      filters.push(`[sb${i}][sl${i}]overlay=0:0:${enable}[sv${i}]`);
+      filters.push(`[${textIdx}:v]format=rgba,${fades}[s${i}]`);
+      filters.push(`[sv${i}][s${i}]overlay=0:0:${enable}[vs${i}]`);
       video = `vs${i}`;
     });
-    await Promise.all((options.supers ?? []).map((png, i) => write(`super-${i}.png`, png)));
+    await Promise.all(supers.flatMap((s, i) => [write(`super-${i}.png`, s.text), write(`super-mask-${i}.png`, s.mask)]));
+
+    // ---- end card text + logo: static on top, fading in with the dissolve into the card ----
+    if (options.endCard && options.endCardOverlay) {
+      const a = starts[starts.length - 1];
+      const fade = Math.max(T, 0.3);
+      const idx = addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", await write("end-card-overlay.png", options.endCardOverlay));
+      filters.push(`[${idx}:v]format=rgba,fade=t=in:st=${f3(a)}:d=${f3(fade)}:alpha=1[eco]`);
+      filters.push(`[${video}][eco]overlay=0:0:enable='gte(t,${f3(a)})'[veco]`);
+      video = "veco";
+    }
     filters.push(`[${video}]fade=t=in:st=0:d=0.25,fade=t=out:st=${f3(Math.max(0, total - 0.4))}:d=0.4,format=yuv420p[outv]`);
 
     // ---- audio ----

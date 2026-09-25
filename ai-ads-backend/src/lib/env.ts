@@ -17,6 +17,9 @@ export const env = {
   // Optional: features degrade gracefully instead of crashing at boot when these are unset,
   // since not every POC account is created yet.
   upstashRedisUrl: process.env.UPSTASH_REDIS_URL || undefined,
+  // Local dev shares the production Redis; a separate prefix keeps the deployed worker from
+  // picking up local jobs (and vice versa). Production leaves it unset (BullMQ's default).
+  queuePrefix: process.env.QUEUE_PREFIX || "bull",
   // Separate from the TCP url above — Ratelimit talks to Upstash over its REST API, not
   // ioredis. Same underlying database, different credential pair (Upstash dashboard's "REST"
   // tab, not "TCP"). Rate limiting is disabled (fails open) when these aren't set.
