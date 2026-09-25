@@ -22,6 +22,8 @@ function friendlyAuthError(message: string): string {
   if (/banned/i.test(message)) return DISABLED_MESSAGE;
   if (/invalid login credentials/i.test(message)) return "That email and password don't match. Please try again.";
   if (/email not confirmed/i.test(message)) return "Please confirm your email first — check your inbox for the link.";
+  // A confirmation link opened in a different browser/device than the one that signed up.
+  if (/code verifier/i.test(message)) return "That link was opened in a different browser. Your email may already be confirmed — sign in below.";
   return message;
 }
 
@@ -64,10 +66,14 @@ function LoginForm() {
 
   useEffect(() => {
     if (!code) return;
+    // The browser client exchanges `?code=` by itself when it starts (detectSessionInUrl), which
+    // spends the one-time PKCE verifier — calling exchangeCodeForSession again here always failed
+    // with "PKCE code verifier not found". Wait for that exchange and use its result instead.
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        setError(friendlyAuthError(error.message));
+    supabase.auth.initialize().then(async ({ error }) => {
+      const { data } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setError(friendlyAuthError(error?.message ?? "This sign-in link has expired. Please sign in again."));
         setExchangingCode(false);
         return;
       }
@@ -225,21 +231,6 @@ function LoginForm() {
           </div>
         ) : (
           <div className="rgb-border flex flex-col gap-4 p-6">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border-strong text-sm font-medium text-foreground transition-colors hover:bg-white/5"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-
-            <div className="flex items-center gap-3 text-xs text-muted">
-              <div className="h-px flex-1 bg-border-subtle" />
-              or
-              <div className="h-px flex-1 bg-border-subtle" />
-            </div>
-
             <div className="flex flex-col gap-2">
               <label htmlFor="email" className="text-sm font-medium">
                 Email
@@ -296,6 +287,21 @@ function LoginForm() {
             <Button onClick={handleSubmit} disabled={submitting || !email.trim() || !password}>
               {submitting ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Sign up"}
             </Button>
+
+            <div className="flex items-center gap-3 text-xs text-muted">
+              <div className="h-px flex-1 bg-border-subtle" />
+              or
+              <div className="h-px flex-1 bg-border-subtle" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border-strong text-sm font-medium text-foreground transition-colors hover:bg-white/5"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
 
             <button
               type="button"

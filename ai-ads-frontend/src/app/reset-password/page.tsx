@@ -61,9 +61,12 @@ export default function ResetPasswordPage() {
         return !error;
       }
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        // The client already exchanged the code on startup (detectSessionInUrl) — a second
+        // exchangeCodeForSession finds the PKCE verifier spent and fails. Use that result.
+        const { error } = await supabase.auth.initialize();
+        const { data } = await supabase.auth.getSession();
         window.history.replaceState(null, "", window.location.pathname);
-        return !error;
+        return !error && Boolean(data.session);
       }
       // A reload after arriving from the link (the tokens are gone from the URL by then). Being
       // merely signed in isn't enough: this page is only for reset links — signed-in users change
