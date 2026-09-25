@@ -402,8 +402,8 @@ export default function StoryboardPage() {
               <video src={legacyJob.output_url} controls className="max-h-80 w-full rounded-xl bg-black object-contain" />
             </div>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+          <div className="rgb-border grid gap-x-8 gap-y-7 p-6 sm:grid-cols-2 sm:p-8">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <label htmlFor="concept" className="text-sm font-medium">
                 Describe the ad concept
               </label>
@@ -423,7 +423,7 @@ export default function StoryboardPage() {
               </p>
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5">
+            <div className="flex flex-col gap-2">
               <label htmlFor="aspect-ratio" className="text-sm font-medium">
                 Aspect ratio
               </label>
@@ -442,7 +442,7 @@ export default function StoryboardPage() {
               </select>
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
                 Reference image <span className="text-muted">(optional)</span>
               </label>
@@ -477,7 +477,7 @@ export default function StoryboardPage() {
               )}
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-2 sm:col-span-2">
               <label className="text-sm font-medium">Format</label>
               <div className="flex flex-wrap gap-2">
                 <button type="button" disabled={creating || !has("video_ad")} onClick={() => setFormat("ad")} className={pillClass(format === "ad")}>
@@ -490,7 +490,7 @@ export default function StoryboardPage() {
             </div>
 
             {format === "single" ? (
-              <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+              <div className="flex flex-col gap-2 sm:col-span-2">
                 <label className="text-sm font-medium">Shot length</label>
                 <div className="flex flex-wrap gap-2">
                   {SINGLE_SHOT_SECONDS.map((seconds) => (
@@ -504,7 +504,7 @@ export default function StoryboardPage() {
               </div>
             ) : (
               <>
-              <div className="rgb-border flex flex-col gap-2 p-5">
+              <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Ad length</label>
                 <div className="flex flex-wrap gap-2">
                   {AD_LENGTHS.map((length) => (
@@ -516,7 +516,7 @@ export default function StoryboardPage() {
                 {makeTimeNote}
               </div>
 
-              <div className="rgb-border flex flex-col gap-2 p-5">
+              <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Pacing</label>
                 <div className="flex flex-wrap gap-2">
                   {AD_PACINGS.map((option) => (
@@ -530,7 +530,7 @@ export default function StoryboardPage() {
               </>
             )}
 
-            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-2 sm:col-span-2">
               <label className="text-sm font-medium">Tone</label>
               <div className="flex flex-wrap gap-2">
                 {AD_TONES.map((option) => (
@@ -541,7 +541,7 @@ export default function StoryboardPage() {
               </div>
             </div>
 
-            <div className="rgb-border flex flex-col gap-2 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-2 sm:col-span-2">
               <label className="text-sm font-medium">Look</label>
               <div className="flex flex-wrap gap-2">
                 {AD_LOOKS.map((option) => (
@@ -553,7 +553,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">Photoreal keeps everything filmable-real. Effects only appear with Surreal.</p>
             </div>
 
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <label className="text-sm font-medium">Audio</label>
               <div className="flex flex-wrap gap-2">
                 <button type="button" disabled={creating} onClick={() => setVoiceover(false)} className={pillClass(!voiceover)}>
@@ -595,7 +595,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">No one speaks on camera — music is composed for the ad, and narration is added only if you choose it.</p>
             </div>
 
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <label className="text-sm font-medium">On-screen text <span className="font-normal text-muted">(optional)</span></label>
               {onScreenText.map((line, index) => (
                 <input
@@ -616,7 +616,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">Shown one line per shot, in order. This is the only text in the film besides the end card.</p>
             </div>
 
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <label className="text-sm font-medium">End card</label>
               {[
                 { id: "brand-name", label: "Brand name (defaults to your brand kit)", value: brandName, set: setBrandName, placeholder: "Saraswati Vidyalaya" },
@@ -631,7 +631,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">The logo comes from the project&apos;s brand kit.</p>
             </div>
 
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <label className="text-sm font-medium">Guidance <span className="font-normal text-muted">(optional)</span></label>
               {[
                 { id: "audience", label: "Audience", value: audience, set: setAudience, placeholder: "Parents of school-age kids in Hyderabad" },
@@ -645,7 +645,7 @@ export default function StoryboardPage() {
               ))}
             </div>
 
-            <div className="rgb-border flex flex-col gap-3 p-5 sm:col-span-2">
+            <div className="flex flex-col gap-3 sm:col-span-2">
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium">References &amp; cast</label>
                 <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>
