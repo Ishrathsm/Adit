@@ -350,7 +350,7 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-muted">Typeset exactly as written. The image itself never contains text.</p>
                   </div>
 
-                  <Accordion title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
+                  <Accordion optional title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
                     {featureList.map((value, i) => (
                       <input
                         key={i}
@@ -387,7 +387,7 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  <Accordion title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
+                  <Accordion optional title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
                     {[
                       { id: "audience", value: audience, set: setAudience, placeholder: "Audience — e.g. Parents of school-age kids in Hyderabad" },
                       { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show — e.g. our campus, students in uniform" },
@@ -405,7 +405,7 @@ export default function ProjectDetailPage() {
                     ))}
                   </Accordion>
 
-                  <Accordion title="Reference photos" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={posterAssets.length > 0}>
+                  <Accordion optional title="Reference photos" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={posterAssets.length > 0}>
                     {posterAssets.map((asset, index) => (
                       <div key={index} className="flex items-center gap-2">
                         {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}

@@ -596,7 +596,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">No one speaks on camera — music is composed for the ad, and narration is added only if you choose it.</p>
             </div>
 
-            <Accordion title="On-screen text" defaultOpen={onScreenText.some((l) => l.trim())} className="sm:col-span-2">
+            <Accordion optional title="On-screen text" defaultOpen={onScreenText.some((l) => l.trim())} className="sm:col-span-2">
               {onScreenText.map((line, index) => (
                 <input
                   key={index}
@@ -616,7 +616,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">Shown one line per shot, in order. This is the only text in the film besides the end card.</p>
             </Accordion>
 
-            <Accordion title="End card" defaultOpen={Boolean(brandName || keyMessage || contactLine)} className="sm:col-span-2">
+            <Accordion optional title="End card" defaultOpen={Boolean(brandName || keyMessage || contactLine)} className="sm:col-span-2">
               {[
                 { id: "brand-name", label: "Brand name (defaults to your brand kit)", value: brandName, set: setBrandName, placeholder: "Saraswati Vidyalaya" },
                 { id: "key-message", label: "Key message", value: keyMessage, set: setKeyMessage, placeholder: "Admissions open for 2027" },
@@ -630,7 +630,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">The logo comes from the project&apos;s brand kit.</p>
             </Accordion>
 
-            <Accordion title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)} className="sm:col-span-2">
+            <Accordion optional title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)} className="sm:col-span-2">
               {[
                 { id: "audience", label: "Audience", value: audience, set: setAudience, placeholder: "Parents of school-age kids in Hyderabad" },
                 { id: "must-show", label: "Must show", value: mustShow, set: setMustShow, placeholder: "Our campus building, students in uniform" },
@@ -643,7 +643,7 @@ export default function StoryboardPage() {
               ))}
             </Accordion>
 
-            <Accordion title="References & cast" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={proAssets.length > 0 || characterSheet} className="sm:col-span-2">
+            <Accordion optional title="References & cast" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={proAssets.length > 0 || characterSheet} className="sm:col-span-2">
 
               {proAssets.map((asset, index) => (
                 <div key={index} className="flex flex-col gap-2 rounded-xl border border-border-subtle p-3 sm:flex-row sm:items-start">

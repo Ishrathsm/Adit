@@ -9,6 +9,7 @@ export function Accordion({
   title,
   hint,
   badge,
+  optional = false,
   defaultOpen = false,
   className = "",
   children,
@@ -16,6 +17,8 @@ export function Accordion({
   title: string;
   hint?: string;
   badge?: ReactNode;
+  // Shows a quiet "Optional" tag next to the heading.
+  optional?: boolean;
   defaultOpen?: boolean;
   className?: string;
   children: ReactNode;
@@ -33,6 +36,9 @@ export function Accordion({
       >
         <span className="text-sm font-medium">{title}</span>
         {hint && <span className="text-sm text-muted">{hint}</span>}
+        {optional && (
+          <span className="rounded-full border border-border-subtle px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted">Optional</span>
+        )}
         {badge}
         <ChevronDown size={16} className={`ml-auto shrink-0 text-muted transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
       </button>
