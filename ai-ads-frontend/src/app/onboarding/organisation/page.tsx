@@ -21,11 +21,9 @@ export default function OrganisationProductPage() {
   }, []);
 
   function handleSelect(product: Product) {
-    if (product.questionnaire_completed) {
-      router.push(`/projects?product=${product.id}`);
-    } else {
-      router.push(`/onboarding/brand-questionnaire?product=${product.id}`);
-    }
+    // A brand kit is optional (it can be skipped at creation); an unfinished one is flagged in the
+    // brand panel on its projects page rather than blocking the brand.
+    router.push(`/projects?product=${product.id}`);
   }
 
   async function handleCreate() {

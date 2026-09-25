@@ -67,16 +67,25 @@ productsRouter.post("/:id/logo", upload.single("logo"), async (req: AuthedReques
 });
 
 productsRouter.patch("/:id/questionnaire", async (req: AuthedRequest, res) => {
-  const { font, brandRules, logoUrl, primaryColor, secondaryColor, tagline } = req.body ?? {};
-  if (typeof font !== "string" || !font.trim() || typeof brandRules !== "string" || !brandRules.trim()) {
-    res.status(400).json({ error: "font and brandRules are required" });
+  const { name, font, brandRules, logoUrl, primaryColor, secondaryColor, tagline } = req.body ?? {};
+  if (name !== undefined && name !== null && (typeof name !== "string" || name.trim().length > 80)) {
+    res.status(400).json({ error: "name must be a string of at most 80 characters" });
     return;
+  }
+  // Font and rules are optional so a brand kit can be skipped or filled in gradually; the pipeline
+  // falls back to the tone's font and no extra rules. The kit counts as complete once both are set.
+  for (const [field, value] of [["font", font], ["brandRules", brandRules]] as const) {
+    if (value !== undefined && value !== null && typeof value !== "string") {
+      res.status(400).json({ error: `${field} must be a string` });
+      return;
+    }
   }
 
   try {
     const product = await completeQuestionnaire(req.userId!, req.params.id, {
-      font: font.trim(),
-      brandRules: brandRules.trim(),
+      name: typeof name === "string" && name.trim() ? name.trim() : null,
+      font: typeof font === "string" && font.trim() ? font.trim() : null,
+      brandRules: typeof brandRules === "string" && brandRules.trim() ? brandRules.trim() : null,
       logoUrl: logoUrl || null,
       primaryColor: primaryColor || null,
       secondaryColor: secondaryColor || null,

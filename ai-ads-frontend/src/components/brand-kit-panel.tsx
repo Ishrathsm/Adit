@@ -18,6 +18,7 @@ export function BrandKitPanel({
 }) {
   const [expanded, setExpanded] = useState(false);
 
+  const [name, setName] = useState(product.name);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(product.logo_url);
   const [primaryColor, setPrimaryColor] = useState(product.primary_color ?? "#6c5ce7");
@@ -30,7 +31,6 @@ export function BrandKitPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   async function handleSave() {
-    if (!font.trim() || !brandRules.trim()) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -40,12 +40,13 @@ export function BrandKitPanel({
         logoUrl = result.logoUrl;
       }
       const { product: updated } = await completeQuestionnaire(product.id, {
+        name: name.trim() || product.name,
         logoUrl,
         primaryColor,
         secondaryColor,
-        font: font.trim(),
+        font: font.trim() || null,
         tagline: tagline.trim(),
-        brandRules: brandRules.trim(),
+        brandRules: brandRules.trim() || null,
       });
       onUpdate(updated);
       setLogoFile(null);
@@ -73,7 +74,13 @@ export function BrandKitPanel({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{product.name}</p>
-          <p className="text-xs text-muted">{expanded ? "Editing brand kit" : "Brand kit — click to edit"}</p>
+          <p className={clsx("text-xs", !expanded && !product.questionnaire_completed ? "text-amber-400" : "text-muted")}>
+            {expanded
+              ? "Editing brand kit"
+              : product.questionnaire_completed
+                ? "Brand kit — click to edit"
+                : "Finish your brand kit — add a font and brand rules for on-brand ads"}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <span
@@ -91,6 +98,20 @@ export function BrandKitPanel({
       {expanded && (
         <div className="grid gap-6 border-t border-border-subtle p-5 md:grid-cols-2">
           <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <label htmlFor={`brand-name-${product.id}`} className="text-sm font-medium">
+                Brand name
+              </label>
+              <input
+                id={`brand-name-${product.id}`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={80}
+                placeholder="e.g. Turito"
+                className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong"
+              />
+            </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">Logo</label>
               <label className="flex cursor-pointer items-center gap-2 rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm text-muted transition-colors hover:border-border-strong">
@@ -185,7 +206,7 @@ export function BrandKitPanel({
             </div>
 
             <div className="flex items-center gap-3">
-              <Button onClick={handleSave} disabled={saving || !font.trim() || !brandRules.trim()}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : "Save brand kit"}
               </Button>
               <button

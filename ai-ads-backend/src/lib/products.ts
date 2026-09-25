@@ -28,12 +28,14 @@ export function toBrandContext(product: ProductRow | null): BrandContext | undef
 }
 
 export interface BrandKitInput {
+  // Optional so the onboarding questionnaire (which names the brand earlier) is unaffected.
+  name?: string | null;
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
-  font: string;
+  font?: string | null;
   tagline?: string | null;
-  brandRules: string;
+  brandRules?: string | null;
 }
 
 export async function listProducts(userId: string): Promise<ProductRow[]> {
@@ -77,13 +79,14 @@ export async function completeQuestionnaire(userId: string, id: string, brand: B
   const { data, error } = await supabase
     .from("products")
     .update({
-      questionnaire_completed: true,
+      questionnaire_completed: Boolean(brand.font && brand.brandRules),
+      ...(brand.name ? { name: brand.name } : {}),
       logo_url: brand.logoUrl ?? null,
       primary_color: brand.primaryColor ?? null,
       secondary_color: brand.secondaryColor ?? null,
-      font: brand.font,
+      font: brand.font ?? null,
       tagline: brand.tagline ?? null,
-      brand_rules: brand.brandRules,
+      brand_rules: brand.brandRules ?? null,
     })
     .eq("user_id", userId)
     .eq("id", id)

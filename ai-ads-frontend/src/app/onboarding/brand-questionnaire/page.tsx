@@ -206,13 +206,24 @@ function BrandQuestionnaireForm() {
 
         {submitError && <p className="text-sm text-red-400">{submitError}</p>}
 
-        <Button
-          onClick={handleSubmit}
-          disabled={submitting || !font.trim() || !brandRules.trim()}
-          className="self-start"
-        >
-          {submitting ? "Saving…" : "Complete & go to Projects"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !font.trim() || !brandRules.trim()}
+          >
+            {submitting ? "Saving…" : "Complete & go to Projects"}
+          </Button>
+          {/* The kit is optional: ads fall back to the tone's font and no extra rules, and it can be
+              finished later from the brand panel on the projects page. */}
+          <button
+            type="button"
+            disabled={submitting || !productId}
+            onClick={() => router.push(`/projects?product=${productId}`)}
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            Skip for now
+          </button>
+        </div>
       </div>
     </main>
   );
