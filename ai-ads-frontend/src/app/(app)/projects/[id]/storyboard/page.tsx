@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { CheckCircle2, Download, Loader2, Upload, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Download, Loader2, Upload, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
+import { InfoTip } from "@/components/ui/info-tip";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
@@ -76,6 +77,15 @@ function mockShot(index: number, opts: { picked?: boolean; withVideo?: boolean }
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+}
+
+// Rough make time, from real app runs (2026-09-25): script ~5 min, character references ~3 min,
+// ~3.5 min per shot (2 keyframes, auto-pick, Veo clip, quality checks — one job at a time), and
+// ~1.5 min for music, voiceover, and the edit. Shown as a range; quota retries can add more.
+function estimateMakeMinutes(shots: number, castSheet: boolean, voiceover: boolean): { low: number; high: number } {
+  const mid = 5 + (castSheet ? 3 : 0) + shots * 3.5 + 1.5 + (voiceover ? 0.5 : 0);
+  const round5 = (n: number) => Math.max(5, Math.round(n / 5) * 5);
+  return { low: round5(mid * 0.8), high: round5(mid * 1.3) };
 }
 
 function mockStoryboard(status: Storyboard["status"], shotCount: number): Storyboard {
@@ -203,6 +213,20 @@ export default function StoryboardPage() {
   // Reference assets + character sheet (future Pro features; not gated until tiers are decided).
   const [proAssets, setProAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string; description: string }[]>([]);
   const [characterSheet, setCharacterSheet] = useState(false);
+  const makeTime = estimateMakeMinutes(shotCount, format === "ad" && characterSheet, voiceover);
+  const makeTimeNote = (
+    <div className="flex items-center gap-1 text-xs text-muted">
+      <Clock size={12} />
+      <span>
+        Takes about {makeTime.low}–{makeTime.high} min to make
+      </span>
+      <InfoTip
+        side="top"
+        label="make time"
+        text={`Estimate for ${shotCount} shot${shotCount === 1 ? "" : "s"}: writing the script (~5 min)${format === "ad" && characterSheet ? ", your cast references (~3 min, then waits for your approval)" : ""}, about 3–4 min per shot (keyframes, then animating), and ~2 min for ${voiceover ? "music, voiceover," : "music"} and the final edit. Busy times can take longer. You can leave this page — we'll keep working.`}
+      />
+    </div>
+  );
   const [starting, setStarting] = useState(false);
 
   const isMock = storyboard?.id === "mock-storyboard";
@@ -473,6 +497,7 @@ export default function StoryboardPage() {
                   ))}
                 </div>
                 <p className="text-xs text-muted">Plus a short branded end card.</p>
+                {makeTimeNote}
               </div>
             ) : (
               <>
@@ -485,6 +510,7 @@ export default function StoryboardPage() {
                     </button>
                   ))}
                 </div>
+                {makeTimeNote}
               </div>
 
               <div className="rgb-border flex flex-col gap-2 p-5">
