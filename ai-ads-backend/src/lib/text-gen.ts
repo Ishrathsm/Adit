@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { type CreativeBrief, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
+import { type CreativeBrief, END_CARD_SECONDS, footageSeconds, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
 import { env } from "./env";
 import { type BrandContext, colorName } from "./prompt-refiner";
 
@@ -88,7 +88,7 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
     `Client concept: "${concept}"`,
     brief.format === "single"
       ? `Length: ONE continuous ${plan.clipSeconds}s shot (no cuts), then a branded end card (logo + key message) is added automatically, so the shot must not attempt one.`
-      : `Length: ${brief.lengthSeconds}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
+      : `Length: ${Math.round(footageSeconds(brief) + END_CARD_SECONDS)}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
     `Tone: ${TONE_DIRECTION[brief.tone]}`,
     `Look: ${LOOK_DIRECTION[brief.look]}`,
     brief.audience && `Audience: ${brief.audience} — cast, setting, and emotional angle should feel true to them.`,

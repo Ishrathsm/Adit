@@ -19,23 +19,24 @@ import {
   selectShotChoice,
   uploadStoryboardReferenceImage,
   STORYBOARD_ASPECT_RATIOS,
-  AD_LENGTHS,
   AD_LOOKS,
-  AD_PACINGS,
   AD_TONES,
   SINGLE_SHOT_SECONDS,
   footageSeconds,
+  MAX_FOOTAGE_SECONDS,
+  pacingForShotSeconds,
+  SHOT_COUNTS,
+  SHOT_SECONDS,
+  type ShotSeconds,
   type AdFormat,
   type SingleShotSeconds,
   MAX_ON_SCREEN_LINES,
   VOICEOVER_LANGUAGES,
   maxVoiceoverWords,
-  plannedShotCount,
   type VoiceGender,
   type VoiceoverLanguage,
   type AdLength,
   type AdLook,
-  type AdPacing,
   type AdTone,
   type AssetKind,
   type Features,
@@ -135,10 +136,13 @@ export default function StoryboardPage() {
   const searchParams = useSearchParams();
   const [format, setFormat] = useState<AdFormat>(searchParams.get("mode") === "quick" ? "single" : "ad");
   const [singleSeconds, setSingleSeconds] = useState<SingleShotSeconds>(8);
-  const [lengthSeconds, setLengthSeconds] = useState<AdLength>(20);
+  // Multi-shot plan: N shots x S seconds (2 x 6s = 12s). Default stays under 20s, which every
+  // plan allows; longer ads need the long_ads feature.
+  const [plannedShots, setPlannedShots] = useState(3);
+  const [shotSeconds, setShotSeconds] = useState<ShotSeconds>(6);
   const [tone, setTone] = useState<AdTone>("premium");
   const [look, setLook] = useState<AdLook>("photoreal");
-  const [pacing, setPacing] = useState<AdPacing>("balanced");
+  const pacing = pacingForShotSeconds(shotSeconds);
   const [audience, setAudience] = useState("");
   const [keyMessage, setKeyMessage] = useState("");
   const [mustShow, setMustShow] = useState("");
@@ -151,10 +155,13 @@ export default function StoryboardPage() {
   const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
   const [voiceoverScript, setVoiceoverScript] = useState("");
   const scriptWords = voiceoverScript.trim() ? voiceoverScript.trim().split(/\s+/).length : 0;
-  const footage = footageSeconds({ format, singleSeconds, lengthSeconds });
+  const adSeconds = plannedShots * shotSeconds;
+  // Older briefs' length field, sent for compatibility; the explicit plan overrides it.
+  const lengthSeconds: AdLength = adSeconds > 20 ? 30 : adSeconds > 15 ? 20 : 15;
+  const footage = footageSeconds({ format, singleSeconds, lengthSeconds, shotCount: plannedShots, shotSeconds });
   const maxScriptWords = maxVoiceoverWords(footage);
   const scriptTooLong = voiceover && scriptWords > maxScriptWords;
-  const shotCount = plannedShotCount({ format, lengthSeconds, pacing });
+  const shotCount = format === "single" ? 1 : plannedShots;
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImageRole, setReferenceImageRole] = useState<ReferenceImageRole>("subject");
   const [creating, setCreating] = useState(false);
@@ -321,6 +328,7 @@ export default function StoryboardPage() {
           format,
           singleSeconds,
           lengthSeconds,
+          ...(format === "ad" ? { shotCount: plannedShots, shotSeconds } : {}),
           tone,
           look,
           pacing,
@@ -420,7 +428,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">
                 {format === "single"
                   ? `We'll plan one continuous ${singleSeconds}s shot in the tone and look you choose below, generate 2 keyframes and auto-pick the best (you can swap it), animate it, and finish with a branded end card.`
-                  : `We'll write a ${lengthSeconds}s, ${shotCount}-shot script in the tone and look you choose below, generate 2 keyframes per shot and auto-pick the best (you can swap any), animate each shot, and finish with a branded end card.`}
+                  : `We'll write a ${adSeconds}s, ${shotCount}-shot script in the tone and look you choose below, generate 2 keyframes per shot and auto-pick the best (you can swap any), animate each shot, and finish with a branded end card.`}
               </p>
             </div>
 
@@ -506,27 +514,38 @@ export default function StoryboardPage() {
             ) : (
               <>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">Ad length</label>
+                <label className="text-sm font-medium">Shots</label>
                 <div className="flex flex-wrap gap-2">
-                  {AD_LENGTHS.map((length) => (
-                    <button key={length} type="button" disabled={creating || (length === 30 && !has("long_ads"))} onClick={() => setLengthSeconds(length)} className={pillClass(lengthSeconds === length)}>
-                      {length}s
-                    </button>
-                  ))}
+                  {SHOT_COUNTS.map((count) => {
+                    const total = count * shotSeconds;
+                    const blocked = total > MAX_FOOTAGE_SECONDS || (total > 20 && !has("long_ads"));
+                    return (
+                      <button key={count} type="button" disabled={creating || blocked} onClick={() => setPlannedShots(count)} className={pillClass(plannedShots === count)}>
+                        {count}
+                      </button>
+                    );
+                  })}
                 </div>
                 {makeTimeNote}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">Pacing</label>
+                <label className="text-sm font-medium">Seconds per shot</label>
                 <div className="flex flex-wrap gap-2">
-                  {AD_PACINGS.map((option) => (
-                    <button key={option.value} type="button" disabled={creating} onClick={() => setPacing(option.value)} className={pillClass(pacing === option.value)}>
-                      {option.label}
-                    </button>
-                  ))}
+                  {SHOT_SECONDS.map((seconds) => {
+                    const total = plannedShots * seconds;
+                    const blocked = total > MAX_FOOTAGE_SECONDS || (total > 20 && !has("long_ads"));
+                    return (
+                      <button key={seconds} type="button" disabled={creating || blocked} onClick={() => setShotSeconds(seconds)} className={pillClass(shotSeconds === seconds)}>
+                        {seconds}s
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-xs text-muted">{shotCount} shots, about {((lengthSeconds - 2.5) / shotCount).toFixed(1)}s each</p>
+                <p className="text-xs text-muted">
+                  {plannedShots} &times; {shotSeconds}s = <span className="font-medium text-foreground">{adSeconds}s ad</span>, plus the end card
+                  {!has("long_ads") ? " · up to 20s on your plan" : ""}
+                </p>
               </div>
               </>
             )}

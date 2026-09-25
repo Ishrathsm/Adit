@@ -97,12 +97,13 @@ export interface Product {
 }
 
 export interface BrandKitInput {
+  name?: string | null;
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
-  font: string;
+  font?: string | null;
   tagline?: string | null;
-  brandRules: string;
+  brandRules?: string | null;
 }
 
 // Must match the backend's disabled-account response (ai-ads-backend/src/middleware/auth.ts).
@@ -423,11 +424,18 @@ export const MAX_ON_SCREEN_LINES = 4;
 export type AdFormat = "ad" | "single";
 export const SINGLE_SHOT_SECONDS = [4, 6, 8] as const;
 export type SingleShotSeconds = (typeof SINGLE_SHOT_SECONDS)[number];
+// Multi-shot ads are planned as N shots x S seconds (mirrors ai-ads-backend creative-brief.ts).
+export const SHOT_SECONDS = [4, 6, 8] as const;
+export type ShotSeconds = (typeof SHOT_SECONDS)[number];
+export const SHOT_COUNTS = [2, 3, 4, 5, 6, 7, 8] as const;
+export const MAX_FOOTAGE_SECONDS = 32;
 
 export interface CreativeBrief {
   format?: AdFormat;
   singleSeconds?: SingleShotSeconds;
   lengthSeconds: AdLength;
+  shotCount?: number | null;
+  shotSeconds?: ShotSeconds | null;
   tone: AdTone;
   look: AdLook;
   pacing: AdPacing;
@@ -445,8 +453,15 @@ export interface CreativeBrief {
 }
 
 // Seconds of footage (before the end card) — what a voiceover has to fit into.
-export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds">): number {
-  return brief.format === "single" ? (brief.singleSeconds ?? 8) : brief.lengthSeconds - END_CARD_SECONDS;
+export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds" | "shotCount" | "shotSeconds">): number {
+  if (brief.format === "single") return brief.singleSeconds ?? 8;
+  if (brief.shotCount && brief.shotSeconds) return brief.shotCount * brief.shotSeconds;
+  return brief.lengthSeconds - END_CARD_SECONDS;
+}
+
+// Shot length implies the pacing sent with the brief (the backend derives the same).
+export function pacingForShotSeconds(seconds: ShotSeconds): AdPacing {
+  return seconds === 4 ? "fast" : seconds === 8 ? "calm" : "balanced";
 }
 
 // Same limit the backend enforces on a pasted voiceover (spoken pace x footage time).

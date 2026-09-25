@@ -7,6 +7,12 @@ export const AD_LENGTHS = [15, 20, 30] as const;
 // quick Text -> Video, now through the same pipeline (checks, music, end card).
 export const FORMATS = ["ad", "single"] as const;
 export const SINGLE_SHOT_SECONDS = [4, 6, 8] as const;
+// Multi-shot ads can also be planned directly as N shots x S seconds (e.g. 2 x 6s = 12s) — the
+// ad length is then always an even number of seconds, before the end card.
+export const SHOT_SECONDS = [4, 6, 8] as const;
+export const MIN_SHOTS = 2;
+export const MAX_SHOTS = 8;
+export const MAX_FOOTAGE_SECONDS = 32;
 export const TONES = ["premium", "warm", "bold", "playful", "trustworthy"] as const;
 export const LOOKS = ["photoreal", "cinematic", "surreal"] as const;
 export const PACINGS = ["calm", "balanced", "fast"] as const;
@@ -16,6 +22,7 @@ export const VOICE_GENDERS = ["female", "male"] as const;
 export type AdLength = (typeof AD_LENGTHS)[number];
 export type Format = (typeof FORMATS)[number];
 export type SingleShotSeconds = (typeof SINGLE_SHOT_SECONDS)[number];
+export type ShotSeconds = (typeof SHOT_SECONDS)[number];
 export type Tone = (typeof TONES)[number];
 export type Look = (typeof LOOKS)[number];
 export type Pacing = (typeof PACINGS)[number];
@@ -29,6 +36,10 @@ export interface CreativeBrief {
   // Only for the "single" format.
   singleSeconds: SingleShotSeconds;
   lengthSeconds: AdLength;
+  // Explicit plan (both set, or both null): shotCount shots of shotSeconds each. Overrides
+  // lengthSeconds + pacing, which remain for older briefs.
+  shotCount: number | null;
+  shotSeconds: ShotSeconds | null;
   tone: Tone;
   look: Look;
   pacing: Pacing;
@@ -59,6 +70,8 @@ export const DEFAULT_BRIEF: CreativeBrief = {
   format: "ad",
   singleSeconds: 8,
   lengthSeconds: 20,
+  shotCount: null,
+  shotSeconds: null,
   tone: "premium",
   look: "photoreal",
   pacing: "balanced",
@@ -103,6 +116,7 @@ export function parseCreativeBrief(raw: unknown): CreativeBrief {
     format: pick(b.format, FORMATS, DEFAULT_BRIEF.format, "format"),
     singleSeconds: pick(b.singleSeconds, SINGLE_SHOT_SECONDS, DEFAULT_BRIEF.singleSeconds, "singleSeconds"),
     lengthSeconds: pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds"),
+    ...shotPlanFor(b),
     tone: pick(b.tone, TONES, DEFAULT_BRIEF.tone, "tone"),
     look: pick(b.look, LOOKS, DEFAULT_BRIEF.look, "look"),
     pacing: pick(b.pacing, PACINGS, DEFAULT_BRIEF.pacing, "pacing"),
@@ -120,6 +134,33 @@ export function parseCreativeBrief(raw: unknown): CreativeBrief {
   };
 }
 
+// Validates an explicit "N shots x S seconds" plan; both fields must come together.
+function shotPlanFor(b: Record<string, unknown>): { shotCount: number | null; shotSeconds: ShotSeconds | null } {
+  if ((b.shotCount === undefined || b.shotCount === null) && (b.shotSeconds === undefined || b.shotSeconds === null)) {
+    return { shotCount: null, shotSeconds: null };
+  }
+  const count = b.shotCount;
+  if (typeof count !== "number" || !Number.isInteger(count) || count < MIN_SHOTS || count > MAX_SHOTS) {
+    throw new Error(`shotCount must be a whole number from ${MIN_SHOTS} to ${MAX_SHOTS}`);
+  }
+  const seconds = pick(b.shotSeconds, SHOT_SECONDS, 6, "shotSeconds");
+  if (count * seconds > MAX_FOOTAGE_SECONDS) throw new Error(`${count} x ${seconds}s is ${count * seconds}s — keep the ad to ${MAX_FOOTAGE_SECONDS}s or less`);
+  return { shotCount: count, shotSeconds: seconds };
+}
+
+// Seconds of footage before the end card.
+export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds" | "shotCount" | "shotSeconds">): number {
+  if (brief.format === "single") return brief.singleSeconds;
+  if (brief.shotCount && brief.shotSeconds) return brief.shotCount * brief.shotSeconds;
+  return brief.lengthSeconds - END_CARD_SECONDS;
+}
+
+// An explicit plan implies its pacing (shot length sets the rhythm); older briefs chose it.
+export function effectivePacing(brief: Pick<CreativeBrief, "pacing" | "shotSeconds" | "format">): Pacing {
+  if (brief.format === "ad" && brief.shotSeconds) return brief.shotSeconds === 4 ? "fast" : brief.shotSeconds === 8 ? "calm" : "balanced";
+  return brief.pacing;
+}
+
 function onScreenLines(value: unknown): string[] {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value) || value.some((l) => typeof l !== "string")) throw new Error("onScreenText must be a list of strings");
@@ -135,10 +176,12 @@ function voiceoverScriptFor(b: Record<string, unknown>): string | null {
   if (typeof b.voiceoverScript !== "string") throw new Error("voiceoverScript must be a string");
   const script = b.voiceoverScript.trim();
   if (!script) return null;
-  const single = b.format === "single";
-  const footage = single
-    ? pick(b.singleSeconds, SINGLE_SHOT_SECONDS, DEFAULT_BRIEF.singleSeconds, "singleSeconds")
-    : pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds") - END_CARD_SECONDS;
+  const footage = footageSeconds({
+    format: b.format === "single" ? "single" : "ad",
+    singleSeconds: pick(b.singleSeconds, SINGLE_SHOT_SECONDS, DEFAULT_BRIEF.singleSeconds, "singleSeconds"),
+    lengthSeconds: pick(b.lengthSeconds, AD_LENGTHS, DEFAULT_BRIEF.lengthSeconds, "lengthSeconds"),
+    ...shotPlanFor(b),
+  });
   const maxWords = Math.floor(footage * VOICEOVER_WORDS_PER_SECOND * 1.1);
   const words = script.split(/\s+/).length;
   if (words > maxWords) throw new Error(`voiceover script is ${words} words — ${Math.round(footage)}s of footage fits about ${maxWords}. Shorten it or pick a longer ad.`);
@@ -163,6 +206,11 @@ export interface ShotPlan {
 // each cut needs and trim in the edit, with shot count set by length and pacing.
 export function planShots(brief: CreativeBrief): ShotPlan {
   if (brief.format === "single") return { shotCount: 1, cutSeconds: brief.singleSeconds, clipSeconds: brief.singleSeconds };
+  if (brief.shotCount && brief.shotSeconds) {
+    // Exactly what the user picked; clips are still generated a little longer where Veo allows.
+    const clipSeconds = VEO_DURATIONS.find((d) => d >= brief.shotSeconds! + 0.8) ?? 8;
+    return { shotCount: brief.shotCount, cutSeconds: brief.shotSeconds, clipSeconds };
+  }
   const footage = brief.lengthSeconds - END_CARD_SECONDS;
   const shotCount = Math.min(8, Math.max(3, Math.round(footage / TARGET_CUT_SECONDS[brief.pacing])));
   const cutSeconds = footage / shotCount;

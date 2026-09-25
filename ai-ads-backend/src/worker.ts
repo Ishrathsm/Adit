@@ -6,7 +6,7 @@ import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
 import { findMarksInVideo, findSuddenEffects } from "./lib/video-check";
 import { posterDirection } from "./lib/poster-brief";
-import { type CreativeBrief, directionText, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
+import { type CreativeBrief, directionText, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
 import { synthesizeVoiceover } from "./lib/voiceover";
@@ -371,7 +371,7 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
 
   const [music, voiceover, endCard, supers] = await Promise.all([
     brief.audio?.musicPrompt
-      ? generateMusic(brief.audio.musicPrompt, `Instrumental background music for a ${brief.tone} ${brief.lengthSeconds}-second ad: simple, steady, gentle dynamics, no vocals.`).catch((err) => {
+      ? generateMusic(brief.audio.musicPrompt, `Instrumental background music for a ${brief.tone} ${Math.round(footageSeconds(brief))}-second ad: simple, steady, gentle dynamics, no vocals.`).catch((err) => {
           console.warn("[worker] music generation failed, continuing without music:", err instanceof Error ? err.message : err);
           return undefined;
         })
@@ -399,7 +399,7 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
     endCard: endCard.background,
     endCardOverlay: endCard.overlay,
     cutSeconds: plan.cutSeconds,
-    transitionSeconds: TRANSITION_SECONDS[brief.pacing],
+    transitionSeconds: TRANSITION_SECONDS[effectivePacing(brief)],
     grade: TONE_GRADE[brief.tone],
     supers,
     music,
