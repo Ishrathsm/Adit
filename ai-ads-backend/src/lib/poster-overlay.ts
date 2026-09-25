@@ -283,7 +283,7 @@ async function buildCopyBlock(
     const words = copy.headline.split(/\s+/).length;
     const headText = words <= 4 ? copy.headline.toUpperCase() : copy.headline;
     const headMarkup = (line: string, size: number) =>
-      `<span foreground="${ink}" letter_spacing="${Math.round(-size * 0.015 * 1024)}">${emphasizeOffer(line, accent)}</span>`;
+      `<span foreground="${accent ?? ink}" letter_spacing="${Math.round(-size * 0.015 * 1024)}">${emphasizeOffer(line, accent)}</span>`;
     const renderHead = async (lines: string[], size: number) => Promise.all(lines.map((l) => renderLine(headMarkup(l, size), heavy, size)));
     let headLines = [headText];
     let rendered = await renderHead(headLines, headSize);
@@ -313,55 +313,69 @@ async function buildCopyBlock(
   }
 
   if (extras.features?.length) {
-    // Feature list: a small accent square per row, "Label:" in bold and the detail in regular —
-    // flat type, same as the rest of the block. Rows share one size, shrunk to fit the widest.
+    // Feature list: a small brand-color square per item, "Label:" in the real bold face and the
+    // detail in regular — flat type, like the rest of the block. When any "Label: detail" is too
+    // wide for one line, every item is set on two lines (label, then detail beneath) so the type
+    // stays readable instead of shrinking to fit.
     y += S * 0.03;
-    let size = Math.min(S * 0.03, headSize * 0.34);
-    // "Label:" from the real bold font file, the detail from the regular one (Pango's bold markup
-    // on a single font file would be a synthetic bold).
-    const renderRow = async (item: string) => {
-      const colon = item.indexOf(":");
-      const label = colon > 0 ? item.slice(0, colon + 1) : null;
-      const detail = colon > 0 ? item.slice(colon + 1) : item;
-      // Rendered images are cropped to their ink, so a near-invisible "|" strut gives every row the
-      // same height (steady rhythm) and, leading the detail, keeps the space after the colon.
-      const strut = `<span foreground="${ink}" fgalpha="1%">|</span>`;
-      const parts = await Promise.all([
-        label ? renderLine(`<span foreground="${ink}">${escapeXml(label)}</span>${strut}`, bold, size) : null,
-        renderLine(`${strut}<span foreground="${ink}" fgalpha="88%">${escapeXml(label ? detail.trim() : detail)}</span>`, regular, size),
-      ]);
-      const [l, d] = parts;
-      if (!l) return d!;
-      const w = l.w + d!.w, h = Math.max(l.h, d!.h);
-      const buf = await sharp({ create: { width: w, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-        .composite([{ input: l.buf, left: 0, top: Math.round((h - l.h) / 2) }, { input: d!.buf, left: l.w, top: Math.round((h - d!.h) / 2) }])
-        .png()
-        .toBuffer();
-      return { buf, w, h };
-    };
-    const bulletGap = () => size * 0.8;
-    const renderRows = () => Promise.all(extras.features!.map(renderRow));
-    let rows = await renderRows();
-    const widest = Math.max(...rows.map((r) => r.w)) + size * 0.5 + bulletGap();
-    if (widest > maxWidth) {
-      size = Math.floor((size * maxWidth) / widest);
-      rows = await renderRows();
-    }
+    const size = Math.min(S * 0.036, headSize * 0.42);
     const dot = Math.max(4, Math.round(size * 0.32));
+    const indent = Math.round(dot + size * 0.8);
+    const avail = maxWidth - indent;
+    // Rendered images are cropped to their ink, so a near-invisible "|" strut gives every line the
+    // same height (steady rhythm) and, leading the detail, keeps the space after the colon.
+    const strut = `<span foreground="${ink}" fgalpha="1%">|</span>`;
+    const labelLine = (text: string, sz: number) => renderLine(`<span foreground="${accent ?? ink}">${escapeXml(text)}</span>${strut}`, bold, sz);
+    const detailLine = (text: string, sz: number) => renderLine(`${strut}<span foreground="${ink}" fgalpha="88%">${escapeXml(text)}</span>`, regular, sz);
+    const items = extras.features.map((f) => {
+      const colon = f.indexOf(":");
+      return colon > 0 ? { label: f.slice(0, colon + 1), detail: f.slice(colon + 1).trim() } : { label: null, detail: f };
+    });
+    const oneLine = await Promise.all(items.map(async (it) => {
+      const [l, d] = await Promise.all([it.label ? labelLine(it.label, size) : null, detailLine(it.detail, size)]);
+      return { l, d, w: (l?.w ?? 0) + d.w };
+    }));
+    const twoLines = oneLine.some((r) => r.w > avail);
     const bullet = await sharp({ create: { width: dot, height: dot, channels: 4, background: fill ?? ink } }).png().toBuffer();
-    const rowGap = size * 1.55;
-    for (const row of rows) {
-      // Bullet and text as one element so the block's alignment keeps them together.
-      const indent = Math.round(dot + bulletGap());
-      const rowW = indent + row.w, rowH = row.h;
-      const buf = await sharp({ create: { width: rowW, height: rowH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-        .composite([{ input: bullet, left: 0, top: Math.round(rowH / 2 - dot / 2) }, { input: row.buf, left: indent, top: 0 }])
+    const join = async (parts: { buf: Buffer; w: number; h: number; left: number; top: number }[], w: number, h: number) =>
+      sharp({ create: { width: Math.max(1, Math.ceil(w)), height: Math.max(1, Math.ceil(h)), channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+        .composite(parts.map((p) => ({ input: p.buf, left: Math.round(p.left), top: Math.round(p.top) })))
         .png()
         .toBuffer();
-      elements.push({ buf, w: rowW, h: rowH, top: y });
-      y += rowGap;
+    for (const [i, r] of oneLine.entries()) {
+      let parts: { buf: Buffer; w: number; h: number; left: number; top: number }[];
+      let w: number, h: number;
+      if (!twoLines || !r.l) {
+        // "Label: detail" on one line, label and detail centered on each other.
+        h = Math.max(r.l?.h ?? 0, r.d.h);
+        const lw = r.l?.w ?? 0;
+        parts = [
+          ...(r.l ? [{ ...r.l, left: indent, top: (h - r.l.h) / 2 }] : []),
+          { ...r.d, left: indent + lw, top: (h - r.d.h) / 2 },
+        ];
+        w = indent + lw + r.d.w;
+        if (w > maxWidth) {
+          // Unlabelled item still too wide: shrink just this line.
+          const d = await detailLine(items[i].detail, (size * avail) / r.d.w);
+          parts = [{ ...d, left: indent, top: 0 }];
+          w = indent + d.w; h = d.h;
+        }
+      } else {
+        // Label, then the detail beneath it (slightly smaller), shrunk only if a single line of
+        // detail is still wider than the block.
+        const detailSize = Math.min(size * 0.92, (size * 0.92 * avail) / Math.max(1, r.d.w * 0.92));
+        const d = await detailLine(items[i].detail, detailSize);
+        // The detail's leading strut adds a sliver of space; pull it back so both lines align.
+        parts = [{ ...r.l, left: indent, top: 0 }, { ...d, left: indent - detailSize * 0.15, top: r.l.h + size * 0.12 }];
+        w = indent + Math.max(r.l.w, d.w);
+        h = r.l.h + size * 0.12 + d.h;
+      }
+      const firstH = twoLines && r.l ? r.l.h : h;
+      parts.unshift({ buf: bullet, w: dot, h: dot, left: 0, top: firstH / 2 - dot / 2 });
+      elements.push({ buf: await join(parts, w, h), w: Math.ceil(w), h: Math.ceil(h), top: y });
+      y += h + size * (twoLines ? 0.75 : 0.55);
     }
-    y += rows[rows.length - 1].h - rowGap;
+    y -= size * (twoLines ? 0.75 : 0.55);
   }
 
   if (extras.cta) {
@@ -464,11 +478,14 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
     // area where a wide one would run over the subject. A full copy set can also make the block
     // tall, so each width's type is scaled down until the block takes at most ~40% of the height.
     const BLOCK_WIDTHS = [0.52, 0.42, 0.34];
+    // A feature list is the poster's content, not a caption — let it take most of the height
+    // (capped at 40% it shrank to phone-unreadable type with half the frame empty).
+    const maxBlockH = extras.features?.length ? 0.75 : 0.4;
     const probes = [];
     for (const fraction of BLOCK_WIDTHS) {
       let typeScale = S;
       let probe = await buildCopyBlock(copy, font, typeScale, width * fraction, "left", "#ffffff", null, extras);
-      while (probe.h > height * 0.4 && typeScale > S * 0.6) {
+      while (probe.h > height * maxBlockH && typeScale > S * 0.6) {
         typeScale *= 0.88;
         probe = await buildCopyBlock(copy, font, typeScale, width * fraction, "left", "#ffffff", null, extras);
       }
@@ -493,11 +510,15 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
     const typeScale = pick.probe.typeScale;
 
     const bgLum = pick.lum; // greyscale mean, ~perceptual 0-1
-    const darkInk = bgLum > 0.62;
-    const ink = darkInk ? "#141414" : "#ffffff";
-    // Accent only where it actually reads against the background; otherwise stay monochrome.
-    const accentContrast = contrast(luminance(accentRgb), bgLum ** 2.2);
-    const accent = accentContrast >= 2.6 ? rgbToHex(accentRgb) : null;
+    // Copy is always near-black with brand-color headings (the user's direction). The white scrim
+    // behind the block is made as strong as the photo needs to reach a light backing.
+    const TARGET_LUM = 0.88; // light enough for brand-red headings to clear 3:1
+    const scrimAlpha = Math.min(0.88, Math.max(0.45, (TARGET_LUM - bgLum) / Math.max(0.01, 1 - bgLum)));
+    const effectiveLum = bgLum + (1 - bgLum) * scrimAlpha * 0.9;
+    const ink = "#141414";
+    // Brand color on headings/labels only where it reads on that backing; else stay black.
+    const accentContrast = contrast(luminance(accentRgb), effectiveLum ** 2.2);
+    const accent = accentContrast >= 3 ? rgbToHex(accentRgb) : null;
     const fill = accentContrast >= 1.4 ? rgbToHex(accentRgb) : null;
 
     const block = await buildCopyBlock(copy, font, typeScale, width * pick.probe.fraction, pick.align, ink, accent, extras, fill);
@@ -508,10 +529,9 @@ export async function applyBrandOverlay(baseImage: Buffer, options: BrandOverlay
     // Local soft scrim: an elliptical glow of shade behind the block only, fading to nothing —
     // lifts the copy off texture without any visible band or box.
     const sw = Math.round(block.w * 1.9), sh = Math.round(block.h * 2.1);
-    const tint = darkInk ? "#ffffff" : "#000000";
     const scrim = Buffer.from(`<svg width="${sw}" height="${sh}" xmlns="http://www.w3.org/2000/svg">
-      <defs><radialGradient id="g"><stop offset="0" stop-color="${tint}" stop-opacity="0.38" />
-      <stop offset="0.55" stop-color="${tint}" stop-opacity="0.18" /><stop offset="1" stop-color="${tint}" stop-opacity="0" /></radialGradient></defs>
+      <defs><radialGradient id="g"><stop offset="0" stop-color="#ffffff" stop-opacity="${scrimAlpha.toFixed(2)}" />
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="${(scrimAlpha * 0.85).toFixed(2)}" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></radialGradient></defs>
       <ellipse cx="${sw / 2}" cy="${sh / 2}" rx="${sw / 2}" ry="${sh / 2}" fill="url(#g)" /></svg>`);
     const sx = Math.round(x + block.w / 2 - sw / 2), sy = Math.round(y + block.h / 2 - sh / 2);
     // Crop the scrim to the canvas — sharp rejects composites that hang off the edge.

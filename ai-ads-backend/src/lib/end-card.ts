@@ -12,6 +12,12 @@ import {
   renderLine,
 } from "./poster-overlay";
 
+// Body copy is near-black and headings take the brand color, on light backings (the user's
+// direction for every overlay; contrast is kept by lightening what's behind the text).
+const INK = "#141414";
+// White wash over the blurred end-card frame (0-1).
+const CARD_WASH = 0.72;
+
 // Typeset text for video: the closing end card and the on-screen text lines ("supers") shown over
 // shots. Both are rendered as images here and composited by the edit (video-stitch.ts), so the
 // wording is exactly what the user typed — never generated into the footage.
@@ -57,11 +63,13 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
   const S = Math.min(width, height);
   const maxWidth = Math.round(width * 0.8);
 
-  const background = await sharp(lastFrame)
-    .blur(Math.max(8, S * 0.02))
-    .modulate({ brightness: 0.7, saturation: 0.85 })
-    .png()
-    .toBuffer();
+  // Light card: the last frame blurred under a white wash, so body copy sits in black and the
+  // heading in the brand color (the user's direction for all overlay text). Two steps — sharp runs
+  // composite after blur regardless of chain order, but the wash must sit on the blurred frame.
+  const blurred = await sharp(lastFrame).blur(Math.max(8, S * 0.02)).modulate({ saturation: 0.85 }).png().toBuffer();
+  const wash = await sharp({ create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: CARD_WASH } } }).png().toBuffer();
+  const background = await sharp(blurred).composite([{ input: wash, left: 0, top: 0 }]).png().toBuffer();
+  const cardLum = 0.8; // roughly what the wash leaves behind
 
   const items: { buf: Buffer; w: number; h: number; gapAfter: number }[] = [];
 
@@ -70,22 +78,25 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
     const raw = res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
     if (raw && !(await isPlaceholderLogo(raw))) {
       let logo: Buffer = await sharp(raw).resize({ height: Math.round(S * 0.14), width: Math.round(width * 0.5), fit: "inside" }).png().toBuffer();
-      // The card background is darkened, so a dark logo gets a white knockout.
-      if (contrast(await logoLuminance(logo), 0.04) < 2.5) logo = await knockout(logo, true);
+      // The card is light, so a light (e.g. white) logo gets its neutral parts flipped to black.
+      if (contrast(await logoLuminance(logo), cardLum) < 2.5) logo = await knockout(logo, false);
       const meta = await sharp(logo).metadata();
       items.push({ buf: logo, w: meta.width ?? 0, h: meta.height ?? 0, gapAfter: S * 0.045 });
     }
   }
 
+  // Heading in the brand color when it reads on the light card (≥3:1, large text), else ink.
+  const accentRgb = content.accentColor ? hexToRgb(content.accentColor) : null;
+  const heading = accentRgb && contrast(luminance(accentRgb), cardLum) >= 3 ? content.accentColor! : INK;
+
   if (content.brandName) {
     const name = content.uppercaseName ? content.brandName.toUpperCase() : content.brandName;
-    const { parts } = await fittedLines(name, content.font, 700, S * 0.085, maxWidth, "#ffffff");
+    const { parts } = await fittedLines(name, content.font, 700, S * 0.085, maxWidth, heading);
     parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.03 : S * 0.005 }));
   }
 
   // Accent rule between the name and the message.
-  const accentRgb = content.accentColor ? hexToRgb(content.accentColor) : null;
-  const accent = accentRgb && luminance(accentRgb) > 0.08 ? content.accentColor! : "#ffffff";
+  const accent = accentRgb && contrast(luminance(accentRgb), cardLum) >= 1.4 ? content.accentColor! : INK;
   const ruleW = Math.round(S * 0.09), ruleH = Math.max(3, Math.round(S * 0.007));
   items.push({
     buf: await sharp({ create: { width: ruleW, height: ruleH, channels: 4, background: accent } }).png().toBuffer(),
@@ -93,12 +104,12 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
   });
 
   if (content.keyMessage) {
-    const { parts } = await fittedLines(content.keyMessage, content.font, 500, S * 0.055, maxWidth, "#ffffff");
+    const { parts } = await fittedLines(content.keyMessage, content.font, 500, S * 0.055, maxWidth, INK);
     parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.04 : S * 0.005 }));
   }
 
   if (content.contactLine) {
-    const { parts } = await fittedLines(content.contactLine, content.font, 400, S * 0.03, maxWidth, "#ffffff", "82%");
+    const { parts } = await fittedLines(content.contactLine, content.font, 400, S * 0.03, maxWidth, INK, "82%");
     parts.forEach((p) => items.push({ ...p, gapAfter: S * 0.006 }));
   }
 
@@ -122,12 +133,12 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
 export async function renderSuper(text: string, width: number, height: number, font: string, accentColor: string | null): Promise<{ text: Buffer; mask: Buffer }> {
   const S = Math.min(width, height);
   const margin = Math.round(S * 0.07);
-  const { parts, size } = await fittedLines(text, font, 700, S * 0.06, Math.round(width * 0.8), "#ffffff");
+  const { parts, size } = await fittedLines(text, font, 700, S * 0.06, Math.round(width * 0.8), INK);
 
   const barW = Math.round(S * 0.06), barH = Math.max(3, Math.round(S * 0.008));
   const accentRgb = accentColor ? hexToRgb(accentColor) : null;
   const bar = await sharp({
-    create: { width: barW, height: barH, channels: 4, background: accentRgb && luminance(accentRgb) > 0.08 ? accentColor! : "#ffffff" },
+    create: { width: barW, height: barH, channels: 4, background: accentRgb && luminance(accentRgb) < 0.8 ? accentColor! : INK },
   }).png().toBuffer();
 
   const lineGap = size * 1.15;

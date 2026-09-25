@@ -24,6 +24,8 @@ const AUDIO_FADE_OUT = 0.18;
 // Blur behind on-screen text, as a fraction of the short side — deliberately light: softens busy
 // detail so the line reads, without looking like a frosted panel.
 const SUPER_BLUR = 0.008;
+// ...and washed 65% toward white, so the black on-screen type reads on any scene.
+const SUPER_WASH = 0.65;
 
 function run(cmd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -220,10 +222,11 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       const still = (name: string) => addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", `${dir}/${name}`);
       const textIdx = still(`super-${i}.png`);
       const maskIdx = still(`super-mask-${i}.png`);
-      // A light blur of the footage, shown only through the feathered mask behind the text.
+      // A light blur of the footage washed toward white, shown only through the feathered mask
+      // behind the (black) text — a frosted patch, no box.
       filters.push(`[${video}]split[sb${i}][sk${i}]`);
       filters.push(`[${maskIdx}:v]format=gray,scale=${width}:${height}[sm${i}]`);
-      filters.push(`[sk${i}]gblur=sigma=${f3(SUPER_BLUR * Math.min(width, height))},format=rgba[sg${i}]`);
+      filters.push(`[sk${i}]gblur=sigma=${f3(SUPER_BLUR * Math.min(width, height))},lutrgb=r='val*${1 - SUPER_WASH}+${Math.round(255 * SUPER_WASH)}':g='val*${1 - SUPER_WASH}+${Math.round(255 * SUPER_WASH)}':b='val*${1 - SUPER_WASH}+${Math.round(255 * SUPER_WASH)}',format=rgba[sg${i}]`);
       filters.push(`[sg${i}][sm${i}]alphamerge,${fades}[sl${i}]`);
       filters.push(`[sb${i}][sl${i}]overlay=0:0:${enable}[sv${i}]`);
       filters.push(`[${textIdx}:v]format=rgba,${fades}[s${i}]`);
@@ -253,9 +256,18 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         );
       }
       if (options.voiceover) {
-        const idx = addInput("-i", await write("voiceover.wav", options.voiceover));
-        // Narration enters just after the opening image lands.
-        filters.push(`[${idx}:a]${audioNorm},adelay=700|700,apad,atrim=0:${f3(total)},afade=t=out:st=${f3(Math.max(0, total - 0.3))}:d=0.3[vo]`);
+        const voPath = await write("voiceover.wav", options.voiceover);
+        const idx = addInput("-i", voPath);
+        // Narration enters just after the opening image lands and must finish ~0.8s before the
+        // end — it used to be cut at the last frame, chopping the CTA's final word. A slightly long
+        // read is sped up (at most 15%, still natural); anything beyond that fades out softly.
+        const start = 0.7, tail = 0.8;
+        const window = Math.max(1, total - start - tail);
+        const voLength = (await probe(voPath)).duration;
+        const tempo = voLength > window ? Math.min(1.15, voLength / window) : 1;
+        const fitted = voLength / tempo;
+        const fade = fitted > window ? `,afade=t=out:st=${f3(start + window - 0.5)}:d=0.5` : "";
+        filters.push(`[${idx}:a]${audioNorm}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""},adelay=700|700,apad,atrim=0:${f3(total)}${fade}[vo]`);
       }
       if (options.music && options.voiceover) {
         // Music ducks under the voice (sidechain), then both are mixed.
