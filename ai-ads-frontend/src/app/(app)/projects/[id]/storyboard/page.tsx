@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, Download, Loader2, Upload, XCircle } from "lucide-
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Accordion } from "@/components/ui/accordion";
 import { consumePrefillForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
@@ -595,8 +596,7 @@ export default function StoryboardPage() {
               <p className="text-xs text-muted">No one speaks on camera — music is composed for the ad, and narration is added only if you choose it.</p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:col-span-2">
-              <label className="text-sm font-medium">On-screen text <span className="font-normal text-muted">(optional)</span></label>
+            <Accordion title="On-screen text" defaultOpen={onScreenText.some((l) => l.trim())} className="sm:col-span-2">
               {onScreenText.map((line, index) => (
                 <input
                   key={index}
@@ -614,10 +614,9 @@ export default function StoryboardPage() {
                 </button>
               )}
               <p className="text-xs text-muted">Shown one line per shot, in order. This is the only text in the film besides the end card.</p>
-            </div>
+            </Accordion>
 
-            <div className="flex flex-col gap-3 sm:col-span-2">
-              <label className="text-sm font-medium">End card</label>
+            <Accordion title="End card" defaultOpen={Boolean(brandName || keyMessage || contactLine)} className="sm:col-span-2">
               {[
                 { id: "brand-name", label: "Brand name (defaults to your brand kit)", value: brandName, set: setBrandName, placeholder: "Saraswati Vidyalaya" },
                 { id: "key-message", label: "Key message", value: keyMessage, set: setKeyMessage, placeholder: "Admissions open for 2027" },
@@ -629,10 +628,9 @@ export default function StoryboardPage() {
                 </div>
               ))}
               <p className="text-xs text-muted">The logo comes from the project&apos;s brand kit.</p>
-            </div>
+            </Accordion>
 
-            <div className="flex flex-col gap-3 sm:col-span-2">
-              <label className="text-sm font-medium">Guidance <span className="font-normal text-muted">(optional)</span></label>
+            <Accordion title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)} className="sm:col-span-2">
               {[
                 { id: "audience", label: "Audience", value: audience, set: setAudience, placeholder: "Parents of school-age kids in Hyderabad" },
                 { id: "must-show", label: "Must show", value: mustShow, set: setMustShow, placeholder: "Our campus building, students in uniform" },
@@ -643,13 +641,9 @@ export default function StoryboardPage() {
                   <input id={field.id} value={field.value} onChange={(e) => field.set(e.target.value)} disabled={creating} maxLength={300} placeholder={field.placeholder} className="rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50" />
                 </div>
               ))}
-            </div>
+            </Accordion>
 
-            <div className="flex flex-col gap-3 sm:col-span-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">References &amp; cast</label>
-                <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>
-              </div>
+            <Accordion title="References & cast" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={proAssets.length > 0 || characterSheet} className="sm:col-span-2">
 
               {proAssets.map((asset, index) => (
                 <div key={index} className="flex flex-col gap-2 rounded-xl border border-border-subtle p-3 sm:flex-row sm:items-start">
@@ -696,7 +690,7 @@ export default function StoryboardPage() {
                 Generate a character sheet — review and approve the cast before any shot is made
               </label>
               <p className="text-xs text-muted">Your photos are used as references in every shot they appear in, so the real product, people, and places stay consistent.</p>
-            </div>
+            </Accordion>
           </div>
 
           <Button

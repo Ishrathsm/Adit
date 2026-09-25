@@ -1,6 +1,7 @@
 "use client";
 
 import { videoThumbSrc } from "@/lib/utils";
+import { Accordion } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -349,10 +350,7 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-muted">Typeset exactly as written. The image itself never contains text.</p>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">
-                      Feature list <span className="text-muted">(optional, up to 4)</span>
-                    </label>
+                  <Accordion title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
                     {featureList.map((value, i) => (
                       <input
                         key={i}
@@ -365,7 +363,7 @@ export default function ProjectDetailPage() {
                       />
                     ))}
                     <p className="text-xs text-muted">Shown as bullets under the headline. Write &ldquo;Label: detail&rdquo; to set the label in bold.</p>
-                  </div>
+                  </Accordion>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">Tone</label>
@@ -389,10 +387,7 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">
-                      Guidance <span className="text-muted">(optional)</span>
-                    </label>
+                  <Accordion title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
                     {[
                       { id: "audience", value: audience, set: setAudience, placeholder: "Audience — e.g. Parents of school-age kids in Hyderabad" },
                       { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show — e.g. our campus, students in uniform" },
@@ -408,13 +403,9 @@ export default function ProjectDetailPage() {
                         className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
                       />
                     ))}
-                  </div>
+                  </Accordion>
 
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium">Reference photos</label>
-                      <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>
-                    </div>
+                  <Accordion title="Reference photos" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={posterAssets.length > 0}>
                     {posterAssets.map((asset, index) => (
                       <div key={index} className="flex items-center gap-2">
                         {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
@@ -467,7 +458,7 @@ export default function ProjectDetailPage() {
                         />
                       </label>
                     )}
-                  </div>
+                  </Accordion>
                 </>
               )}
 
