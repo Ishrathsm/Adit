@@ -7,3 +7,10 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// Thumbnail source for a finished video: every stitched ad fades in from black, so the frame a
+// muted <video preload="metadata"> shows by default was black and the card looked empty. A media
+// fragment makes the browser show a frame from just after the fade instead.
+export function videoThumbSrc(url: string, seconds = 1.5): string {
+  return url.includes("#") ? url : `${url}#t=${seconds}`;
+}

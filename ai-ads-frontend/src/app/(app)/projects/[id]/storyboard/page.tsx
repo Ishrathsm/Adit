@@ -213,6 +213,9 @@ export default function StoryboardPage() {
   // Reference assets + character sheet (future Pro features; not gated until tiers are decided).
   const [proAssets, setProAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string; description: string }[]>([]);
   const [characterSheet, setCharacterSheet] = useState(false);
+  // Swapping a keyframe re-renders that shot in Veo, so a thumbnail click only opens this preview;
+  // the swap happens on an explicit confirm (a click to look at a frame used to re-render it).
+  const [swapPreview, setSwapPreview] = useState<{ shot: StoryboardShot; choiceIndex: number } | null>(null);
   const makeTime = estimateMakeMinutes(shotCount, format === "ad" && characterSheet, voiceover);
   const makeTimeNote = (
     <div className="flex items-center gap-1 text-xs text-muted">
@@ -842,9 +845,11 @@ export default function StoryboardPage() {
                         choiceIndex === shot.selected_choice ? null : (
                           <button
                             key={choiceIndex}
-                            onClick={() => handleSelect(shot, choiceIndex)}
-                            title="Use this keyframe instead — regenerates this shot's video"
-                            className="overflow-hidden rounded-md border border-border-subtle transition-colors hover:border-border-strong"
+                            onClick={() => setSwapPreview({ shot, choiceIndex })}
+                            // No swaps while this shot is still rendering — each one queues another Veo render.
+                            disabled={!shot.video_url && shot.status !== "failed"}
+                            title={!shot.video_url && shot.status !== "failed" ? "Available once this shot's video is ready" : "Preview this keyframe"}
+                            className="overflow-hidden rounded-md border border-border-subtle transition-colors hover:border-border-strong disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
                             <img src={url} alt={`Alternative ${choiceIndex + 1}`} className="h-12 w-12 object-cover" />
@@ -937,6 +942,42 @@ export default function StoryboardPage() {
               <p className="text-sm text-red-400">{storyboard.error}</p>
             </div>
           )}
+        </div>
+      )}
+      {swapPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6" onClick={() => setSwapPreview(null)}>
+          <div className="rgb-border flex w-full max-w-2xl flex-col gap-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-base font-semibold">Use this keyframe for shot {swapPreview.shot.shot_index + 1}?</h2>
+              <p className="text-sm text-muted">This re-renders the shot&rsquo;s video (about 3&ndash;4 min) and then the final ad.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Current", url: swapPreview.shot.choice_urls![swapPreview.shot.selected_choice!] },
+                { label: "New", url: swapPreview.shot.choice_urls![swapPreview.choiceIndex] },
+              ].map((frame) => (
+                <div key={frame.label} className="flex flex-col gap-1.5">
+                  <p className="text-xs text-muted">{frame.label}</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image */}
+                  <img src={frame.url} alt={`${frame.label} keyframe`} className="w-full rounded-xl object-cover" />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSwapPreview(null)}>
+                Keep current
+              </Button>
+              <Button
+                onClick={() => {
+                  const { shot, choiceIndex } = swapPreview;
+                  setSwapPreview(null);
+                  handleSelect(shot, choiceIndex);
+                }}
+              >
+                Use this keyframe
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </main>

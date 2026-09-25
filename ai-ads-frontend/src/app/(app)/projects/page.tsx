@@ -1,5 +1,6 @@
 "use client";
 
+import { videoThumbSrc } from "@/lib/utils";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -325,7 +326,9 @@ function ProjectsPageInner() {
         </p>
       )}
 
-      {!activeFolder && (folders.length > 0 || creatingFolder) && (
+      {/* Always shown at the top level — the "New folder" tile lives in here, so hiding the row
+          until a folder existed left every account with no way to create its first one. */}
+      {!activeFolder && (
         <div className="mt-6">
           <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Folders</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -465,7 +468,7 @@ function ProjectsPageInner() {
                 {project.preview_url ? (
                   project.preview_type === "video" ? (
                     <video
-                      src={project.preview_url}
+                      src={videoThumbSrc(project.preview_url)}
                       className="h-full w-full object-cover"
                       muted
                       playsInline

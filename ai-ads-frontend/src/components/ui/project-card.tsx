@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn, videoThumbSrc } from "@/lib/utils";
 
 interface ProjectCardProps {
   image: string;
@@ -44,7 +44,7 @@ export const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
         }}
       >
         {mediaType === "video" ? (
-          <video src={image} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <video src={videoThumbSrc(image)} className="h-full w-full object-cover" muted playsInline preload="metadata" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated thumbnail
           <img src={image} alt={title} className="w-full h-full object-cover" />

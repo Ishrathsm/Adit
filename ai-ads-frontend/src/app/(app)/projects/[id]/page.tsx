@@ -1,5 +1,6 @@
 "use client";
 
+import { videoThumbSrc } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -225,7 +226,7 @@ export default function ProjectDetailPage() {
                       // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated thumbnail
                       <img src={job.output_url ?? undefined} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <video src={job?.output_url ?? undefined} className="h-full w-full object-cover" muted />
+                      <video src={job?.output_url ? videoThumbSrc(job.output_url) : undefined} className="h-full w-full object-cover" muted playsInline preload="metadata" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
