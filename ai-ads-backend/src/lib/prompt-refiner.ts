@@ -129,8 +129,8 @@ function brandContextBlock(brand?: BrandContext): string {
   const facts = [
     brand.productName && `Brand name (context only — NEVER write this name in your output): ${brand.productName}`,
     brand.tagline && `Brand tagline (context for tone only — NEVER quote it in your output): ${brand.tagline}`,
-    brand.primaryColor && `Primary brand color: ${brand.primaryColor}`,
-    brand.secondaryColor && `Secondary brand color: ${brand.secondaryColor}`,
+    brand.primaryColor && `Primary brand color: ${colorName(brand.primaryColor)}`,
+    brand.secondaryColor && `Secondary brand color: ${colorName(brand.secondaryColor)}`,
   ].filter(Boolean);
   const factsBlock = facts.length
     ? `\n\nBrand facts to reflect in the scene (weave in naturally — do not just list them):\n${facts.join("\n")}`
@@ -149,7 +149,7 @@ function stripCodeFence(text: string): string {
   return (fenced ? fenced[1] : text).trim();
 }
 
-async function refine(metaPrompt: string): Promise<string> {
+async function refine(metaPrompt: string, image?: { imageBytes: string; mimeType: string }): Promise<string> {
   if (!genAI) {
     throw new Error("Prompt refinement is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
@@ -162,7 +162,7 @@ async function refine(metaPrompt: string): Promise<string> {
 
     const response = await genAI.models.generateContent({
       model: env.textModel,
-      contents: prompt,
+      contents: image ? [{ role: "user", parts: [{ text: prompt }, { inlineData: { data: image.imageBytes, mimeType: image.mimeType } }] }] : prompt,
     });
 
     const text = response.text ? stripCodeFence(response.text) : undefined;
@@ -298,12 +298,19 @@ export async function refineShotVideoPrompt(
   brand?: BrandContext,
   lookSheet?: string | null,
   direction?: string | null,
+  // The chosen keyframe. Veo animates from this image, so the prompt must describe motion in what
+  // it actually shows — after a user swapped shot 7 to a campus frame, a text-only prompt still
+  // said "laptop hero shot" and Veo morphed the campus into a laptop (with glitter).
+  startFrame?: { imageBytes: string; mimeType: string },
+  // Only a real product (the client's own photo) gets the product hero close-up at the end; a
+  // service brand has none, and the rule made the model invent one (a laptop).
+  hasProduct = false,
 ): Promise<string> {
   // Short storyboard shots are cut to ~2-4s in the edit, so a 4s clip is one continuous action.
   const scenes = durationSeconds <= 4 ? 1 : sceneCount(durationSeconds);
   const metaPrompt = `You are an award-winning ad film director and prompt engineer, briefing Google's Veo video generation model in image-to-video mode: a starting frame image is provided separately, and Veo will animate motion from it.${lookSheetBlock(lookSheet)}
 
-This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}". The clip must stay in the starting frame's world — same location, time of day, weather, and light as that frame; camera moves may reveal more of it but never transport to a different place or time.${shotIndex === shotCount - 1 ? " This is the final shot: its last beat must end on a clear hero close-up of the product itself." : ""} Structure this as ${scenes} distinct scene${scenes > 1 ? "s" : ""} — roughly one main action per 2-3 seconds of the ${durationSeconds}-second clip, each scene sized like a real single-shot prompt (concrete, specific, ~300-400 characters), not a half-second timestamp grid.
+This is shot ${shotIndex + 1} of ${shotCount} in a storyboard for a real ad campaign, concept: "${storyboardConcept}". This specific shot's brief is: "${shotDescription}". The clip must stay in the starting frame's world — same location, time of day, weather, and light as that frame; camera moves may reveal more of it but never transport to a different place or time.${startFrame ? " The starting frame is attached: describe motion that continues naturally from exactly what it shows — its people, place, and objects. Where the shot brief describes a different subject or setting than the frame, follow the frame; never introduce objects or scenery the frame doesn't contain." : ""}${shotIndex === shotCount - 1 ? (hasProduct ? " This is the final shot: its last beat must end on a clear hero close-up of the product itself." : " This is the final shot: its last beat should land on a calm, resolved hero moment of what the frame shows (no new objects).") : ""} It is ONE continuous take — no cuts, wipes, or transitions inside the clip (a wide-to-close change happens as a smooth camera move, never an iris or circular mask); nobody speaks or moves their lips. Structure this as ${scenes} distinct scene${scenes > 1 ? "s" : ""} — roughly one main action per 2-3 seconds of the ${durationSeconds}-second clip, each scene sized like a real single-shot prompt (concrete, specific, ~300-400 characters), not a half-second timestamp grid.
 ${qualityBarBlock("video")}${directionBlock(direction)}
 ${brandContextBlock(brand)}
 
@@ -320,7 +327,7 @@ Expand this into a JSON object with this exact schema. The character counts in p
 
 ${JSON_OUTPUT_RULE}`;
 
-  return refine(metaPrompt);
+  return refine(metaPrompt, startFrame);
 }
 
 // Refined video prompts carry a `negative_prompt` field; Veo takes that through its own parameter,
@@ -334,4 +341,22 @@ export function splitNegativePrompt(refined: string): { prompt: string; negative
   } catch {
     return { prompt: refined };
   }
+}
+
+// Brand colors in words for image/video prompts. A raw hex code reached Veo verbatim and was
+// painted onto a laptop screen as "#ed1b36"; models only need the color, not its code.
+export function colorName(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex.replace(/#/g, "");
+  const n = parseInt(m[1], 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (sat < 0.12) return l > 0.9 ? "white" : l < 0.12 ? "black" : l > 0.6 ? "light grey" : l < 0.35 ? "charcoal grey" : "grey";
+  let h = d === 0 ? 0 : max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  const hues: [number, string][] = [[15, "red"], [40, "orange"], [65, "yellow"], [160, "green"], [195, "teal"], [250, "blue"], [290, "purple"], [335, "pink"], [360, "red"]];
+  const hue = hues.find(([limit]) => h < limit)![1];
+  const tone = l < 0.3 ? "deep" : l > 0.72 ? "pale" : sat > 0.65 ? "vivid" : "muted";
+  return `${tone} ${hue}`;
 }

@@ -300,6 +300,8 @@ async function processShotVideo(shotId: string): Promise<void> {
       brand,
       storyboard.look_sheet,
       directionText(storyboard.creative_brief),
+      { imageBytes, mimeType: "image/png" },
+      storyboard.reference_image_role === "subject" || (await listAssets(storyboard.id)).some((a) => a.kind === "product"),
     );
     const { prompt, negativePrompt: refinedNegative } = splitNegativePrompt(refinedPrompt);
     const brief = storyboard.creative_brief;

@@ -36,7 +36,11 @@ async function enqueue(task: GenerationTask): Promise<void> {
   if (!generationQueue) {
     throw new Error("Generation queue is disabled — UPSTASH_REDIS_URL not set");
   }
-  await generationQueue.add(task.kind, task);
+  // One job per (kind, target) at a time: repeated keyframe swaps queued a Veo render per click
+  // (a 7-shot ad had shot 1 rendered four times). keepLastIfActive still allows one follow-up
+  // run while a job is active, since that run reads the newer state (e.g. the latest pick).
+  const target = "jobId" in task ? task.jobId : "shotId" in task ? task.shotId : "storyboardId" in task ? task.storyboardId : task.assetId;
+  await generationQueue.add(task.kind, task, { deduplication: { id: `${task.kind}:${target}`, keepLastIfActive: true } });
 }
 
 export function enqueueGenerationJob(jobId: string): Promise<void> {

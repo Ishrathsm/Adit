@@ -214,7 +214,7 @@ export const TONE_GRADE: Record<Tone, string> = {
 // Always sent to Veo's negative prompt for photoreal/cinematic looks: sudden unmotivated effects
 // Veo likes to add while animating (a smoke puff appeared mid-shot in testing).
 export const VIDEO_ARTIFACT_NEGATIVES =
-  "smoke, fog, haze, mist, dust clouds, floating particles, sparks, sudden flashes, light leaks, morphing, warping, flickering";
+  "smoke, fog, haze, mist, dust clouds, floating particles, glitter, sparks, sudden flashes, light leaks, morphing, warping, flickering, iris wipes, circular masks, transitions, jump cuts, people talking, lip movement";
 
 // Tone + look direction as one block for the shot prompt refiners.
 export function directionText(brief: CreativeBrief | null): string | null {

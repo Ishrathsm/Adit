@@ -24,6 +24,10 @@ const DELIVERY: Record<Tone, string> = {
   trustworthy: "calm, reassuring, clear, sincere",
 };
 
+// English narration defaults to an Indian English accent — the brands and audiences here are
+// Indian (the default voice read as American on the Turito ad). Override per deployment.
+const ENGLISH_ACCENT = process.env.VOICEOVER_ENGLISH_ACCENT ?? "Indian English";
+
 const SAMPLE_RATE = 24_000; // Gemini TTS returns 16-bit mono PCM at 24kHz
 
 function wavFromPcm(pcm: Buffer): Buffer {
@@ -51,7 +55,7 @@ export async function synthesizeVoiceover(text: string, language: VoiceoverLangu
   const response = await withRateLimitRetry("voiceover", () =>
     genAI.models.generateContent({
       model: env.voiceoverModel,
-      contents: `Read this ${VOICEOVER_LANGUAGE_NAMES[language]} advertisement voiceover aloud in a ${DELIVERY[tone]} voice, with natural pauses between sentences: ${text}`,
+      contents: `Read this ${VOICEOVER_LANGUAGE_NAMES[language]} advertisement voiceover aloud as a ${gender === "female" ? "young woman" : "young man"} speaking with a natural ${language === "en" ? ENGLISH_ACCENT : `native ${VOICEOVER_LANGUAGE_NAMES[language]}`} accent, in a ${DELIVERY[tone]} voice, with natural pauses between sentences: ${text}`,
       config: {
         responseModalities: ["AUDIO"],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICES[gender] } } },

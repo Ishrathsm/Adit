@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { type CreativeBrief, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
 import { env } from "./env";
-import type { BrandContext } from "./prompt-refiner";
+import { type BrandContext, colorName } from "./prompt-refiner";
 
 const genAI = env.googleCloudProjectId
   ? new GoogleGenAI({
@@ -96,10 +96,10 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
     brief.mustShow && `MUST SHOW (include these concretely across the shots): ${brief.mustShow}`,
     brief.avoid && `MUST AVOID (the client explicitly does not want any of this anywhere in the film): ${brief.avoid}`,
     brief.onScreenText.length > 0 &&
-      `On-screen text the editor will typeset over the footage (${brief.format === "single" ? "one line after another over the shot" : "one line per shot, starting with shot 2"}): ${brief.onScreenText.map((l) => `"${l}"`).join(", ")} — ${brief.format === "single" ? "the shot needs a calm, uncluttered area in its lower third" : "those shots need calm, uncluttered areas where a line of text can sit, and their visuals should support what the line says"}.`,
+      `On-screen text the editor will typeset over the footage (${brief.format === "single" ? "one line after another over the shot" : "one line per shot, starting with shot 2"}): ${brief.onScreenText.map((l) => `"${l}"`).join(", ")} — ${brief.format === "single" ? "the shot needs a calm, uncluttered area in its lower third" : "those shots need a calm, uncluttered area in the lower third, and their visuals should support what the line says"} — describe that area only as plain, uncluttered space; never mention text, words, titles, or copy in a shot, since the image model paints whatever lettering it reads about.`,
     brief.voiceoverScript && `FIXED NARRATION (the client's own voiceover, spoken over the film — the visuals must follow and support it, beat by beat): "${brief.voiceoverScript}"`,
     brand?.productName && `Brand (context only — never write this name anywhere): ${brand.productName}`,
-    brand?.primaryColor && `Brand colors to echo subtly in the palette: ${[brand.primaryColor, brand.secondaryColor].filter(Boolean).join(", ")}`,
+    brand?.primaryColor && `Brand colors to echo subtly in the palette: ${[brand.primaryColor, brand.secondaryColor].filter((c): c is string => Boolean(c)).map(colorName).join(", ")}`,
     brand?.brandRules && `MANDATORY brand rules: ${brand.brandRules}`,
     assets.length > 0 &&
       `REFERENCE ASSETS — real photos the client supplied; every shot that shows one must match it exactly (its images are attached to those shots):\n${assets
