@@ -153,7 +153,7 @@ const ASSET_LABEL: Record<AssetKind, (name: string) => string> = {
 // The ready reference assets named in a shot, as labeled images (characters first, then product,
 // then location), plus the product images on their own for the mark check's allow-list.
 async function shotAssetReferences(storyboardId: string, names: string[], fetchImage: (url: string) => Promise<RefImage>) {
-  if (!names.length) return { refs: [] as { image: RefImage; label: string }[], productRefs: [] as RefImage[] };
+  if (!names.length) return { refs: [] as { image: RefImage; label: string; kind: AssetKind }[], productRefs: [] as RefImage[] };
   const order: AssetKind[] = ["character", "product", "location"];
   const assets = (await listAssets(storyboardId))
     .filter((a) => names.includes(a.name) && a.status === "ready" && a.image_url)
@@ -206,7 +206,7 @@ async function processShotChoices(shotId: string): Promise<void> {
       return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
     };
     const { refs: assetRefs, productRefs } = await shotAssetReferences(storyboard.id, shot.asset_names, fetchImage);
-    const references = [...assetRefs];
+    const references: { image: RefImage; label: string }[] = [...assetRefs];
     const userRole = storyboard.reference_image_url ? storyboard.reference_image_role ?? "subject" : undefined;
     const userRef = storyboard.reference_image_url ? await fetchImage(storyboard.reference_image_url) : undefined;
     if (userRef) {
@@ -221,7 +221,15 @@ async function processShotChoices(shotId: string): Promise<void> {
       const previous = siblingShots.find((s) => s.shot_index === shot.shot_index - 1);
       if (previous?.selected_choice !== null && previous?.selected_choice !== undefined && previous.choice_urls) {
         previousFrame = await fetchImage(previous.choice_urls[previous.selected_choice]);
-        references.push({ image: previousFrame, label: "the previous shot's chosen frame — keep continuity of people, wardrobe, place, light, and palette; the framing and action change" });
+        // With a cast sheet, people and wardrobe come from the character references, not from this
+        // frame — otherwise one drifted outfit propagated to every later shot.
+        const hasCast = assetRefs.some((r) => r.kind === "character");
+        references.push({
+          image: previousFrame,
+          label: hasCast
+            ? "the previous shot's chosen frame — keep continuity of place, light, and palette; people and wardrobe follow the character references above; the framing and action change"
+            : "the previous shot's chosen frame — keep continuity of people, wardrobe, place, light, and palette; the framing and action change",
+        });
       }
     }
     const referenceImages = references.map((r) => r.image);
@@ -253,7 +261,8 @@ async function processShotChoices(shotId: string): Promise<void> {
     // Auto-pick the best candidate and keep the film moving: the next shot's choices first (so
     // every keyframe is visible early), then this shot's video. The user can override any pick
     // through PATCH, which regenerates just that shot's video.
-    const best = await pickBestKeyframe(images, shot.description, storyboard.look_sheet, previousFrame);
+    const cast = assetRefs.filter((r) => r.kind === "character").map((r) => ({ image: r.image, name: r.label }));
+    const best = await pickBestKeyframe(images, shot.description, storyboard.look_sheet, previousFrame, cast);
     await selectShotChoice(shotId, best);
     const next = (await listShots(shot.storyboard_id)).find((s) => s.shot_index === shot.shot_index + 1);
     if (next && next.status === "pending" && !next.choice_urls) await enqueueShotChoices(next.id);
@@ -360,7 +369,7 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
 
   const [music, voiceover, endCard, supers] = await Promise.all([
     brief.audio?.musicPrompt
-      ? generateMusic(brief.audio.musicPrompt).catch((err) => {
+      ? generateMusic(brief.audio.musicPrompt, `Instrumental background music for a ${brief.tone} ${brief.lengthSeconds}-second ad: simple, steady, gentle dynamics, no vocals.`).catch((err) => {
           console.warn("[worker] music generation failed, continuing without music:", err instanceof Error ? err.message : err);
           return undefined;
         })

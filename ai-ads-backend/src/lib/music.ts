@@ -7,7 +7,26 @@ import { withRateLimitRetry } from "./rate-limit-retry";
 // the stitch step trims and fades it to the ad's length.
 const auth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/cloud-platform"] });
 
-export async function generateMusic(prompt: string): Promise<Buffer> {
+// Lyria sometimes 500s with "Could not generate audio. Please try again with a different prompt"
+// (seen on a director's beat-by-beat prompt; the ad went out silent). One retry of the same prompt,
+// then the plain fallback prompt, before giving up.
+export async function generateMusic(prompt: string, fallbackPrompt?: string): Promise<Buffer> {
+  const attempts = [prompt, prompt, ...(fallbackPrompt ? [fallbackPrompt] : [])];
+  let lastError: unknown;
+  for (const [i, p] of attempts.entries()) {
+    try {
+      return await generateMusicOnce(p);
+    } catch (err) {
+      const status = (err as { status?: number }).status ?? 0;
+      if (status < 500) throw err;
+      lastError = err;
+      if (i < attempts.length - 1) console.warn(`[music] Lyria ${status}, retrying${attempts[i + 1] === prompt ? "" : " with the fallback prompt"}`);
+    }
+  }
+  throw lastError;
+}
+
+async function generateMusicOnce(prompt: string): Promise<Buffer> {
   if (!env.googleCloudProjectId) {
     throw new Error("Music generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }

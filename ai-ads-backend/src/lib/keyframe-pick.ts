@@ -21,6 +21,8 @@ export async function pickBestKeyframe(
   shotDescription: string,
   lookSheet: string | null,
   previousFrame?: { imageBytes: string; mimeType: string },
+  // Approved character-sheet references: the authority on each person's face and wardrobe.
+  cast: { image: { imageBytes: string; mimeType: string }; name: string }[] = [],
 ): Promise<number> {
   const eligible = candidates.map((c, i) => ({ c, i })).filter(({ c }) => c.clean);
   const pool = eligible.length ? eligible : candidates.map((c, i) => ({ c, i }));
@@ -28,6 +30,10 @@ export async function pickBestKeyframe(
 
   try {
     const parts: ({ inlineData: { data: string; mimeType: string } } | string)[] = [];
+    cast.forEach((c) => {
+      parts.push(`CAST REFERENCE (${c.name}):`);
+      parts.push({ inlineData: { data: c.image.imageBytes, mimeType: c.image.mimeType } });
+    });
     if (previousFrame) {
       parts.push("PREVIOUS SHOT (the chosen frame this one must cut from):");
       parts.push({ inlineData: { data: previousFrame.imageBytes, mimeType: previousFrame.mimeType } });
@@ -40,7 +46,7 @@ export async function pickBestKeyframe(
 Shot brief: "${shotDescription}"
 ${lookSheet ? `Film look sheet (people, product, place, palette, light must match this): "${lookSheet}"` : ""}
 
-Pick the candidate that best: (1) shows exactly what the shot brief describes; (2) ${previousFrame ? "matches the previous shot — same people, product design, location, time of day, palette — so the cut feels seamless;" : "matches the look sheet;"} (3) looks like a real, beautifully crafted ad frame — natural anatomy and faces, believable materials and light, no AI artifacts (warped hands, melted details, plastic skin), no stray text or logos. Return the candidate number.`);
+Pick the candidate that best: (1) shows exactly what the shot brief describes; (2) ${cast.length ? "shows each person exactly as in their CAST REFERENCE — same face, hair, and the same clothing (garment type, sleeve length, color); a wardrobe mismatch with the cast is a serious flaw even if it matches the previous shot;" : ""} ${previousFrame ? `matches the previous shot — ${cast.length ? "" : "same people, "}product design, location, time of day, palette — so the cut feels seamless;` : "matches the look sheet;"} (3) looks like a real, beautifully crafted ad frame — natural anatomy and faces, believable materials and light, no AI artifacts (warped hands, melted details, plastic skin), no stray text or logos. Return the candidate number.`);
 
     const response = await genAI.models.generateContent({
       model: env.copyModel,
