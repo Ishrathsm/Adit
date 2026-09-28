@@ -1,0 +1,288 @@
+<title>Script Model Taste Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+  :root {
+    --bg: #f3f4f2; --surface: #ffffff; --ink: #1b1f23; --muted: #5b636c; --line: #dcdfdc;
+    --accent: #2c55c9; --accent-soft: #e5ebfa; --good: #1d7a4e; --good-soft: #e1f2e8;
+    --font-body: "IBM Plex Sans", system-ui, sans-serif; --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    --font-display: "Newsreader", Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121416; --surface: #1b1e21; --ink: #e7e9eb; --muted: #9aa2ab; --line: #2d3136;
+      --accent: #86a3ff; --accent-soft: #1f2a44; --good: #6fd19d; --good-soft: #17301f;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121416; --surface: #1b1e21; --ink: #e7e9eb; --muted: #9aa2ab; --line: #2d3136;
+    --accent: #86a3ff; --accent-soft: #1f2a44; --good: #6fd19d; --good-soft: #17301f;
+  }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); padding-inline: 16px; padding-block: 28px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  header { display: flex; flex-direction: column; gap: 10px; max-width: 68ch; }
+  h1 { font: 600 34px/1.15 var(--font-display); margin: 0; text-wrap: balance; }
+  h2 { font: 600 24px/1.2 var(--font-display); margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .eyebrow { font: 500 11px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .progress { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pill { font: 500 12px/1 var(--font-mono); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: var(--muted); background: var(--surface); text-decoration: none; }
+  .pill.done { color: var(--good); border-color: var(--good); background: var(--good-soft); }
+  section.brief { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 16px; }
+  .brief-head { display: flex; flex-direction: column; gap: 8px; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 20px; font-size: 13.5px; }
+  .facts div { display: flex; flex-direction: column; gap: 2px; }
+  .facts dt { font: 500 11px/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .facts dd { margin: 0; }
+  .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .option { border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; background: var(--bg); }
+  .option-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .label { font: 600 28px/1 var(--font-display); }
+  .block { display: flex; flex-direction: column; gap: 6px; }
+  .shots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .shots li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; font-size: 14px; }
+  .tc { font: 500 12px/1.6 var(--font-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .vo { font: italic 500 16px/1.5 var(--font-display); border-left: 2px solid var(--accent); padding-left: 12px; }
+  .score { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .score button { font: 500 13px/1 var(--font-mono); min-width: 36px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .score button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .verdict { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .pick { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick button { font: 500 14px/1 var(--font-body); padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .pick button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  textarea { width: 100%; box-sizing: border-box; min-height: 64px; font: 14px/1.5 var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .save { font: 600 14px/1 var(--font-body); padding: 11px 18px; border-radius: 999px; border: 0; background: var(--accent); color: var(--surface); cursor: pointer; }
+  .save:disabled { opacity: .5; cursor: default; }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.ok { color: var(--good); }
+  button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .part { display: flex; flex-direction: column; gap: 8px; max-width: 68ch; padding-top: 12px; }
+  .treatment { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 20px; font-size: 13.5px; }
+  .treatment div { display: flex; flex-direction: column; gap: 2px; }
+  .tshots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tshot { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .tshot-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+  .tshot-head strong { font: 600 16px/1.3 var(--font-body); }
+  .spec { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 13.5px; margin: 0; }
+  .spec dt { font: 500 11px/1.9 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .spec dd { margin: 0; }
+  .screen-img { max-width: 100%; width: 360px; border-radius: 10px; border: 1px solid var(--line); }
+  .pill-screen { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--surface); background: var(--accent); border-radius: 999px; padding: 5px 9px; }
+  .flag { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+  @media (max-width: 480px) { .spec { grid-template-columns: 1fr; } }
+  .banner { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  @media (max-width: 480px) { .shots li { grid-template-columns: 1fr; gap: 2px; } h1 { font-size: 28px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Shipping-level ads · Phase 0</p>
+    <h1>Which model writes the better ad?</h1>
+    <p class="muted">Part 1 shows the new production-treatment format for two briefs. Part 2 is the blind model comparison: each brief below was written by different AI models using the same instructions, with the draft and the creative-director review both run. The scripts are shuffled and labelled A and B, so you don't know which model wrote which. Score each script from 1 to 5 (would you shoot it?), pick the better one, and add a note if something stands out. Your picks save here; tell Claude when you're done and it will reveal the models.</p>
+    <nav class="progress" id="progress" aria-label="Briefs"></nav>
+    <p class="banner" id="db-banner" hidden>Saving isn't available in this view. Reply to Claude in chat with your picks instead.</p>
+  </header>
+  <div class="part"><p class="eyebrow">Part 1</p><h2>New script format</h2><p class="muted">The same two briefs, rewritten as a full production treatment: a look sheet by department, and for every shot its purpose, framing, lens, camera move, performance, light and voiceover line. Score each from 1 to 5 and note what's still missing.</p></div>
+  <main id="featured" class="wrap"></main>
+  <div class="part"><p class="eyebrow">Part 2</p><h2>Model comparison (old format)</h2><p class="muted">Six briefs, two models, blind.</p></div>
+  <main id="briefs" class="wrap"></main>
+</div>
+
+<script>
+const BRIEFS = __DATA__;
+const FEATURED = __FEATURED__;
+// Known issues spotted before publishing, shown so the scorer doesn't have to rediscover them.
+const FLAGS = { turito: "Picked by the judge from 3 written treatments. Watch in the render: shot 4 has one pen stroke on the notebook, which AI video may draw as a mark." };
+const FLAGS_OLD = { turito: "Known risks: shot 4 still shows her writing (angled away, but AI video can render marks), and the mug is an unused prop." };
+const feedback = {}; // briefId -> { score, note, saved }
+const state = {}; // briefId -> { scores: {A: n}, pick, note, saved }
+let db = null;
+
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+};
+const tc = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+const cap = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+function fact(label, value) {
+  if (!value || (Array.isArray(value) && !value.length)) return null;
+  return el("div", {}, el("dt", {}, label), el("dd", {}, Array.isArray(value) ? value.map((v) => `“${v}”`).join(" · ") : value));
+}
+
+function renderProgress() {
+  const nav = document.getElementById("progress");
+  nav.replaceChildren(...BRIEFS.map((b, i) =>
+    el("a", { class: `pill${state[b.id]?.saved ? " done" : ""}`, href: `#${b.id}` }, `${i + 1} · ${b.category}${state[b.id]?.saved ? " ✓" : ""}`)));
+}
+
+function renderBrief(b, i) {
+  const s = (state[b.id] ||= { scores: {}, pick: null, note: "", saved: false });
+  const status = el("span", { class: "status" });
+  const save = el("button", { class: "save", type: "button" }, "Save verdict");
+  const note = el("textarea", { id: `note-${b.id}`, placeholder: "What made one better? (optional)" });
+  note.value = s.note;
+  note.addEventListener("input", () => { s.note = note.value; });
+
+  const syncSave = () => { save.disabled = !s.pick || b.options.some((o) => !s.scores[o.label]); };
+
+  const options = b.options.map((o) => {
+    const scoreBtns = [1, 2, 3, 4, 5].map((n) => {
+      const btn = el("button", { type: "button", "aria-pressed": String(s.scores[o.label] === n), "aria-label": `Score ${o.label} ${n}` }, n);
+      btn.addEventListener("click", () => {
+        s.scores[o.label] = n;
+        btn.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+        syncSave();
+      });
+      return btn;
+    });
+    return el("article", { class: "option" },
+      el("div", { class: "option-head" }, el("span", { class: "label" }, `Script ${o.label}`), el("span", { class: "eyebrow" }, `${b.shotCount} shots · ${b.aspectRatio}`)),
+      el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Shot list"),
+        el("ol", { class: "shots" }, o.shots.map((d, k) =>
+          el("li", {}, el("span", { class: "tc" }, `${tc(k * b.cutSeconds)}–${tc((k + 1) * b.cutSeconds)}`), el("span", {}, d))))),
+      o.voiceoverScript && el("div", { class: "block" }, el("span", { class: "eyebrow" }, `Voiceover · ${b.voiceover}`), el("p", { class: "vo" }, o.voiceoverScript)),
+      el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Music"), el("p", {}, o.musicPrompt)),
+      el("details", { class: "block" }, el("summary", { class: "eyebrow" }, "Look sheet"), el("p", { class: "muted" }, o.lookSheet)),
+      el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Would you shoot it? (1–5)"), el("div", { class: "score" }, scoreBtns)),
+    );
+  });
+
+  const pickBtns = [...b.options.map((o) => [o.label, `${o.label} is better`]), ["tie", "About the same"]].map(([v, text]) => {
+    const btn = el("button", { type: "button", "aria-pressed": String(s.pick === v) }, text);
+    btn.addEventListener("click", () => {
+      s.pick = v;
+      btn.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+      syncSave();
+    });
+    return btn;
+  });
+
+  save.addEventListener("click", async () => {
+    if (!db) return;
+    save.disabled = true;
+    status.className = "status"; status.textContent = "Saving…";
+    try {
+      await db.doc(`votes/${b.id}`).set({ scores: s.scores, pick: s.pick, note: s.note.trim(), savedAt: new Date().toISOString() });
+      s.saved = true;
+      status.className = "status ok"; status.textContent = "Saved";
+      renderProgress();
+    } catch (e) {
+      status.textContent = e?.code === "invalid_argument" ? "You can view this page but not save picks." : "Couldn't save. Try again in a moment.";
+    } finally { syncSave(); }
+  });
+  syncSave();
+
+  return el("section", { class: "brief", id: b.id },
+    el("div", { class: "brief-head" },
+      el("span", { class: "eyebrow" }, `Brief ${i + 1} of ${BRIEFS.length} · ${b.category}`),
+      el("h2", {}, b.brandName),
+      el("p", {}, b.concept)),
+    el("dl", { class: "facts" },
+      fact("Tone · pacing", `${cap(b.tone)} · ${b.pacing}`),
+      fact("Audience", b.audience), fact("Key message (end card)", b.keyMessage),
+      fact("Must show", b.mustShow), fact("Avoid", b.avoid), fact("On-screen text", b.onScreenText),
+      fact("Tagline", b.tagline), fact("Brand rules", b.brandRules),
+      fact("Voiceover", b.voiceover ? `${b.voiceover}, written by the model` : "None, music only")),
+    el("div", { class: "options" }, options),
+    el("div", { class: "verdict" }, el("span", { class: "eyebrow" }, "Your verdict"), el("div", { class: "pick" }, pickBtns), note, el("div", { class: "row" }, save, status)),
+  );
+}
+
+function specRow(label, value) { return value ? [el("dt", {}, label), el("dd", {}, value)] : []; }
+
+function renderFeatured(f) {
+  const s = f.script, l = s.look;
+  const fb = (feedback[f.briefId] ||= { score: null, note: "", saved: false });
+  const status = el("span", { class: "status" }, fb.saved ? "Saved" : "");
+  if (fb.saved) status.className = "status ok";
+  const save = el("button", { class: "save", type: "button" }, "Save feedback");
+  const note = el("textarea", { id: `fnote-${f.briefId}`, placeholder: "What's still missing or wrong?" });
+  note.value = fb.note;
+  note.addEventListener("input", () => { fb.note = note.value; });
+  const scoreBtns = [1, 2, 3, 4, 5].map((n) => {
+    const btn = el("button", { type: "button", "aria-pressed": String(fb.score === n), "aria-label": `Score ${n}` }, n);
+    btn.addEventListener("click", () => {
+      fb.score = n;
+      btn.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+      save.disabled = false;
+    });
+    return btn;
+  });
+  save.disabled = !fb.score;
+  save.addEventListener("click", async () => {
+    if (!db) return;
+    save.disabled = true; status.className = "status"; status.textContent = "Saving…";
+    try {
+      await db.doc(`feedback/${f.briefId}`).set({ score: fb.score, note: fb.note.trim(), savedAt: new Date().toISOString() });
+      fb.saved = true; status.className = "status ok"; status.textContent = "Saved";
+    } catch (e) {
+      status.textContent = e?.code === "invalid_argument" ? "You can view this page but not save feedback." : "Couldn't save. Try again in a moment.";
+    } finally { save.disabled = !fb.score; }
+  });
+
+  return el("section", { class: "brief", id: `new-${f.briefId}` },
+    el("div", { class: "brief-head" },
+      el("span", { class: "eyebrow" }, `New format · ${f.category} · ${s.shots.length} shots · ${f.aspectRatio}`),
+      el("h2", {}, f.brandName),
+      el("p", { class: "muted" }, f.concept),
+      el("p", {}, el("strong", {}, "Idea: "), s.idea)),
+    FLAGS[f.briefId] && el("p", { class: "flag" }, FLAGS[f.briefId]),
+    el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Look sheet"),
+      el("dl", { class: "treatment" },
+        fact("Set", l.productionDesign), fact("People", l.characters), fact("Props", l.props), fact("Environment", l.environment),
+        fact("Lighting setup", l.lighting), fact("Grade", l.grade), fact("Never in frame", l.exclusions))),
+    el("ol", { class: "tshots" }, s.shots.map(({ spec }, k) =>
+      el("li", { class: "tshot" },
+        el("div", { class: "tshot-head" },
+          el("span", { class: "tc" }, `${tc(k * f.cutSeconds)}–${tc((k + 1) * f.cutSeconds)}`),
+          el("strong", {}, `Shot ${k + 1}`), spec.screen !== null && el("span", { class: "pill-screen" }, "Real product screen"), el("span", { class: "muted" }, spec.purpose)),
+        spec.screen !== null && f.screens[spec.screen] && el("img", { class: "screen-img", src: f.screens[spec.screen].url, alt: f.screens[spec.screen].description || "Product screen" }),
+        el("dl", { class: "spec" },
+          ...specRow("Framing", spec.framing), ...specRow("Lens", spec.lens), ...specRow("Movement", spec.movement),
+          ...specRow("Action", spec.action), ...specRow("Performance", spec.performance), ...(spec.screen === null ? specRow("Light", spec.lighting) : []), ...specRow("Sound", spec.sfx)),
+        spec.voLine && el("p", { class: "vo" }, spec.voLine)))),
+    s.continuity && el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Continuity (identical in every shot)"),
+      el("dl", { class: "treatment" }, fact("People", s.continuity.characters), fact("Props", s.continuity.props), fact("Environment", s.continuity.environment))),
+    s.voiceoverDirection && el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Voiceover direction"), el("p", {}, s.voiceoverDirection)),
+    s.soundAmbience && el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Sound design"), el("p", {}, `Room tone: ${s.soundAmbience}`), el("p", { class: "muted" }, "Per-shot effects are listed on each shot. They're written for the edit; the pipeline has no sound-effects source yet.")),
+    s.endCardTagline && el("div", { class: "block" }, el("span", { class: "eyebrow" }, "End card (added automatically after the last shot)"),
+      el("p", {}, el("strong", {}, f.brandName), " · ", s.endCardTagline, f.keyMessage ? ` · ${f.keyMessage}` : "", f.contactLine ? ` · ${f.contactLine}` : "")),
+    el("div", { class: "block" }, el("span", { class: "eyebrow" }, "Music"), el("p", {}, s.musicPrompt)),
+    el("div", { class: "verdict" }, el("span", { class: "eyebrow" }, "Would you shoot it? (1–5)"), el("div", { class: "score" }, scoreBtns), note, el("div", { class: "row" }, save, status)),
+  );
+}
+
+document.getElementById("featured").replaceChildren(...FEATURED.map(renderFeatured));
+document.getElementById("briefs").replaceChildren(...BRIEFS.map(renderBrief));
+renderProgress();
+
+(async () => {
+  db = window.claude?.use ? await window.claude.use("db") : null;
+  if (!db) { document.getElementById("db-banner").hidden = false; document.querySelectorAll(".save").forEach((b) => (b.hidden = true)); return; }
+  try {
+    const snap = await db.collection("votes").get();
+    for (const d of snap.docs) {
+      const v = d.data();
+      if (!v || !state[d.id]) continue;
+      Object.assign(state[d.id], { scores: v.scores || {}, pick: v.pick || null, note: v.note || "", saved: true });
+    }
+    const fsnap = await db.collection("feedback").get();
+    for (const d of fsnap.docs) {
+      const v = d.data();
+      if (v) feedback[d.id] = { score: v.score ?? null, note: v.note || "", saved: true };
+    }
+    document.getElementById("featured").replaceChildren(...FEATURED.map(renderFeatured));
+    document.getElementById("briefs").replaceChildren(...BRIEFS.map(renderBrief));
+    renderProgress();
+  } catch { /* first visit: nothing saved yet */ }
+})();
+</script>
