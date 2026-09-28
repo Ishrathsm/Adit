@@ -13,11 +13,14 @@ import { productsRouter } from "./routes/products";
 import { projectsRouter } from "./routes/projects";
 import { storyboardsRouter } from "./routes/storyboards";
 import { templatesRouter } from "./routes/templates";
+import { transcribeRouter } from "./routes/transcribe";
 
 export function createApp() {
   const app = express();
 
   app.use(cors({ origin: env.frontendUrl }));
+  // Mounted before the global JSON parser: it takes recorded audio, larger than the default limit.
+  app.use("/api/transcribe", requireAuth, transcribeRouter);
   app.use(express.json());
 
   app.use("/health", healthRouter);

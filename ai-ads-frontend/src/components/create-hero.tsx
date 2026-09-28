@@ -1,5 +1,6 @@
 "use client";
 
+import { DictationButton } from "@/components/ui/dictation-button";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -128,15 +129,18 @@ export function CreateHero({ account, productId }: { account: Account | null; pr
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!prompt.trim() || creating}
-              className="shiny-button inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-medium text-button-fg transition-transform duration-150 hover:scale-[1.05] active:scale-95 disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100"
-            >
-              {creating ? "Creating…" : "Create"}
-              {!creating && <ArrowRight size={14} />}
-            </button>
+            <div className="flex items-center gap-2">
+              <DictationButton value={prompt} onChange={setPrompt} disabled={creating} />
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!prompt.trim() || creating}
+                className="shiny-button inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-medium text-button-fg transition-transform duration-150 hover:scale-[1.05] active:scale-95 disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100"
+              >
+                {creating ? "Creating…" : "Create"}
+                {!creating && <ArrowRight size={14} />}
+              </button>
+            </div>
           </div>
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { DictationButton } from "@/components/ui/dictation-button";
 import { videoThumbSrc } from "@/lib/utils";
 import { Accordion } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
@@ -288,19 +289,22 @@ export default function ProjectDetailPage() {
                 <label htmlFor="prompt" className="text-sm font-medium">
                   Describe the ad
                 </label>
-                <textarea
-                  id="prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  disabled={busy}
-                  placeholder={
-                    isPoster
-                      ? "A refreshing bottle of cold brew on ice, condensation dripping, bright summer light"
-                      : "A sleek smartphone rotating on a reflective podium, dramatic studio lighting, cinematic product ad style"
-                  }
-                  rows={4}
-                  className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                />
+                <div className="relative">
+                  <textarea
+                    id="prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    disabled={busy}
+                    placeholder={
+                      isPoster
+                        ? "A refreshing bottle of cold brew on ice, condensation dripping, bright summer light"
+                        : "A sleek smartphone rotating on a reflective podium, dramatic studio lighting, cinematic product ad style"
+                    }
+                    rows={4}
+                    className="w-full pr-12 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                  />
+                  <DictationButton value={prompt} onChange={setPrompt} disabled={busy} className="absolute right-2 bottom-2" />
+                </div>
               </div>
 
               {isPoster && (

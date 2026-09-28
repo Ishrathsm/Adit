@@ -1,5 +1,6 @@
 "use client";
 
+import { DictationButton } from "@/components/ui/dictation-button";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { CheckCircle2, Clock, Download, Loader2, Upload, XCircle } from "lucide-react";
@@ -416,15 +417,18 @@ export default function StoryboardPage() {
               <label htmlFor="concept" className="text-sm font-medium">
                 Describe the ad concept
               </label>
-              <textarea
-                id="concept"
-                value={concept}
-                onChange={(e) => setConcept(e.target.value)}
-                disabled={creating}
-                rows={4}
-                placeholder="A cold brew coffee brand's morning routine ad — from grinding beans to the first sip"
-                className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-              />
+              <div className="relative">
+                <textarea
+                  id="concept"
+                  value={concept}
+                  onChange={(e) => setConcept(e.target.value)}
+                  disabled={creating}
+                  rows={4}
+                  placeholder="A cold brew coffee brand's morning routine ad — from grinding beans to the first sip"
+                  className="w-full pr-12 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                />
+                <DictationButton value={concept} onChange={setConcept} disabled={creating} className="absolute right-2 bottom-2" />
+              </div>
               <p className="text-xs text-muted">
                 {format === "single"
                   ? `We'll plan one continuous ${singleSeconds}s shot in the tone and look you choose below, generate 2 keyframes and auto-pick the best (you can swap it), animate it, and finish with a branded end card.`
@@ -598,14 +602,17 @@ export default function StoryboardPage() {
                       </button>
                     ))}
                   </div>
-                  <textarea
-                    value={voiceoverScript}
-                    onChange={(e) => setVoiceoverScript(e.target.value)}
-                    disabled={creating}
-                    rows={3}
-                    placeholder="Paste your voiceover script, or leave empty and we'll write one"
-                    className="resize-none rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <textarea
+                      value={voiceoverScript}
+                      onChange={(e) => setVoiceoverScript(e.target.value)}
+                      disabled={creating}
+                      rows={3}
+                      placeholder="Paste your voiceover script, or leave empty and we'll write one"
+                      className="w-full pr-12 resize-none rounded-xl border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                    />
+                    <DictationButton value={voiceoverScript} onChange={setVoiceoverScript} disabled={creating} className="absolute right-2 bottom-2" />
+                  </div>
                   <p className={`text-xs ${scriptTooLong ? "text-red-400" : "text-muted"}`}>
                     {scriptWords ? `${scriptWords} / ${maxScriptWords} words` : `Up to ${maxScriptWords} words fit ${Math.round(footage)}s of footage`}
                     {scriptTooLong && " — shorten it or pick a longer ad"}

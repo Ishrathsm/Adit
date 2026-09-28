@@ -1,5 +1,6 @@
 "use client";
 
+import { DictationButton } from "@/components/ui/dictation-button";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Upload } from "lucide-react";
@@ -194,14 +195,17 @@ function BrandQuestionnaireForm() {
           <label htmlFor="brand-rules" className="text-sm font-medium">
             Brand rules
           </label>
-          <textarea
-            id="brand-rules"
-            value={brandRules}
-            onChange={(e) => setBrandRules(e.target.value)}
-            rows={4}
-            placeholder="Tone of voice, dos and don'ts, colors/imagery to avoid…"
-            className="resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong"
-          />
+          <div className="relative">
+            <textarea
+              id="brand-rules"
+              value={brandRules}
+              onChange={(e) => setBrandRules(e.target.value)}
+              rows={4}
+              placeholder="Tone of voice, dos and don'ts, colors/imagery to avoid…"
+              className="w-full pr-12 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong"
+            />
+            <DictationButton value={brandRules} onChange={setBrandRules} className="absolute right-2 bottom-2" />
+          </div>
         </div>
 
         {submitError && <p className="text-sm text-red-400">{submitError}</p>}

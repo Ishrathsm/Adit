@@ -1,5 +1,6 @@
 "use client";
 
+import { DictationButton } from "@/components/ui/dictation-button";
 import { useState } from "react";
 import { ChevronDown, Palette, Upload } from "lucide-react";
 import { clsx } from "clsx";
@@ -195,14 +196,17 @@ export function BrandKitPanel({
               <label htmlFor={`brand-rules-${product.id}`} className="text-sm font-medium">
                 Brand rules
               </label>
-              <textarea
-                id={`brand-rules-${product.id}`}
-                value={brandRules}
-                onChange={(e) => setBrandRules(e.target.value)}
-                rows={8}
-                placeholder="Tone of voice, dos and don'ts, colors/imagery to avoid…"
-                className="min-h-[160px] flex-1 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong"
-              />
+              <div className="relative flex flex-1 flex-col">
+                <textarea
+                  id={`brand-rules-${product.id}`}
+                  value={brandRules}
+                  onChange={(e) => setBrandRules(e.target.value)}
+                  rows={8}
+                  placeholder="Tone of voice, dos and don'ts, colors/imagery to avoid…"
+                  className="w-full pr-12 min-h-[160px] flex-1 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong"
+                />
+                <DictationButton value={brandRules} onChange={setBrandRules} className="absolute right-2 bottom-2" />
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

@@ -142,6 +142,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+// Dictation fallback: a recorded clip (base64) turned into text on the server.
+export function transcribeAudio(audio: string, mimeType: string) {
+  return request<{ text: string }>("/api/transcribe", { method: "POST", body: JSON.stringify({ audio, mimeType }) });
+}
+
 export function getAccount() {
   return request<{ account: Account | null; features: Features }>("/api/account");
 }
