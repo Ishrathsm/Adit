@@ -64,6 +64,10 @@ export function DictationButton({
   // Chrome ends a recognition session by itself after a short pause, even in continuous mode, so a
   // session that ends while the user still wants to talk is restarted (text so far is kept).
   const wantLive = useRef(false);
+  // Sessions in a row that ended without hearing anything — a browser that keeps dropping them
+  // would otherwise flip the mic on and off; after a few, dictation switches to recording.
+  const emptyEnds = useRef(0);
+  const canRecord = useRef(false);
   // What has been heard in this dictation (across restarted sessions), for the listening panel.
   const heardFinal = useRef("");
   const [heard, setHeard] = useState({ final: "", interim: "" });
@@ -76,9 +80,14 @@ export function DictationButton({
   // Decided after mount: the capability check reads `window`, which the server render doesn't have.
   useEffect(() => {
     const live = Boolean(speechRecognition());
-    const canRecord = typeof window !== "undefined" && "MediaRecorder" in window && Boolean(navigator.mediaDevices?.getUserMedia);
+    const record = allowServer && typeof window !== "undefined" && "MediaRecorder" in window && Boolean(navigator.mediaDevices?.getUserMedia);
+    canRecord.current = record;
+    // Phones and tablets end a recognition session after every phrase (and Android repeats text
+    // across sessions), so they record and transcribe instead — steady, and better at Indian
+    // languages. Desktop browsers keep live words.
+    const touch = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMode(live ? "live" : allowServer && canRecord ? "record" : null);
+    setMode(record && (touch || !live) ? "record" : live ? "live" : null);
   }, [allowServer]);
 
   useEffect(() => {
@@ -117,6 +126,7 @@ export function DictationButton({
       recognition.current?.stop();
     }, MAX_RECORDING_MS * 2);
     heardFinal.current = "";
+    emptyEnds.current = 0;
     setHeard({ final: "", interim: "" });
     setError(null);
     setState("listening");
@@ -131,7 +141,9 @@ export function DictationButton({
     // Each session appends to whatever the field holds when it starts (earlier sessions included).
     const base = latest.current.value;
     let finalText = "";
+    let heardSomething = false;
     rec.onresult = (e) => {
+      heardSomething = true;
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
@@ -156,11 +168,27 @@ export function DictationButton({
       latest.current.onChange(joinText(base, finalText));
       heardFinal.current = joinText(heardFinal.current, finalText);
       setHeard({ final: heardFinal.current, interim: "" });
+      emptyEnds.current = heardSomething ? 0 : emptyEnds.current + 1;
+      if (wantLive.current && emptyEnds.current >= 3) {
+        // The browser keeps dropping the session: stop the on/off loop and record instead.
+        wantLive.current = false;
+        recognition.current = null;
+        if (stopTimer.current) window.clearTimeout(stopTimer.current);
+        if (canRecord.current) {
+          setMode("record");
+          void startRecording();
+        } else {
+          setState("idle");
+          setError("Voice input paused. Tap the mic to continue.");
+        }
+        return;
+      }
       if (wantLive.current) {
-        // The new session must read the updated value, which lands after React re-renders.
+        // A calm restart (not instant) — and the new session reads the updated value, which lands
+        // after React re-renders.
         window.setTimeout(() => {
           if (wantLive.current) runLiveSession(Ctor);
-        }, 150);
+        }, 400);
         return;
       }
       wantLive.current = false;
