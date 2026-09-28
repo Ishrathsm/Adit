@@ -24,6 +24,8 @@ const CARD_WASH = 0.72;
 
 export interface EndCardContent {
   brandName: string | null;
+  // A short supporting line under the brand name (e.g. "Your personal AI tutor").
+  tagline?: string | null;
   keyMessage: string | null;
   contactLine: string | null;
   logoUrl: string | null;
@@ -92,6 +94,11 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
   if (content.brandName) {
     const name = content.uppercaseName ? content.brandName.toUpperCase() : content.brandName;
     const { parts } = await fittedLines(name, content.font, 700, S * 0.085, maxWidth, heading);
+    parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.03 : S * 0.005 }));
+  }
+
+  if (content.tagline) {
+    const { parts } = await fittedLines(content.tagline, content.font, 400, S * 0.04, maxWidth, INK, "82%");
     parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.03 : S * 0.005 }));
   }
 

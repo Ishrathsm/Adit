@@ -113,10 +113,25 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
       referenceImageUrl: referenceImageUrl || null,
       referenceImageRole: referenceImageUrl ? referenceImageRole : null,
       lookSheet: script.lookSheet,
-      creativeBrief: { ...brief, audio: { musicPrompt: script.musicPrompt, voiceoverScript: script.voiceoverScript } },
+      creativeBrief: {
+        ...brief,
+        audio: {
+          musicPrompt: script.musicPrompt,
+          voiceoverScript: script.voiceoverScript,
+          voiceoverDirection: script.voiceoverDirection,
+          // The client's own narration is read as one piece; the director's is placed per shot.
+          voiceoverLines: brief.voiceoverScript ? undefined : script.shots.map((s) => s.spec.voLine),
+        },
+        exclusions: script.look.exclusions,
+        endCardTagline: script.endCardTagline,
+        soundDesign: { ambience: script.soundAmbience, cues: script.shots.map((s) => s.spec.sfx) },
+      },
       status: casting ? "casting" : "drafting",
     });
-    const shots = await createShots(storyboard.id, script.shots);
+    const shots = await createShots(
+      storyboard.id,
+      script.shots.map((s) => ({ ...s, screenUrl: s.spec.screen !== null ? brief.screens[s.spec.screen]?.url ?? null : null })),
+    );
     const createdAssets = await createAssets(storyboard.id, [
       ...assets.map((a) => ({ ...a, source: "uploaded" as const })),
       ...script.characters.map((c) => ({ kind: "character" as const, name: c.name, description: c.description, imageUrl: null, source: "generated" as const })),

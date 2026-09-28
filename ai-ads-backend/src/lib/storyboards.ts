@@ -37,6 +37,8 @@ export interface StoryboardShotRow {
   video_url: string | null;
   // Names of the storyboard assets (characters / product / location) that appear in this shot.
   asset_names: string[];
+  // Screen-insert shot: the client's real product screen, shown instead of generated footage.
+  screen_url: string | null;
   status: ShotStatus;
   error: string | null;
   created_at: string;
@@ -81,13 +83,14 @@ export async function createStoryboard(
 
 export async function createShots(
   storyboardId: string,
-  shots: { description: string; assetNames: string[] }[],
+  shots: { description: string; assetNames: string[]; screenUrl?: string | null }[],
 ): Promise<StoryboardShotRow[]> {
   const rows = shots.map((shot, shot_index) => ({
     storyboard_id: storyboardId,
     shot_index,
     description: shot.description,
     asset_names: shot.assetNames,
+    ...(shot.screenUrl ? { screen_url: shot.screenUrl } : {}),
   }));
   const { data, error } = await supabase.from("storyboard_shots").insert(rows).select();
   if (error) throw error;

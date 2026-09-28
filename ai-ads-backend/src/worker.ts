@@ -9,7 +9,7 @@ import { posterDirection } from "./lib/poster-brief";
 import { type CreativeBrief, directionText, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
-import { synthesizeVoiceover } from "./lib/voiceover";
+import { synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
 import sharp from "sharp";
 import { pickBestKeyframe } from "./lib/keyframe-pick";
 import { generateCleanImage } from "./lib/image-gen";
@@ -20,6 +20,7 @@ import { getProductById, type ProductRow, toBrandContext } from "./lib/products"
 import { getTemplateById } from "./lib/templates";
 import { ensureMediaBucket, uploadPoster, uploadVideo } from "./lib/storage";
 import { extractLastFrame, stitchVideos } from "./lib/video-stitch";
+import { renderScreenInsert } from "./lib/screen-insert";
 import {
   getShot,
   getStoryboardById,
@@ -193,6 +194,15 @@ async function processShotChoices(shotId: string): Promise<void> {
   const storyboard = await getStoryboardById(shot.storyboard_id);
   if (!storyboard) throw new Error(`storyboard ${shot.storyboard_id} not found`);
 
+  // A screen insert has no keyframe to generate: its one "choice" is the product screen itself.
+  if (shot.screen_url) {
+    await updateShot(shotId, { choice_urls: [shot.screen_url], selected_choice: 0, status: "choices_ready" });
+    const next = (await listShots(shot.storyboard_id)).find((s) => s.shot_index === shot.shot_index + 1);
+    if (next && next.status === "pending" && !next.choice_urls) await enqueueShotChoices(next.id);
+    await enqueueShotVideo(shotId);
+    return;
+  }
+
   try {
     const brand = await getBrandContextForProject(storyboard.project_id);
 
@@ -218,7 +228,11 @@ async function processShotChoices(shotId: string): Promise<void> {
     let previousFrame: { imageBytes: string; mimeType: string } | undefined;
     if (shot.shot_index > 0) {
       const siblingShots = await listShots(shot.storyboard_id);
-      const previous = siblingShots.find((s) => s.shot_index === shot.shot_index - 1);
+      // Continuity comes from the last live shot — a screen insert's product screen is no reference
+      // for people, place, or light.
+      const previous = siblingShots
+        .filter((s) => s.shot_index < shot.shot_index && !s.screen_url)
+        .sort((a, b) => b.shot_index - a.shot_index)[0];
       if (previous?.selected_choice !== null && previous?.selected_choice !== undefined && previous.choice_urls) {
         previousFrame = await fetchImage(previous.choice_urls[previous.selected_choice]);
         // With a cast sheet, people and wardrobe come from the character references, not from this
@@ -284,6 +298,19 @@ async function processShotVideo(shotId: string): Promise<void> {
   if (!storyboard) throw new Error(`storyboard ${shot.storyboard_id} not found`);
 
   try {
+    if (shot.screen_url) {
+      // Built from the real screen, so no Veo call and no text/effects checks (it is all real UI).
+      const res = await fetch(shot.screen_url);
+      if (!res.ok) throw new Error(`failed to fetch product screen: ${res.status}`);
+      const reveal = storyboard.creative_brief?.screens?.find((s) => s.url === shot.screen_url)?.reveal ?? null;
+      const clip = await renderScreenInsert(Buffer.from(await res.arrayBuffer()), storyboard.aspect_ratio, storyboard.shot_duration_seconds, reveal);
+      const videoUrl = await uploadVideo(shotId, clip, "video/mp4");
+      await updateShot(shotId, { video_url: videoUrl, status: "video_ready" });
+      const siblings = await listShots(shot.storyboard_id);
+      if (siblings.every((s) => s.id === shotId || s.video_url)) await enqueueStoryboardStitch(shot.storyboard_id);
+      return;
+    }
+
     const chosenImageUrl = shot.choice_urls[shot.selected_choice];
     const imageRes = await fetch(chosenImageUrl);
     if (!imageRes.ok) throw new Error(`failed to fetch chosen image: ${imageRes.status}`);
@@ -306,7 +333,7 @@ async function processShotVideo(shotId: string): Promise<void> {
     const { prompt, negativePrompt: refinedNegative } = splitNegativePrompt(refinedPrompt);
     const brief = storyboard.creative_brief;
     const negativePrompt =
-      [refinedNegative, brief?.avoid, brief?.look !== "surreal" ? VIDEO_ARTIFACT_NEGATIVES : null].filter(Boolean).join(", ") || undefined;
+      [refinedNegative, brief?.avoid, brief?.exclusions, brief?.look !== "surreal" ? VIDEO_ARTIFACT_NEGATIVES : null].filter(Boolean).join(", ") || undefined;
 
     const generate = () =>
       generateVideo(prompt, {
@@ -365,10 +392,19 @@ async function processShotVideo(shotId: string): Promise<void> {
 // the user's on-screen text, a designed end card (brand name, logo, key message, contact line),
 // and a soundtrack — Lyria music, plus the voiceover only when the brief asked for one. Music or
 // voiceover failing degrades to a quieter ad rather than failing the whole storyboard.
-async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: CreativeBrief, product: ProductRow | null): Promise<Buffer> {
+async function editBriefedAd(
+  clips: Buffer[],
+  lastFrame: Buffer,
+  brief: CreativeBrief,
+  product: ProductRow | null,
+  // Shots that may carry on-screen text (live shots after the first; never a screen insert).
+  superShots?: number[],
+): Promise<Buffer> {
   const font = product?.font || TONE_FONT[brief.tone];
   const { width = 720, height = 1280 } = await sharp(lastFrame).metadata();
 
+  const lines = brief.voiceover && !brief.voiceoverScript ? brief.audio?.voiceoverLines : undefined;
+  const perShot = Boolean(lines?.some((l) => l?.trim()));
   const [music, voiceover, endCard, supers] = await Promise.all([
     brief.audio?.musicPrompt
       ? generateMusic(brief.audio.musicPrompt, `Instrumental background music for a ${brief.tone} ${Math.round(footageSeconds(brief))}-second ad: simple, steady, gentle dynamics, no vocals.`).catch((err) => {
@@ -376,14 +412,20 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
           return undefined;
         })
       : undefined,
-    brief.voiceover && brief.audio?.voiceoverScript
-      ? synthesizeVoiceover(brief.audio.voiceoverScript, brief.voiceoverLanguage, brief.voiceGender, brief.tone).catch((err) => {
+    perShot
+      ? synthesizeVoiceoverLines(lines!, brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio?.voiceoverDirection).catch((err) => {
+          console.warn("[worker] voiceover generation failed, continuing without voiceover:", err instanceof Error ? err.message : err);
+          return undefined;
+        })
+      : brief.voiceover && brief.audio?.voiceoverScript
+      ? synthesizeVoiceover(brief.audio.voiceoverScript, brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio.voiceoverDirection).catch((err) => {
           console.warn("[worker] voiceover generation failed, continuing without voiceover:", err instanceof Error ? err.message : err);
           return undefined;
         })
       : undefined,
     renderEndCard(lastFrame, {
       brandName: brief.brandName ?? product?.name ?? null,
+      tagline: brief.endCardTagline ?? null,
       keyMessage: brief.keyMessage ?? product?.tagline ?? null,
       contactLine: brief.contactLine,
       logoUrl: product?.logo_url ?? null,
@@ -402,8 +444,9 @@ async function editBriefedAd(clips: Buffer[], lastFrame: Buffer, brief: Creative
     transitionSeconds: TRANSITION_SECONDS[effectivePacing(brief)],
     grade: TONE_GRADE[brief.tone],
     supers,
+    superShots,
     music,
-    voiceover,
+    ...(Array.isArray(voiceover) ? { voiceoverLines: voiceover } : { voiceover }),
   });
 }
 
@@ -430,7 +473,7 @@ async function processStoryboardStitch(storyboardId: string): Promise<void> {
 
     let finalBuffer: Buffer;
     if (brief) {
-      finalBuffer = await editBriefedAd(clipBuffers, lastFrame, brief, product);
+      finalBuffer = await editBriefedAd(clipBuffers, lastFrame, brief, product, shots.filter((s) => s.shot_index > 0 && !s.screen_url).map((s) => s.shot_index));
     } else {
       // Storyboards from before creative briefs: hard cuts, clips' own audio, poster-style card.
       const endLine = product?.tagline ?? null;

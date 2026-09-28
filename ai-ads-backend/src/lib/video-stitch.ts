@@ -68,6 +68,54 @@ async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 }
 
 // Final frame of a clip as a PNG — the base image for the branded end card.
+// Splits one narration take into `count` pieces at its longest pauses (the reader was asked to
+// pause between lines), trimming the silence around each piece. Returns null when the take has
+// fewer usable pauses than it needs.
+export async function splitAudioAtPauses(wav: Buffer, count: number): Promise<Buffer[] | null> {
+  if (count <= 1) return [wav];
+  const dir = await mkdtemp(join(tmpdir(), "vo-split-"));
+  try {
+    const input = join(dir, "vo.wav");
+    await writeFile(input, wav);
+    const stderr = await new Promise<string>((resolve, reject) => {
+      const proc = spawn(BINARIES.ffmpeg, ["-i", input, "-af", "silencedetect=noise=-38dB:d=0.35", "-f", "null", "-"]);
+      let err = "";
+      proc.stderr.on("data", (c) => { err += c; });
+      proc.on("error", reject);
+      proc.on("close", () => resolve(err));
+    });
+    const duration = (await probe(input)).duration;
+    const silences: { start: number; end: number }[] = [];
+    let open: number | null = null;
+    for (const m of stderr.matchAll(/silence_(start|end): ([\d.]+)/g)) {
+      const t = Number(m[2]);
+      if (m[1] === "start") open = t;
+      else if (open !== null) { silences.push({ start: open, end: t }); open = null; }
+    }
+    // Only pauses between speech count (not leading or trailing silence).
+    const inner = silences.filter((g) => g.start > 0.15 && g.end < duration - 0.15);
+    if (inner.length < count - 1) return null;
+    const cuts = inner
+      .sort((a, b) => b.end - b.start - (a.end - a.start))
+      .slice(0, count - 1)
+      .sort((a, b) => a.start - b.start);
+    const bounds = [
+      { from: 0, to: cuts[0].start + 0.05 },
+      ...cuts.slice(1).map((c, i) => ({ from: cuts[i].end - 0.05, to: c.start + 0.05 })),
+      { from: cuts[cuts.length - 1].end - 0.05, to: duration },
+    ];
+    const pieces: Buffer[] = [];
+    for (const [i, b] of bounds.entries()) {
+      const out = join(dir, `piece-${i}.wav`);
+      await run("ffmpeg", ["-y", "-i", input, "-af", `atrim=${f3(Math.max(0, b.from))}:${f3(b.to)},asetpts=PTS-STARTPTS,silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse`, out]);
+      pieces.push(await readFile(out));
+    }
+    return pieces;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 export async function extractLastFrame(clip: Buffer): Promise<Buffer> {
   return withTempDir(async (dir) => {
     const input = join(dir, "clip.mp4");
@@ -108,13 +156,19 @@ export interface StitchOptions {
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
   grade?: string;
-  // On-screen text; supers[i] is shown over shot i + 1. `text` is a full-frame transparent PNG;
+  // Shots that may carry on-screen text, in order; supers[i] goes over superShots[i]. Defaults to
+  // every shot after the first. Screen inserts are left out — the product UI is never covered.
+  superShots?: number[];
+  // On-screen text; supers[i] is shown over shot i + 1 (or superShots[i]). `text` is a full-frame transparent PNG;
   // `mask` (white = blur) marks where the footage behind it is lightly blurred.
   supers?: { text: Buffer; mask: Buffer }[];
   // Soundtrack for the whole edit. When music or a voiceover is given, the clips' own audio is
   // dropped; otherwise the clips' audio is kept (older storyboards).
   music?: Buffer;
   voiceover?: Buffer;
+  // Narration read per shot: each line enters just after its shot's dissolve settles. Takes
+  // precedence over `voiceover`.
+  voiceoverLines?: { shot: number; audio: Buffer }[];
 }
 
 // Which stretch of a clip to keep: image-to-video starts on the (static) keyframe and the motion
@@ -143,7 +197,9 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     const infos = await Promise.all(clipPaths.map(probe));
     const { width, height } = infos[0];
     const T = options.transitionSeconds ?? 0;
-    const soundtrack = Boolean(options.music || options.voiceover);
+    const voLines = (options.voiceoverLines ?? []).filter((l) => l.shot >= 0).sort((a, b) => a.shot - b.shot);
+    const hasVoice = voLines.length > 0 || Boolean(options.voiceover);
+    const soundtrack = Boolean(options.music || hasVoice);
 
     const args = ["-y"];
     const filters: string[] = [];
@@ -210,8 +266,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         a = 0.3 + i * slot;
         b = a + slot - 0.15;
       } else {
-        const shot = i + 1;
-        if (shot >= clipPaths.length) return;
+        const shot = options.superShots ? options.superShots[i] : i + 1;
+        if (shot === undefined || shot >= clipPaths.length) return;
         a = starts[shot] + T * 0.6 + 0.1;
         b = (starts[shot + 1] ?? total) - 0.1;
       }
@@ -255,7 +311,32 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           `[${idx}:a]${audioNorm},atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8[mus]`,
         );
       }
-      if (options.voiceover) {
+      if (voLines.length) {
+        // Each line starts once its shot's dissolve has settled; a line that runs long is sped up a
+        // little (at most 12%) and otherwise pushes the next line later rather than overlapping it.
+        // The last line must end ~0.8s before the film does.
+        const lead = T * 0.6 + 0.25, gap = 0.3, tail = 0.8;
+        let prevEnd = 0;
+        const labels: string[] = [];
+        for (const [k, line] of voLines.entries()) {
+          const path = await write(`vo-line-${k}.wav`, line.audio);
+          const idx = addInput("-i", path);
+          const length = (await probe(path)).duration;
+          const desired = (starts[line.shot] ?? 0) + (line.shot === 0 ? 0.5 : lead);
+          const at = Math.max(desired, prevEnd + gap);
+          const nextDesired = k + 1 < voLines.length ? (starts[voLines[k + 1].shot] ?? total) + lead - gap : total - tail;
+          const room = Math.max(0.5, nextDesired - at);
+          const tempo = length > room ? Math.min(1.12, length / room) : 1;
+          const fitted = length / tempo;
+          const isLast = k === voLines.length - 1;
+          const fade = isLast && at + fitted > total - tail ? `,afade=t=out:st=${f3(Math.max(0, total - tail - at - 0.5))}:d=0.5` : "";
+          const ms = Math.round(at * 1000);
+          filters.push(`[${idx}:a]${audioNorm}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""}${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[vol${k}]`);
+          labels.push(`[vol${k}]`);
+          prevEnd = at + fitted;
+        }
+        filters.push(labels.length > 1 ? `${labels.join("")}amix=inputs=${labels.length}:duration=first:normalize=0[vo]` : `${labels[0]}anull[vo]`);
+      } else if (options.voiceover) {
         const voPath = await write("voiceover.wav", options.voiceover);
         const idx = addInput("-i", voPath);
         // Narration enters just after the opening image lands and must finish ~0.8s before the
@@ -269,7 +350,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         const fade = fitted > window ? `,afade=t=out:st=${f3(start + window - 0.5)}:d=0.5` : "";
         filters.push(`[${idx}:a]${audioNorm}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""},adelay=700|700,apad,atrim=0:${f3(total)}${fade}[vo]`);
       }
-      if (options.music && options.voiceover) {
+      if (options.music && hasVoice) {
         // Music ducks under the voice (sidechain), then both are mixed.
         filters.push(`[vo]asplit=2[vo1][vosc]`);
         filters.push(`[mus]volume=0.8[mus2]`);

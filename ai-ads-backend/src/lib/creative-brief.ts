@@ -61,10 +61,40 @@ export interface CreativeBrief {
   voiceGender: VoiceGender;
   // The user's own narration, used verbatim; when empty the director writes one.
   voiceoverScript: string | null;
+  // A software product's real screens (uploaded screenshots of its UI). When present, the director
+  // may show the product on screen through screen-insert shots built from these images.
+  screens: ProductScreen[];
   // Written by the director step (not user input): the music brief and, if voiceover is on, the
   // narration script. Kept with the brief so the stitch step (a later queue task) can use them.
-  audio?: { musicPrompt: string; voiceoverScript: string | null };
+  audio?: {
+    musicPrompt: string;
+    voiceoverScript: string | null;
+    voiceoverDirection?: string | null;
+    // The narration split by shot (index = shot index, null = no line on that shot), so each line
+    // lands on its own picture. Absent on older storyboards and when the client wrote the VO.
+    voiceoverLines?: (string | null)[];
+  };
+  // Also written by the director: things this film must never show, added to the video model's
+  // negative prompt (never the image prompt, which paints what it reads).
+  exclusions?: string | null;
+  // Also written by the director: the end card's supporting line under the brand name.
+  endCardTagline?: string | null;
+  // Also written by the director: sound design notes (ambience and per-shot effects) for the edit.
+  soundDesign?: { ambience: string; cues: (string | null)[] } | null;
 }
+
+export interface ProductScreen {
+  url: string;
+  // What the screen shows, so the director knows which moment it fits (e.g. "AI Tutor answering a
+  // question about linear equations").
+  description: string | null;
+  // Optional: the part of the screen that is the product's response (top and bottom, as fractions
+  // of the image height). It streams in top to bottom during the shot, so the product visibly
+  // answers instead of sitting still.
+  reveal?: { from: number; to: number } | null;
+}
+
+export const MAX_SCREENS = 4;
 
 export const DEFAULT_BRIEF: CreativeBrief = {
   format: "ad",
@@ -86,6 +116,7 @@ export const DEFAULT_BRIEF: CreativeBrief = {
   voiceoverLanguage: "en",
   voiceGender: "female",
   voiceoverScript: null,
+  screens: [],
 };
 
 export const MAX_ON_SCREEN_LINES = 4;
@@ -131,7 +162,22 @@ export function parseCreativeBrief(raw: unknown): CreativeBrief {
     voiceoverLanguage: pick(b.voiceoverLanguage, VOICEOVER_LANGUAGES, DEFAULT_BRIEF.voiceoverLanguage, "voiceoverLanguage"),
     voiceGender: pick(b.voiceGender, VOICE_GENDERS, DEFAULT_BRIEF.voiceGender, "voiceGender"),
     voiceoverScript: voiceoverScriptFor(b),
+    screens: screensFor(b.screens),
   };
+}
+
+function screensFor(raw: unknown): ProductScreen[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new Error("screens must be a list");
+  if (raw.length > MAX_SCREENS) throw new Error(`at most ${MAX_SCREENS} product screens`);
+  return raw.map((item, i) => {
+    const s = (item ?? {}) as Record<string, unknown>;
+    if (typeof s.url !== "string" || !/^https:\/\//.test(s.url)) throw new Error(`screens[${i}].url must be an https URL`);
+    const r = s.reveal as { from?: unknown; to?: unknown } | null | undefined;
+    const reveal =
+      r && typeof r.from === "number" && typeof r.to === "number" && r.from >= 0 && r.to <= 1 && r.to - r.from >= 0.05 ? { from: r.from, to: r.to } : null;
+    return { url: s.url, description: text(s.description, `screens[${i}].description`), reveal };
+  });
 }
 
 // Validates an explicit "N shots x S seconds" plan; both fields must come together.
@@ -262,7 +308,7 @@ export const TONE_GRADE: Record<Tone, string> = {
 // Always sent to Veo's negative prompt for photoreal/cinematic looks: sudden unmotivated effects
 // Veo likes to add while animating (a smoke puff appeared mid-shot in testing).
 export const VIDEO_ARTIFACT_NEGATIVES =
-  "smoke, fog, haze, mist, dust clouds, floating particles, glitter, sparks, sudden flashes, light leaks, morphing, warping, flickering, iris wipes, circular masks, transitions, jump cuts, people talking, lip movement";
+  "smoke, fog, haze, mist, dust clouds, floating particles, glitter, sparks, sudden flashes, light leaks, morphing, warping, flickering, iris wipes, circular masks, transitions, jump cuts, people talking, lip movement, deformed hands, extra fingers, warped objects, changing faces, plastic skin, camera shake, lens flare, light leaks, bokeh ghosts";
 
 // Tone + look direction as one block for the shot prompt refiners.
 export function directionText(brief: CreativeBrief | null): string | null {
