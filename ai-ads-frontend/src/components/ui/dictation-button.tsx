@@ -30,6 +30,27 @@ function speechRecognition(): SpeechRecognitionCtor | null {
 // Longest recording for the server fallback — a prompt, not a meeting.
 const MAX_RECORDING_MS = 60_000;
 
+const norm = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+// Adds a recognized piece to what's been heard. Android sends each new piece with all the earlier
+// words repeated at its start, so a piece that already contains what we have replaces it instead
+// of being appended (which typed the same words over and over).
+function mergeHeard(have: string, piece: string): string {
+  const h = norm(have), p = norm(piece);
+  if (!h) return piece.trim();
+  if (!p || h.endsWith(p)) return have;
+  if (p.startsWith(h)) return piece.trim();
+  return joinText(have, piece);
+}
+
+function stripPrefix(text: string, prefix: string): string {
+  const t = norm(text), p = norm(prefix);
+  if (!p || !t.startsWith(p)) return text;
+  // Drop as many leading words as the prefix has.
+  const words = text.trim().split(/\s+/);
+  return words.slice(p.split(" ").length).join(" ");
+}
+
 const joinText = (base: string, added: string) => {
   const a = added.trim();
   if (!a) return base;
@@ -67,6 +88,7 @@ export function DictationButton({
   // Sessions in a row that ended without hearing anything — a browser that keeps dropping them
   // would otherwise flip the mic on and off; after a few, dictation switches to recording.
   const emptyEnds = useRef(0);
+  const serviceFailures = useRef(0);
   const canRecord = useRef(false);
   // What has been heard in this dictation (across restarted sessions), for the listening panel.
   const heardFinal = useRef("");
@@ -82,12 +104,10 @@ export function DictationButton({
     const live = Boolean(speechRecognition());
     const record = allowServer && typeof window !== "undefined" && "MediaRecorder" in window && Boolean(navigator.mediaDevices?.getUserMedia);
     canRecord.current = record;
-    // Phones and tablets end a recognition session after every phrase (and Android repeats text
-    // across sessions), so they record and transcribe instead — steady, and better at Indian
-    // languages. Desktop browsers keep live words.
-    const touch = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+    // Live words wherever the browser can recognize speech (desktop and mobile); recording is the
+    // fallback for browsers without it, or whose recognition service fails.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMode(record && (touch || !live) ? "record" : live ? "live" : null);
+    setMode(live ? "live" : record ? "record" : null);
   }, [allowServer]);
 
   useEffect(() => {
@@ -127,6 +147,7 @@ export function DictationButton({
     }, MAX_RECORDING_MS * 2);
     heardFinal.current = "";
     emptyEnds.current = 0;
+    serviceFailures.current = 0;
     setHeard({ final: "", interim: "" });
     setError(null);
     setState("listening");
@@ -147,13 +168,16 @@ export function DictationButton({
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
-        if (r.isFinal) finalText = joinText(finalText, r[0].transcript);
-        else interim = joinText(interim, r[0].transcript);
+        if (r.isFinal) finalText = mergeHeard(finalText, r[0].transcript);
+        else interim = mergeHeard(interim, r[0].transcript);
       }
+      // Android also repeats the settled words at the start of the interim text.
+      interim = stripPrefix(interim, finalText);
       latest.current.onChange(joinText(base, joinText(finalText, interim)));
       setHeard({ final: joinText(heardFinal.current, finalText), interim });
     };
     rec.onerror = (e) => {
+      if (e.error === "network") serviceFailures.current += 1;
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         wantLive.current = false;
         setError("Microphone is blocked. Allow it in your browser's site settings.");
@@ -169,19 +193,17 @@ export function DictationButton({
       heardFinal.current = joinText(heardFinal.current, finalText);
       setHeard({ final: heardFinal.current, interim: "" });
       emptyEnds.current = heardSomething ? 0 : emptyEnds.current + 1;
-      if (wantLive.current && emptyEnds.current >= 3) {
-        // The browser keeps dropping the session: stop the on/off loop and record instead.
+      if (wantLive.current && serviceFailures.current >= 2 && canRecord.current) {
+        // The browser's recognition service isn't reachable (e.g. Brave): record for this one.
         wantLive.current = false;
         recognition.current = null;
         if (stopTimer.current) window.clearTimeout(stopTimer.current);
-        if (canRecord.current) {
-          setMode("record");
-          void startRecording();
-        } else {
-          setState("idle");
-          setError("Voice input paused. Tap the mic to continue.");
-        }
+        void startRecording();
         return;
+      }
+      if (wantLive.current && emptyEnds.current >= 6) {
+        // A long stretch with nothing said: stop instead of listening forever.
+        wantLive.current = false;
       }
       if (wantLive.current) {
         // A calm restart (not instant) — and the new session reads the updated value, which lands
