@@ -2,13 +2,15 @@ import { supabase } from "./supabase";
 
 export type AccountType = "individual" | "organisation";
 export type Plan = "free" | "pro";
+export const ROLES = ["admin", "user"] as const;
+export type Role = (typeof ROLES)[number];
 
 export interface AccountRow {
   user_id: string;
   account_type: AccountType;
   // Access control (changed only by admins, through the admin API or SQL).
   plan: Plan;
-  is_admin: boolean;
+  role: Role;
   disabled: boolean;
   feature_overrides: Partial<Record<string, boolean>>;
   created_at: string;
@@ -36,7 +38,7 @@ export async function listAccounts(): Promise<AccountRow[]> {
   return data;
 }
 
-export type AccountAdminPatch = Partial<Pick<AccountRow, "account_type" | "plan" | "is_admin" | "disabled" | "feature_overrides">>;
+export type AccountAdminPatch = Partial<Pick<AccountRow, "account_type" | "plan" | "role" | "disabled" | "feature_overrides">>;
 
 export async function updateAccount(userId: string, patch: AccountAdminPatch): Promise<AccountRow> {
   const { data, error } = await supabase.from("accounts").update(patch).eq("user_id", userId).select().single();

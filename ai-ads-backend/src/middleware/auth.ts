@@ -35,7 +35,7 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
 }
 
 export function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction): void {
-  if (!req.account?.is_admin) {
+  if (req.account?.role !== "admin") {
     res.status(403).json({ error: "admin access required" });
     return;
   }

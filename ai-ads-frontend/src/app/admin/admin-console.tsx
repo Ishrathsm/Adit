@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Search, ShieldCheck, X } from "lucide-react";
-import { BackLink } from "@/components/back-link";
+import Link from "next/link";
 import {
   adminGetUser,
   adminListFeatures,
@@ -17,10 +17,14 @@ import {
   type FeatureKey,
   type Features,
   type Plan,
+  ROLES,
+  type Role,
 } from "@/lib/api";
 
-// Admin console: who's on which plan/account type, how they sign in, what they've made, and
+// Admin console: who's on which plan/account type, how they sign in, what they've made, roles, and
 // per-user feature switches. Every call is admin-checked server-side; this page only renders.
+
+const ROLE_LABELS: Record<Role, string> = { admin: "Admin", user: "User" };
 
 type StatusFilter = "all" | "active" | "disabled" | "not_onboarded" | "admins";
 
@@ -39,7 +43,7 @@ function providerLabel(provider: string) {
   return provider === "google" ? "Google" : provider === "email" ? "Email" : provider;
 }
 
-export default function AdminPage() {
+export function AdminConsole() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [features, setFeatures] = useState<AdminFeatureInfo[]>([]);
   const [planDefaults, setPlanDefaults] = useState<Record<Plan, Features> | null>(null);
@@ -77,7 +81,7 @@ export default function AdminPage() {
       if (statusFilter === "active" && (u.disabled || !u.onboarded)) return false;
       if (statusFilter === "disabled" && !u.disabled) return false;
       if (statusFilter === "not_onboarded" && u.onboarded) return false;
-      if (statusFilter === "admins" && !u.isAdmin) return false;
+      if (statusFilter === "admins" && u.role !== "admin") return false;
       return true;
     });
   }, [users, search, planFilter, loginFilter, statusFilter]);
@@ -96,19 +100,20 @@ export default function AdminPage() {
 
   if (forbidden) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10 sm:px-10">
-        <BackLink href="/projects" label="Projects" />
-        <p className="mt-10 text-sm text-muted">This page is only available to admins.</p>
+      <main className="mx-auto flex max-w-4xl flex-col px-6 py-10 sm:px-10">
+        <p className="text-sm text-muted">
+          This page is only available to admins.{" "}
+          <Link href="/projects" className="text-foreground underline underline-offset-4">
+            Back to the app
+          </Link>
+        </p>
       </main>
     );
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-10 sm:px-10">
-      <BackLink href="/projects" label="Projects" />
-
-      <div className="mt-8 flex flex-col gap-2">
-        <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Admin</p>
+    <main className="relative mx-auto flex max-w-6xl flex-col px-6 py-10 sm:px-10">
+      <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Users &amp; access</h1>
       </div>
 
@@ -190,7 +195,7 @@ export default function AdminPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="truncate">{u.email ?? u.id}</span>
-                      {u.isAdmin && <ShieldCheck size={13} className="shrink-0 text-muted" aria-label="Admin" />}
+                      {u.role === "admin" && <ShieldCheck size={13} className="shrink-0 text-muted" aria-label="Admin" />}
                       {u.disabled && <span className="rounded-full border border-red-400/50 px-2 py-0.5 text-[10px] text-red-400">Disabled</span>}
                     </div>
                   </td>
@@ -391,11 +396,20 @@ function UserPanel({
             </section>
 
             <section className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted uppercase">Role</p>
+              <p className="text-xs text-muted">Admins can open this console and change any user&apos;s plan, features, and access.</p>
+              <div className="flex gap-2">
+                {ROLES.map((role) => (
+                  <button key={role} disabled={saving} onClick={() => save({ role })} className={pillClass(user.role === role)}>
+                    {ROLE_LABELS[role]}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-2">
               <p className="text-xs font-medium text-muted uppercase">Access</p>
               <div className="flex flex-wrap gap-2">
-                <button disabled={saving} onClick={() => save({ isAdmin: !user.isAdmin })} className={pillClass(user.isAdmin)}>
-                  {user.isAdmin ? "Admin" : "Make admin"}
-                </button>
                 {user.disabled ? (
                   <button disabled={saving} onClick={() => save({ disabled: false })} className={pillClass(false)}>
                     Re-enable account

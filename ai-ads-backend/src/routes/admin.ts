@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { User } from "@supabase/supabase-js";
 import type { AuthedRequest } from "../middleware/auth";
-import { type AccountAdminPatch, type AccountRow, type AccountType, listAccounts, type Plan, updateAccount } from "../lib/accounts";
+import { type AccountAdminPatch, type AccountRow, type AccountType, listAccounts, type Plan, ROLES, type Role, updateAccount } from "../lib/accounts";
 import { effectiveFeatures, FEATURE_KEYS, FEATURES, type FeatureKey, PLAN_DEFAULTS } from "../lib/features";
 import { env } from "../lib/env";
 import { supabase } from "../lib/supabase";
@@ -67,7 +67,7 @@ function summarize(user: User, account: AccountRow | null, usage: Usage | undefi
     onboarded: Boolean(account),
     accountType: account?.account_type ?? null,
     plan: account?.plan ?? "free",
-    isAdmin: account?.is_admin ?? false,
+    role: account?.role ?? "user",
     disabled: account?.disabled ?? false,
     featureOverrides: account?.feature_overrides ?? {},
     features: effectiveFeatures(account),
@@ -118,7 +118,7 @@ const ACCOUNT_TYPES: AccountType[] = ["individual", "organisation"];
 
 adminRouter.patch("/users/:id", async (req: AuthedRequest, res) => {
   const targetId = req.params.id;
-  const { plan, accountType, disabled, isAdmin, featureOverrides } = req.body ?? {};
+  const { plan, accountType, disabled, role, featureOverrides } = req.body ?? {};
 
   const patch: AccountAdminPatch = {};
   if (plan !== undefined) {
@@ -133,9 +133,9 @@ adminRouter.patch("/users/:id", async (req: AuthedRequest, res) => {
     if (typeof disabled !== "boolean") return void res.status(400).json({ error: "disabled must be a boolean" });
     patch.disabled = disabled;
   }
-  if (isAdmin !== undefined) {
-    if (typeof isAdmin !== "boolean") return void res.status(400).json({ error: "isAdmin must be a boolean" });
-    patch.is_admin = isAdmin;
+  if (role !== undefined) {
+    if (!ROLES.includes(role)) return void res.status(400).json({ error: `role must be one of ${ROLES.join(", ")}` });
+    patch.role = role as Role;
   }
   if (featureOverrides !== undefined) {
     // { key: true | false } sets an override; { key: null } clears it back to the plan default.
@@ -148,7 +148,7 @@ adminRouter.patch("/users/:id", async (req: AuthedRequest, res) => {
     }
   }
   // An admin can't lock themselves out or remove their own admin access.
-  if (targetId === req.userId && (patch.disabled === true || patch.is_admin === false)) {
+  if (targetId === req.userId && (patch.disabled === true || (patch.role !== undefined && patch.role !== "admin"))) {
     return void res.status(400).json({ error: "you can't disable yourself or remove your own admin access" });
   }
 

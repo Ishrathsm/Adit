@@ -66,6 +66,9 @@ export interface Template {
 
 export type AccountType = "individual" | "organisation";
 export type Plan = "free" | "pro";
+// Mirrors ROLES in ai-ads-backend/src/lib/accounts.ts.
+export const ROLES = ["admin", "user"] as const;
+export type Role = (typeof ROLES)[number];
 
 // Feature switches — mirrors ai-ads-backend/src/lib/features.ts. Plan gives defaults; admins can
 // override any feature per user.
@@ -76,7 +79,7 @@ export interface Account {
   user_id: string;
   account_type: AccountType;
   plan: Plan;
-  is_admin: boolean;
+  role: Role;
   disabled: boolean;
   feature_overrides: Partial<Record<FeatureKey, boolean>>;
   created_at: string;
@@ -154,7 +157,7 @@ export interface AdminUser {
   onboarded: boolean;
   accountType: AccountType | null;
   plan: Plan;
-  isAdmin: boolean;
+  role: Role;
   disabled: boolean;
   featureOverrides: Partial<Record<FeatureKey, boolean>>;
   features: Features;
@@ -192,7 +195,7 @@ export interface AdminUserPatch {
   plan?: Plan;
   accountType?: AccountType;
   disabled?: boolean;
-  isAdmin?: boolean;
+  role?: Role;
   // true/false sets an override; null clears it back to the plan default.
   featureOverrides?: Partial<Record<FeatureKey, boolean | null>>;
 }

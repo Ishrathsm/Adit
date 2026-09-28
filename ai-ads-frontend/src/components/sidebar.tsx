@@ -186,8 +186,9 @@ export function Sidebar() {
         label="Projects"
         active={pathname === "/projects" || pathname.startsWith("/projects/")}
       />
-      {/* Admins only — the admin API is also admin-checked server-side, this just hides the link. */}
-      {account?.is_admin && <NavLink href="/admin" icon={ShieldCheck} label="Admin" active={pathname.startsWith("/admin")} />}
+      {/* Admins only — /admin and the admin API are also admin-checked server-side, this just hides
+          the link. The console is its own shell, outside the product, so the link is never active. */}
+      {account?.role === "admin" && <NavLink href="/admin" icon={ShieldCheck} label="Admin console" active={false} />}
       <button
         onClick={handleTemplatesClick}
         className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
