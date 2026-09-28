@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import sharp, { type OverlayOptions } from "sharp";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 import { resolveFontFile } from "./font-cache";
 import { type PosterCopy, splitPosterCopy } from "./poster-copy";
 
 const visionAI = env.googleCloudProjectId
-  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.textLocation })
   : null;
 
 // Brand assets are applied post-generation as a logo + typeset copy — not per-brand model
@@ -132,21 +133,23 @@ async function detectSubjects(image: Buffer, width: number, height: number): Pro
   if (!visionAI) return [];
   try {
     const small = await sharp(image).resize({ width: 768, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
-    const response = await visionAI.models.generateContent({
-      model: env.imageCheckModel,
-      contents: [
-        { inlineData: { data: small.toString("base64"), mimeType: "image/jpeg" } },
-        "Return a bounding box for every person (whole body, including clothing and limbs) and every featured product in this image, as [ymin, xmin, ymax, xmax] on a 0-1000 scale.",
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: { boxes: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.NUMBER } } } },
-          required: ["boxes"],
+    const response = await withRateLimitRetry("poster-subjects", () =>
+      visionAI.models.generateContent({
+        model: env.imageCheckModel,
+        contents: [
+          { inlineData: { data: small.toString("base64"), mimeType: "image/jpeg" } },
+          "Return a bounding box for every person (whole body, including clothing and limbs) and every featured product in this image, as [ymin, xmin, ymax, xmax] on a 0-1000 scale.",
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: { boxes: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.NUMBER } } } },
+            required: ["boxes"],
+          },
         },
-      },
-    });
+      }),
+    );
     const parsed = JSON.parse(response.text ?? "{}") as { boxes?: number[][] };
     return (parsed.boxes ?? [])
       .filter((b) => b.length === 4)

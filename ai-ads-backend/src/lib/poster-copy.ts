@@ -1,8 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 
 const genAI = env.googleCloudProjectId
-  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.textLocation })
   : null;
 
 // A poster reads as designed when copy has hierarchy — a short dominant headline (usually the
@@ -35,27 +36,29 @@ export async function splitPosterCopy(tagline: string): Promise<PosterCopy> {
   if (!genAI) return heuristicSplit(tagline);
 
   try {
-    const response = await genAI.models.generateContent({
-      model: env.copyModel,
-      contents: `You are an advertising art director laying out copy on a poster. Split this tagline into typographic roles, using ONLY its own words in their original order, keeping their original capitalization (you may drop punctuation at the split points; never add, rephrase, reorder, or translate words):
+    const response = await withRateLimitRetry("poster-copy", () =>
+      genAI.models.generateContent({
+        model: env.copyModel,
+        contents: `You are an advertising art director laying out copy on a poster. Split this tagline into typographic roles, using ONLY its own words in their original order, keeping their original capitalization (you may drop punctuation at the split points; never add, rephrase, reorder, or translate words):
 - headline: the 1-4 word hook that should dominate — the offer (e.g. "30% off") if there is one, otherwise the punchiest phrase
 - subline: the remaining supporting words, or null
 - kicker: a 1-2 word label that naturally leads the tagline (e.g. "New", "Introducing"), or null — only if the tagline actually starts with one
 
 Tagline: "${tagline}"`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            kicker: { type: Type.STRING, nullable: true },
-            headline: { type: Type.STRING },
-            subline: { type: Type.STRING, nullable: true },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              kicker: { type: Type.STRING, nullable: true },
+              headline: { type: Type.STRING },
+              subline: { type: Type.STRING, nullable: true },
+            },
+            required: ["headline"],
           },
-          required: ["headline"],
         },
-      },
-    });
+      }),
+    );
     const parsed = JSON.parse(response.text ?? "{}") as Partial<PosterCopy>;
     const copy: PosterCopy = {
       kicker: parsed.kicker?.trim() || null,

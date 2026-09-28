@@ -1,8 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 
 const genAI = env.googleCloudProjectId
-  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.textLocation })
   : null;
 
 export interface KeyframeCandidate {
@@ -48,18 +49,20 @@ ${lookSheet ? `Film look sheet (people, product, place, palette, light must matc
 
 Pick the candidate that best: (1) shows exactly what the shot brief describes; (2) ${cast.length ? "shows each person exactly as in their CAST REFERENCE — same face, hair, and the same clothing (garment type, sleeve length, color); a wardrobe mismatch with the cast is a serious flaw even if it matches the previous shot;" : ""} ${previousFrame ? `matches the previous shot — ${cast.length ? "" : "same people, "}product design, location, time of day, palette — so the cut feels seamless;` : "matches the look sheet;"} (3) looks like a real, beautifully crafted ad frame — natural anatomy and faces, believable materials and light, no AI artifacts (warped hands, melted details, plastic skin), no stray text or logos. Return the candidate number.`);
 
-    const response = await genAI.models.generateContent({
-      model: env.copyModel,
-      contents: parts,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: { best: { type: Type.INTEGER }, reason: { type: Type.STRING } },
-          required: ["best"],
+    const response = await withRateLimitRetry("keyframe-pick", () =>
+      genAI.models.generateContent({
+        model: env.copyModel,
+        contents: parts,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: { best: { type: Type.INTEGER }, reason: { type: Type.STRING } },
+            required: ["best"],
+          },
         },
-      },
-    });
+      }),
+    );
     const parsed = JSON.parse(response.text ?? "{}") as { best?: number; reason?: string };
     if (typeof parsed.best === "number" && pool[parsed.best]) {
       console.log(`[keyframe-pick] picked candidate ${parsed.best}: ${parsed.reason ?? ""}`);

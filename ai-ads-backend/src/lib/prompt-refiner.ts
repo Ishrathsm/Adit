@@ -1,8 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 
 const genAI = env.googleCloudProjectId
-  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.textLocation })
   : null;
 
 export interface BrandContext {
@@ -160,10 +161,12 @@ async function refine(metaPrompt: string, image?: { imageBytes: string; mimeType
       ? metaPrompt
       : `${metaPrompt}\n\nIMPORTANT: your previous attempt was too short. The combined JSON must be at least ${MIN_CHARS} characters of dense, concrete visual detail across its fields — do not summarize or stop early.`;
 
-    const response = await genAI.models.generateContent({
-      model: env.textModel,
-      contents: image ? [{ role: "user", parts: [{ text: prompt }, { inlineData: { data: image.imageBytes, mimeType: image.mimeType } }] }] : prompt,
-    });
+    const response = await withRateLimitRetry("prompt-refiner", () =>
+      genAI.models.generateContent({
+        model: env.textModel,
+        contents: image ? [{ role: "user", parts: [{ text: prompt }, { inlineData: { data: image.imageBytes, mimeType: image.mimeType } }] }] : prompt,
+      }),
+    );
 
     const text = response.text ? stripCodeFence(response.text) : undefined;
     if (text && text.length >= RETRY_MIN_CHARS) return text;

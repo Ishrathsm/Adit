@@ -15,6 +15,16 @@ const genAI = imageGenEnabled
     })
   : null;
 
+// Start times are spaced env.imageMinIntervalMs apart across the whole process (keyframe
+// candidates, clean-check re-rolls, cast sheets), since a burst is what trips the quota.
+let nextImageSlot = 0;
+async function waitForImageSlot(): Promise<void> {
+  const now = Date.now();
+  const wait = Math.max(0, nextImageSlot - now);
+  nextImageSlot = Math.max(now, nextImageSlot) + env.imageMinIntervalMs;
+  if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+}
+
 export interface GeneratedImage {
   imageBytes: string;
   mimeType: string;
@@ -41,16 +51,17 @@ export async function generateImage(
     ? [...referenceImages.map((ref) => ({ inlineData: { data: ref.imageBytes, mimeType: ref.mimeType } })), prompt]
     : prompt;
 
-  const response = await withRateLimitRetry("image-gen", () =>
-    genAI.models.generateContent({
+  const response = await withRateLimitRetry("image-gen", async () => {
+    await waitForImageSlot();
+    return genAI.models.generateContent({
       model: env.imageModel,
       contents,
       config: {
         responseModalities: ["IMAGE"],
         imageConfig: { aspectRatio },
       },
-    }),
-  );
+    });
+  });
 
   const parts = response.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((part) => part.inlineData?.data);

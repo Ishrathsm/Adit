@@ -40,11 +40,18 @@ export const env = {
   // location for this project — it 404s in us-central1 same as Imagen does.
   imageModel: process.env.IMAGE_MODEL ?? "gemini-3.1-flash-image",
   imageLocation: process.env.IMAGE_LOCATION ?? "global",
+  // Minimum gap between Nano Banana calls in this process — back-to-back image calls (keyframe
+  // candidates, clean-check re-rolls) are what trip its per-minute quota.
+  imageMinIntervalMs: Number(process.env.IMAGE_MIN_INTERVAL_MS ?? 4000),
   // Text generation (prompt refinement, storyboard shot breakdown) — plain Gemini text, no
   // region quirks observed. Pro over Flash: the refined prompt is the single biggest lever
   // on output quality (brand-rule adherence, actually following the user's brief), worth the
   // extra cost/latency over the budget tier.
   textModel: process.env.TEXT_MODEL ?? "gemini-2.5-pro",
+  // Every Gemini text/vision call (script, prompt refinement, image/video checks, copy split,
+  // keyframe pick) goes to the "global" endpoint: Vertex routes it to whichever region has
+  // capacity, so it 429s far less than pinning us-central1. Veo, Lyria, and TTS stay regional.
+  textLocation: process.env.TEXT_LOCATION ?? "global",
   // Post-generation check for stray text / real-brand marks in generated images — a yes/no
   // vision read on every image, so the budget tier is plenty.
   imageCheckModel: process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",

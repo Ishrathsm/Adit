@@ -1,10 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 import { checkForUnwantedMarks } from "./image-check";
 import { sampleFrames } from "./video-stitch";
 
 const genAI = env.googleCloudProjectId
-  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.googleCloudLocation })
+  ? new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: env.textLocation })
   : null;
 
 // A clean keyframe isn't enough: Veo can paint marks in while animating (seen in testing — a logo
@@ -34,18 +35,20 @@ export async function findSuddenEffects(clip: Buffer): Promise<string[]> {
 - objects or people appearing, vanishing, melting, morphing, or duplicating; warped faces, hands, or limbs
 Normal motion does not count: people moving, camera moves, focus changes, natural light already present in FRAME 0. Each finding must name what appears and where. Return an empty list if the shot is clean.`);
 
-    const response = await genAI.models.generateContent({
-      model: env.imageCheckModel,
-      contents: parts,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: { findings: { type: Type.ARRAY, items: { type: Type.STRING } } },
-          required: ["findings"],
+    const response = await withRateLimitRetry("video-check", () =>
+      genAI.models.generateContent({
+        model: env.imageCheckModel,
+        contents: parts,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: { findings: { type: Type.ARRAY, items: { type: Type.STRING } } },
+            required: ["findings"],
+          },
         },
-      },
-    });
+      }),
+    );
     const parsed = JSON.parse(response.text ?? "{}") as { findings?: string[] };
     return Array.isArray(parsed.findings) ? parsed.findings : [];
   } catch (err) {

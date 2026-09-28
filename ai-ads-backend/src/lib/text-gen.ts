@@ -1,13 +1,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { type CreativeBrief, END_CARD_SECONDS, footageSeconds, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
 import { env } from "./env";
+import { withRateLimitRetry } from "./rate-limit-retry";
 import { type BrandContext, colorName } from "./prompt-refiner";
 
 const genAI = env.googleCloudProjectId
   ? new GoogleGenAI({
       vertexai: true,
       project: env.googleCloudProjectId,
-      location: env.googleCloudLocation,
+      location: env.textLocation,
     })
   : null;
 
@@ -134,11 +135,13 @@ function voiceoverSpec(brief: CreativeBrief, plan: ShotPlan): string {
 }
 
 async function generateJson(contents: string): Promise<AdScript> {
-  const response = await genAI!.models.generateContent({
-    model: env.textModel,
-    contents,
-    config: { responseMimeType: "application/json", responseSchema: SCRIPT_SCHEMA },
-  });
+  const response = await withRateLimitRetry("ad-script", () =>
+    genAI!.models.generateContent({
+      model: env.textModel,
+      contents,
+      config: { responseMimeType: "application/json", responseSchema: SCRIPT_SCHEMA },
+    }),
+  );
   const text = response.text;
   if (!text) throw new Error("Ad script returned no text");
   const parsed = JSON.parse(text) as {

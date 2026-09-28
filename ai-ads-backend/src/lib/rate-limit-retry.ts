@@ -14,8 +14,10 @@ export async function withRateLimitRetry<T>(label: string, fn: () => Promise<T>)
       return await fn();
     } catch (err) {
       if (!isRateLimited(err) || attempt >= DELAYS_MS.length) throw err;
-      console.warn(`[${label}] rate limited, retrying in ${DELAYS_MS[attempt] / 1000}s (attempt ${attempt + 1}/${DELAYS_MS.length})`);
-      await new Promise((resolve) => setTimeout(resolve, DELAYS_MS[attempt]));
+      // ±25% jitter so calls that 429'd together (a video's frame checks) don't retry in lockstep.
+      const delay = Math.round(DELAYS_MS[attempt] * (0.75 + Math.random() * 0.5));
+      console.warn(`[${label}] rate limited, retrying in ${Math.round(delay / 1000)}s (attempt ${attempt + 1}/${DELAYS_MS.length})`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
