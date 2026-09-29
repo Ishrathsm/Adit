@@ -33,6 +33,9 @@ export const env = {
   googleCloudLocation: process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1",
   // veo-2.0-generate-001 was retired — veo-3.1-lite-generate-001 is the current cheapest tier.
   veoModel: process.env.VEO_MODEL ?? "veo-3.1-lite-generate-001",
+  // Veo takes per shot, first included: each is checked, a flagged take is re-rendered with the
+  // findings fed back, and the cleanest take is kept. A Veo call is the expensive step.
+  videoMaxTakes: Math.max(1, Number(process.env.VIDEO_MAX_TAKES ?? 3)),
   // Imagen (imagen-4.x, all variants) 404s on this project in every region tried — blocked at
   // the account/entitlement level, unrelated to model naming. Gemini's native image output
   // ("Nano Banana") is a separate product/API path and does work. gemini-3.1-flash-image
@@ -55,6 +58,9 @@ export const env = {
   // Post-generation check for stray text / real-brand marks in generated images — a yes/no
   // vision read on every image, so the budget tier is plenty.
   imageCheckModel: process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",
+  // Per-take video check (effects, skin, props, over-acting across ~9 frames) — a judgement call
+  // on a whole shot, not a yes/no read; every flag costs a Veo re-render.
+  videoCheckModel: process.env.VIDEO_CHECK_MODEL ?? process.env.IMAGE_CHECK_MODEL ?? "gemini-2.5-flash",
   // Splits a poster tagline into headline/subline roles — tiny structured task, budget tier.
   copyModel: process.env.COPY_MODEL ?? "gemini-2.5-flash",
   // Background music for video ads (Vertex Lyria; returns ~32s instrumental WAV).

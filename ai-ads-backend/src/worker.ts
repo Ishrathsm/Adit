@@ -4,7 +4,7 @@ import { type GenerationTask, enqueueShotChoices, enqueueShotVideo, enqueueStory
 import { env } from "./lib/env";
 import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
-import { findMarksInVideo, findSuddenEffects } from "./lib/video-check";
+import { type ClipProblem, findMarksInVideo, findSuddenEffects } from "./lib/video-check";
 import { posterDirection } from "./lib/poster-brief";
 import { type CreativeBrief, directionText, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
@@ -335,46 +335,62 @@ async function processShotVideo(shotId: string): Promise<void> {
     const negativePrompt =
       [refinedNegative, brief?.avoid, brief?.exclusions, brief?.look !== "surreal" ? VIDEO_ARTIFACT_NEGATIVES : null].filter(Boolean).join(", ") || undefined;
 
-    const generate = () =>
-      generateVideo(prompt, {
-        // Silent footage: Veo's native audio ignored "no dialogue" and produced speech in testing.
-        // Music (and voiceover, when requested) is laid over the whole edit instead.
-        generateAudio: false,
-        durationSeconds: storyboard.shot_duration_seconds,
-        aspectRatio: storyboard.aspect_ratio,
-        image: { imageBytes, mimeType: "image/png" },
-        negativePrompt,
-      });
-    let video = await generate();
-    let clip = Buffer.from(video.videoBytes, "base64");
-
-    // One regeneration if Veo painted text/marks in, or added a sudden effect (smoke, flashes,
-    // morphing) while animating — a Veo call is the expensive step, so no more than one retry.
-    // The mark check is skipped when the user's own product photo is the reference (its real
-    // branding would be flagged); the effects check is skipped for the surreal look.
-    {
-      const { productRefs } = await shotAssetReferences(storyboard.id, shot.asset_names, async (url) => {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`failed to fetch reference image: ${res.status}`);
-        return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
-      });
+    // Every take is checked for painted-in text/marks and for sudden effects, skin artifacts, prop
+    // swaps, and over-acting. A flagged take is re-rendered with the findings fed back (short
+    // negatives for Veo's negative prompt, positive directions for the prompt), up to
+    // VIDEO_MAX_TAKES, and the take with the fewest problems is kept. The mark check is skipped
+    // when the user's own product photo is the reference (its real branding would be flagged);
+    // the effects check is skipped for the surreal look.
+    const { productRefs } = await shotAssetReferences(storyboard.id, shot.asset_names, async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`failed to fetch reference image: ${res.status}`);
+      return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
+    });
+    const checkTake = async (clip: Buffer) => {
       const [marks, effects] = await Promise.all([
         storyboard.reference_image_role !== "subject" ? findMarksInVideo(clip, productRefs) : Promise.resolve([]),
         brief?.look !== "surreal" ? findSuddenEffects(clip) : Promise.resolve([]),
       ]);
-      const findings = [...marks, ...effects];
-      if (findings.length) {
-        console.warn(`[worker] shot ${shotId} video has problems, regenerating once:`, findings.join("; "));
-        try {
-          video = await generate();
-          clip = Buffer.from(video.videoBytes, "base64");
-        } catch (err) {
-          console.warn(`[worker] shot ${shotId} regeneration failed, keeping first clip:`, err instanceof Error ? err.message : err);
-        }
+      return [...marks, ...effects];
+    };
+
+    const avoid = new Set<string>();
+    const directions = new Set<string>();
+    let best: { clip: Buffer; mimeType: string; problems: ClipProblem[]; take: number } | null = null;
+    for (let take = 1; take <= env.videoMaxTakes; take++) {
+      let video;
+      try {
+        video = await generateVideo(directions.size ? `${prompt}\n\nDirection for this take: ${[...directions].join(" ")}` : prompt, {
+          // Silent footage: Veo's native audio ignored "no dialogue" and produced speech in testing.
+          // Music (and voiceover, when requested) is laid over the whole edit instead.
+          generateAudio: false,
+          durationSeconds: storyboard.shot_duration_seconds,
+          aspectRatio: storyboard.aspect_ratio,
+          image: { imageBytes, mimeType: "image/png" },
+          negativePrompt: [negativePrompt, ...avoid].filter(Boolean).join(", ") || undefined,
+        });
+      } catch (err) {
+        if (!best) throw err;
+        console.warn(`[worker] shot ${shotId} take ${take} failed, keeping take ${best.take}:`, err instanceof Error ? err.message : err);
+        break;
+      }
+      const clip = Buffer.from(video.videoBytes, "base64");
+      const problems = await checkTake(clip);
+      if (!best || problems.length < best.problems.length) best = { clip, mimeType: video.mimeType, problems, take };
+      if (!problems.length) break;
+      console.warn(`[worker] shot ${shotId} take ${take} has ${problems.length} problem(s):`, problems.map((p) => p.issue).join("; "));
+      for (const p of problems) {
+        if (p.avoid) avoid.add(p.avoid);
+        if (p.direction) directions.add(p.direction);
       }
     }
+    if (best!.problems.length) {
+      console.warn(`[worker] shot ${shotId} kept take ${best!.take} with ${best!.problems.length} problem(s) left after ${env.videoMaxTakes} take(s)`);
+    } else if (best!.take > 1) {
+      console.log(`[worker] shot ${shotId} take ${best!.take} is clean`);
+    }
 
-    const videoUrl = await uploadVideo(shotId, clip, video.mimeType);
+    const videoUrl = await uploadVideo(shotId, best!.clip, best!.mimeType);
     await updateShot(shotId, { video_url: videoUrl, status: "video_ready" });
 
     const siblingShots = await listShots(shot.storyboard_id);
