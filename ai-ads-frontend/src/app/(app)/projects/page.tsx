@@ -10,7 +10,6 @@ import {
   FolderInput,
   FolderPlus,
   Image as ImageIcon,
-  LayoutTemplate,
   MessageSquare,
   MoreVertical,
   Pencil,
@@ -24,6 +23,7 @@ import { BackLink } from "@/components/back-link";
 import { BrandKitPanel } from "@/components/brand-kit-panel";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CreateHero } from "@/components/create-hero";
+import { TemplateGallery } from "@/components/template-gallery";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createFolder,
@@ -624,15 +624,7 @@ function ProjectsPageInner() {
       {!activeFolder && (
         <div id="templates" className="mt-14 scroll-mt-6 pb-10">
           <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Templates</p>
-          <div className="rgb-border flex flex-col items-center gap-2 p-8 text-center opacity-70">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border-strong">
-              <LayoutTemplate size={18} />
-            </div>
-            <p className="text-sm font-medium">Templates are coming soon</p>
-            <p className="max-w-sm text-xs text-muted">
-              Ready-made starting points for common ad formats — on the way.
-            </p>
-          </div>
+          <TemplateGallery productId={productId} needsProduct={account?.account_type === "organisation"} />
         </div>
       )}
 

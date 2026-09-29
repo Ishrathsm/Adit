@@ -4,7 +4,7 @@ import { DictationButton } from "@/components/ui/dictation-button";
 import { videoThumbSrc } from "@/lib/utils";
 import { Accordion } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   Upload,
@@ -28,7 +28,7 @@ import {
   uploadStoryboardReferenceImage,
   type AdLook,
   type AdTone,
-  type AssetKind,
+  type PosterAssetKind,
   type Features,
   getJob,
   getLatestJobForProject,
@@ -51,6 +51,8 @@ function chipClass(active: boolean) {
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  // Set by a template's Remix button: preselect that template for this poster.
+  const remixTemplateId = useSearchParams().get("template");
 
   const [project, setProject] = useState<Project | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function ProjectDetailPage() {
       .catch(() => setFeatures(null));
   }, []);
   const has = (key: keyof Features) => features?.[key] ?? true;
-  const [posterAssets, setPosterAssets] = useState<{ file: File; previewUrl: string; kind: AssetKind; name: string }[]>([]);
+  const [posterAssets, setPosterAssets] = useState<{ file: File; previewUrl: string; kind: PosterAssetKind; name: string }[]>([]);
 
   const [job, setJob] = useState<Job | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -124,11 +126,18 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!project) return;
     listTemplates(project.type)
-      .then(({ templates }) => setTemplates(templates))
+      .then(({ templates }) => {
+        setTemplates(templates);
+        if (remixTemplateId && templates.some((t) => t.id === remixTemplateId)) {
+          setTemplateId(remixTemplateId);
+          // Curated templates are portrait posters.
+          setAspectRatio("3:4");
+        }
+      })
       .catch(() => {
         /* templates are an optional enhancement — a load failure shouldn't block generation */
       });
-  }, [project]);
+  }, [project, remixTemplateId]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -416,13 +425,14 @@ export default function ProjectDetailPage() {
                         <img src={asset.previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
                         <select
                           value={asset.kind}
-                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, kind: e.target.value as AssetKind } : a)))}
+                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, kind: e.target.value as PosterAssetKind } : a)))}
                           disabled={busy}
                           className="rounded-full border border-border-subtle bg-background px-3 py-2 text-xs outline-none"
                         >
                           <option value="product">Product</option>
                           <option value="character">Person</option>
                           <option value="location">Location</option>
+                          <option value="logo">Logo</option>
                         </select>
                         <input
                           value={asset.name}
@@ -448,7 +458,7 @@ export default function ProjectDetailPage() {
                     {!has("reference_assets") && <p className="text-xs text-muted">Reference uploads aren&apos;t enabled on your account.</p>}
                     {posterAssets.length < MAX_POSTER_ASSETS && has("reference_assets") && (
                       <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${busy ? "pointer-events-none opacity-50" : "hover:bg-white/5"}`}>
-                        <Upload size={14} /> Upload a product, person, or location photo
+                        <Upload size={14} /> Upload a product, person, location, or logo
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"

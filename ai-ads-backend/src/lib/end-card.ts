@@ -6,6 +6,7 @@ import {
   face,
   hexToRgb,
   isPlaceholderLogo,
+  colourfulShare,
   knockout,
   logoLuminance,
   luminance,
@@ -38,8 +39,13 @@ export interface EndCardContent {
 }
 
 // Renders text at a size that fits maxWidth, wrapping to two balanced lines before shrinking.
+// Brand fonts are usually Latin-only; Telugu text in one rendered as empty boxes. Telugu lines use
+// the brand font's Telugu sibling where Google Fonts has one, else Noto Sans Telugu.
+const TELUGU_SIBLING: Record<string, string> = { "Baloo 2": "Baloo Tammudu 2", Poppins: "Hind Guntur" };
+const scriptFont = (text: string, font: string) => (/[\u0C00-\u0C7F]/.test(text) ? TELUGU_SIBLING[font] ?? "Noto Sans Telugu" : font);
+
 async function fittedLines(text: string, font: string, weight: number, size: number, maxWidth: number, color: string, alpha = "100%") {
-  const f = await face(font, weight);
+  const f = await face(scriptFont(text, font), weight);
   const markup = (line: string) => `<span foreground="${color}" fgalpha="${alpha}">${escapeXml(line)}</span>`;
   let lines = [text];
   let parts = await Promise.all(lines.map((l) => renderLine(markup(l), f, size)));
@@ -75,13 +81,21 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
 
   const items: { buf: Buffer; w: number; h: number; gapAfter: number }[] = [];
 
+  // A wordmark logo (wide, it already spells the name) is shown larger and replaces the typed brand
+  // name, which would otherwise repeat it right underneath.
+  let wordmark = false;
   if (content.logoUrl) {
     const res = await fetch(content.logoUrl).catch(() => null);
     const raw = res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
     if (raw && !(await isPlaceholderLogo(raw))) {
-      let logo: Buffer = await sharp(raw).resize({ height: Math.round(S * 0.14), width: Math.round(width * 0.5), fit: "inside" }).png().toBuffer();
+      const { width: lw = 1, height: lh = 1 } = await sharp(raw).metadata();
+      wordmark = lw / lh >= 2.2;
+      let logo: Buffer = await sharp(raw)
+        .resize({ height: Math.round(S * (wordmark ? 0.2 : 0.14)), width: Math.round(width * (wordmark ? 0.6 : 0.5)), fit: "inside" })
+        .png()
+        .toBuffer();
       // The card is light, so a light (e.g. white) logo gets its neutral parts flipped to black.
-      if (contrast(await logoLuminance(logo), cardLum) < 2.5) logo = await knockout(logo, false);
+      if ((await colourfulShare(logo)) < 0.4 && contrast(await logoLuminance(logo), cardLum) < 2.5) logo = await knockout(logo, false);
       const meta = await sharp(logo).metadata();
       items.push({ buf: logo, w: meta.width ?? 0, h: meta.height ?? 0, gapAfter: S * 0.045 });
     }
@@ -91,14 +105,14 @@ export async function renderEndCard(lastFrame: Buffer, content: EndCardContent):
   const accentRgb = content.accentColor ? hexToRgb(content.accentColor) : null;
   const heading = accentRgb && contrast(luminance(accentRgb), cardLum) >= 3 ? content.accentColor! : INK;
 
-  if (content.brandName) {
+  if (content.brandName && !wordmark) {
     const name = content.uppercaseName ? content.brandName.toUpperCase() : content.brandName;
     const { parts } = await fittedLines(name, content.font, 700, S * 0.085, maxWidth, heading);
     parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.03 : S * 0.005 }));
   }
 
   if (content.tagline) {
-    const { parts } = await fittedLines(content.tagline, content.font, 400, S * 0.04, maxWidth, INK, "82%");
+    const { parts } = await fittedLines(content.tagline, content.font, 500, S * 0.05, maxWidth, INK, "82%");
     parts.forEach((p, i) => items.push({ ...p, gapAfter: i === parts.length - 1 ? S * 0.03 : S * 0.005 }));
   }
 

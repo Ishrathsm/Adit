@@ -30,9 +30,13 @@ export async function uploadVideo(jobId: string, videoBuffer: Buffer, mimeType: 
   });
   if (error) throw error;
 
-  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  return versioned(supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl);
 }
+
+// Re-renders overwrite the same path (upsert), and the storage CDN kept serving the old file at the
+// plain URL — a re-rendered shot went into the stitched film as its previous take. A version
+// stamp makes every upload a new URL.
+const versioned = (url: string) => `${url}?v=${Date.now()}`;
 
 export async function uploadPoster(jobId: string, imageBuffer: Buffer): Promise<string> {
   const path = `${jobId}.png`;
@@ -43,8 +47,7 @@ export async function uploadPoster(jobId: string, imageBuffer: Buffer): Promise<
   });
   if (error) throw error;
 
-  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  return versioned(supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl);
 }
 
 export async function uploadLogo(

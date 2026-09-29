@@ -1,3 +1,5 @@
+import type { PackInsert } from "./video-stitch";
+
 // The user's creative brief for a video ad. One house style doesn't fit every brand (a school's
 // admissions ad and a sneaker drop need opposite treatments), so the brief steers the director
 // script, the shot count and cut length, the color grade, and the end card line.
@@ -14,7 +16,7 @@ export const MIN_SHOTS = 2;
 export const MAX_SHOTS = 8;
 export const MAX_FOOTAGE_SECONDS = 32;
 export const TONES = ["premium", "warm", "bold", "playful", "trustworthy"] as const;
-export const LOOKS = ["photoreal", "cinematic", "surreal"] as const;
+export const LOOKS = ["photoreal", "cinematic", "surreal", "stopmotion", "puppet", "folkpuppet"] as const;
 export const PACINGS = ["calm", "balanced", "fast"] as const;
 export const VOICEOVER_LANGUAGES = ["en", "hi", "te", "ta"] as const;
 export const VOICE_GENDERS = ["female", "male"] as const;
@@ -79,6 +81,19 @@ export interface CreativeBrief {
   exclusions?: string | null;
   // Also written by the director: the end card's supporting line under the brand name.
   endCardTagline?: string | null;
+  // Also written by the director (stop-motion look): how each shot hands to the next — a paper tear,
+  // fold, slide-in, or cut on motion — built in the edit, never generated into the footage.
+  transitions?: (string | null)[];
+  // The client's real pack (a transparent cutout) composited into the listed shots in the edit,
+  // so packaging is never AI-drawn. Set per storyboard at production, not by the director.
+  pack?: { url: string; inserts: PackInsert[] } | null;
+  // Voices for a film with characters: the narrator and each speaking character (keyed by the
+  // upper-case name used in the vo lines, e.g. "DRAGON: …"). `voice` is a Gemini TTS prebuilt voice;
+  // `persona` is who is speaking, in plain words. Absent = one narrator voice from voiceGender.
+  voiceCast?: Record<string, { voice: string; persona: string }> | null;
+  // Approved voice takes (WAV URLs by shot index) used as-is in the edit instead of new reads —
+  // for when takes were cast and checked by ear before the render.
+  voiceTakes?: { shot: number; url: string }[] | null;
   // Also written by the director: sound design notes (ambience and per-shot effects) for the edit.
   soundDesign?: { ambience: string; cues: (string | null)[] } | null;
 }
@@ -290,6 +305,12 @@ export const LOOK_DIRECTION: Record<Look, string> = {
     "PHOTOREAL LIVE-ACTION: everything must be physically plausible and filmable with a real camera. No magical effects, glowing energy, particles bursting, lightning, shockwaves, transformations, or CGI spectacle. No smoke, fog, haze, mist, dust clouds, floating particles, light rays, or sudden atmospheric changes unless the brief explicitly asks for them — they read as AI artifacts. Impact comes from light, composition, performance, and real motion (fabric, hair, water, reflections).",
   cinematic:
     "STYLIZED CINEMATIC: live-action but heightened — dramatic motivated lighting, bold grading, slow motion, shallow depth of field and lens character are welcome. Still no fantasy effects, glowing energy, or transformations.",
+  stopmotion:
+    "STOP-MOTION PAPER COLLAGE: a handmade tabletop world shot frame by frame — everything is cut paper, card, and printed-photo cutouts with visible scissor-cut and torn edges, paper grain, layered depth, and small real drop shadows between layers, on a real tabletop set lit like a miniature. Objects move in small stepped jumps (animated on twos, 12 frames a second): they hop, slide, pop up, fold open, and wobble with charm, never smooth CGI motion. Hero objects the brand supplies (the real pack) stay photographic and exact; the world around them is paper. Clean, bright and graphic; no smoke, glow, particles, or digital effects — every effect is a paper effect (a torn-paper burst, cut-paper confetti, a fold-out pop-up). No people and no hands in frame — the objects are the characters.",
+  puppet:
+    "STOP-MOTION PUPPET FILM: a real handmade miniature world shot frame by frame, like a Laika or Aardman feature — sculpted puppets with painted faces, glass-bead eyes and real fabric costumes; miniature sets built from carved wood, clay, plaster, felt, real stone and moss; tiny practical lights (lanterns, oil lamps, fire) lighting the set like a real film. It must feel tactile and real: fingerprints in the clay, fabric weave, wood grain, slight hand-made imperfection. Characters move in small stepped poses (animated on twos, 12 frames a second) with clear, readable acting — expressive faces and gestures, never lip-synced dialogue (the narration tells the story). Hero objects the brand supplies (the real pack) stay photographic and exact. No CGI gloss, no digital particles; smoke, fire and magic are practical miniature effects (cotton-wool smoke, cellophane flame). Never real humans or animators' hands.",
+  folkpuppet:
+    "TELUGU FOLK-ART CUT-OUT PUPPET SHOW: a flat, hand-painted 2D world in the style of Cheriyal scroll paintings and Kalamkari — one uniform black outline of the same medium weight around every element (characters, props, architecture, borders, clouds), never bold in one place and thin in another; flat rich colour (Cheriyal red grounds, ochre, indigo, leaf green, turmeric), ornate patterned borders and floors, stylised trees, forts and houses built from decorative motifs, figures mostly in profile with large expressive almond eyes. Every character is a jointed flat cut-out puppet like Tholu Bommalata: separate painted pieces pinned at neck, shoulders, elbows and knees, moving in stepped poses (animated on twos, 12 frames a second) — limbs swing from their pins, heads tilt, bodies slide and bob; never smooth 3D turns. The scene is layered flat planes with slight depth and soft shadows between them, with a faint hand-painted cloth and leather texture. No 3D shading, no CGI, no photographic elements except the brand's real pack, which stays photographic and exact. Effects are painted too (painted flames, painted smoke curls, painted stars).",
   surreal:
     "SURREAL / EFFECTS ALLOWED: at most ONE clear, elegant visual effect idea may run through the film where it serves the concept — restrained, consistent, and never cluttered; everything else stays photoreal.",
 };
@@ -309,6 +330,20 @@ export const TONE_GRADE: Record<Tone, string> = {
 // Veo likes to add while animating (a smoke puff appeared mid-shot in testing).
 export const VIDEO_ARTIFACT_NEGATIVES =
   "smoke, fog, haze, mist, dust clouds, floating particles, glitter, sparks, sudden flashes, light leaks, morphing, warping, flickering, iris wipes, circular masks, transitions, jump cuts, people talking, lip movement, deformed hands, extra fingers, warped objects, changing faces, plastic skin, camera shake, lens flare, light leaks, bokeh ghosts";
+
+// Stop-motion: appended to every keyframe and Veo prompt as-is. The look direction alone let the
+// image model slip back to photography on food (real liquid chutney, a real dipped stick) — food
+// pulls hardest toward photoreal — so the paper medium is restated as a binding final line.
+export const STOP_MOTION_IMAGE_STYLE =
+  "Rendering style, binding for every object in the frame: a handmade stop-motion paper-craft miniature. Every object — snacks, bowls, sauces, chutney, leaves, chillies — is built from cut and folded coloured paper, crepe paper, and card, with visible cut edges, paper grain, and layered paper depth; nothing is real food or a photographic object. Sauces and chutneys are layered, torn green paper shapes, never liquid. Only the objects this shot describes are in frame, and none of them has a face, eyes, arms, or legs.";
+// Folk cut-out puppets: same idea — the medium restated as a binding last line, since image and video
+// models drift toward 3D shading and uneven, brush-weight outlines.
+export const FOLK_IMAGE_STYLE =
+  "Rendering style, binding for the whole frame: a flat, hand-painted Telugu folk-art illustration in the Cheriyal scroll and Kalamkari tradition — flat colour fills with no 3D shading, no gradients and no photographic texture; every single element outlined in one uniform black line of the same medium weight everywhere (never bolder in one place and thinner in another); figures are flat jointed cut-out puppets; ornate patterned borders; a faint cloth texture over everything. Everything — foreground and background — is in the same crisp sharp focus with no blur and no depth of field (ignore any lens or focus wording); faces and bodies are flat colour with no painted shading or highlights; every figure, near or far, has exactly the same outline weight. People have natural warm brown skin tones (never green, blue or yellow faces). No gods, deities, temple idols or religious figures anywhere — only ordinary villagers. The dragon, whenever it appears, is KoriKey red.";
+export const FOLK_VIDEO_STYLE =
+  "Everything stays a flat hand-painted folk-art illustration for the whole clip, with the same uniform black outlines. The characters are flat jointed cut-out puppets: they move in small stepped poses — limbs swinging from their pins, heads tilting, bodies sliding and bobbing — and never turn in 3D. The camera and the painted set never change.";
+export const STOP_MOTION_VIDEO_STYLE =
+  "Everything stays handmade paper craft for the whole clip — cut paper, crepe paper and card, never real food or liquid. Objects move like stop-motion puppets: small deliberate hops, slides and wobbles, then they hold still; the camera and the set never change. Every object keeps its exact shape from the first frame — it never grows faces, eyes, mouths, arms, legs, or feet, and never bends or melts; its personality comes only from how it hops and tilts.";
 
 // Tone + look direction as one block for the shot prompt refiners.
 export function directionText(brief: CreativeBrief | null): string | null {

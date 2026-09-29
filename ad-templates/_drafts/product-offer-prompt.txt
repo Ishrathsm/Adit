@@ -1,0 +1,43 @@
+Create a premium, soft and elegant vertical product-offer poster template for [Product], reusable for skincare, personal care, baby care, beauty, wellness, home care, and everyday consumer products running a discount or special offer.
+
+FORMAT:
+Portrait vertical layout optimized for Instagram, WhatsApp, mobile ads, and digital campaigns. Keep a clear visual flow:
+[Brand Logo] → [Main Headline] → [Secondary Headline] → [Lifestyle / Product Visual] → [Offer] → [Supporting Message] → [Call to Action].
+
+MAIN VISUAL:
+Make the product the unmistakable hero, shown clearly in the foreground or lower-middle area with clean, premium packaging. Pair it with one natural lifestyle subject that fits [Product] — for example a happy child for baby care, glowing skin for skincare, a calm home for home care — with a genuine, unposed expression and natural anatomy. Use soft commercial photography with a warm, caring, trustworthy atmosphere.
+
+BRANDING:
+Place [Brand Logo] small and clear near the top. Preserve any supplied logo exactly. Never invent logos, certifications, awards, ingredients, medical claims, statistics, or contact details.
+
+HEADLINE:
+Make [Main Headline] large, elegant, and highly readable in the upper section, using a soft, sophisticated display typeface. Place [Secondary Headline] beneath it as a quieter line in a clean sans-serif.
+
+OFFER:
+Show [Offer] exactly as supplied inside a distinctive rounded or organic premium badge near the product. Make it immediately noticeable without overpowering the product or headline. Never invent discounts or prices.
+
+SUPPORTING MESSAGE:
+Set [Supporting Message] as one short, calm line in a clean area with generous space around it.
+
+CALL TO ACTION:
+Place [Call to Action] near the bottom in a refined pill-shaped button.
+
+COLOR:
+Adapt a controlled, gentle palette to [Brand Colors] and [Product] — creamy ivory, soft pastels, light beige, and subtle warm neutrals by default. Avoid rainbow or harsh saturated colors.
+
+BACKGROUND:
+A soft premium background with subtle creamy gradients, gentle abstract shapes, or minimal product-inspired details (bubbles, petals, fabric, water) that stay quiet behind the text.
+
+LIGHTING:
+Soft diffused commercial light, gentle highlights, realistic shadows, natural skin tones, and polished product illumination.
+
+TYPOGRAPHY:
+Two complementary fonts with a clear hierarchy: headline, secondary headline, offer, supporting message, CTA. Every word crisp, correctly spelled, well kerned, and readable on mobile.
+
+ADAPTABILITY:
+Change the product, lifestyle subject, colors, background, and mood to suit the supplied product while keeping the same soft, premium, editorial design system.
+
+NEGATIVE:
+No copied artwork, fake branding, invented claims, random letters, extra text, distorted people, malformed hands, warped products, clutter, harsh colors, heavy shadows, excessive glow, or obvious AI artifacts.
+
+Final result: a finished, professionally art-directed product-offer poster — soft, premium, trustworthy, and instantly clear about the product, the offer, and the CTA.

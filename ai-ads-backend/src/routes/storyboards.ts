@@ -125,6 +125,7 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
         exclusions: script.look.exclusions,
         endCardTagline: script.endCardTagline,
         soundDesign: { ambience: script.soundAmbience, cues: script.shots.map((s) => s.spec.sfx) },
+        transitions: brief.look === "stopmotion" || brief.look === "puppet" || brief.look === "folkpuppet" ? script.shots.map((s) => s.spec.transition ?? null) : undefined,
       },
       status: casting ? "casting" : "drafting",
     });

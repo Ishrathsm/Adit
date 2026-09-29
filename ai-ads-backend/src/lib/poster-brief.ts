@@ -4,7 +4,8 @@ import { LOOK_DIRECTION, LOOKS, type Look, TONE_DIRECTION, TONES, type Tone } fr
 // the layout, instead of one tagline split heuristically), and tone/look/guidance steer the image
 // the same way the video brief steers a film.
 
-export type PosterAssetKind = "character" | "product" | "location";
+// "logo": the client's logo for this poster — placed on the finished image, never drawn by the model.
+export type PosterAssetKind = "character" | "product" | "location" | "logo";
 
 export interface PosterAsset {
   kind: PosterAssetKind;
@@ -35,7 +36,7 @@ export interface PosterBrief {
 const LIMITS = { headline: 60, subline: 120, offer: 24, cta: 28, contactLine: 120, feature: 70, guidance: 300 };
 const MAX_FEATURES = 4; // more than ~4 bullets stops reading as a poster
 const MAX_ASSETS = 3; // beyond ~3 subjects the image model starts blending them
-const ASSET_KINDS: PosterAssetKind[] = ["character", "product", "location"];
+const ASSET_KINDS: PosterAssetKind[] = ["character", "product", "location", "logo"];
 
 function text(value: unknown, field: string, max: number): string | null {
   if (value === undefined || value === null) return null;

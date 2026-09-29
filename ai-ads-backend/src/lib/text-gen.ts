@@ -33,6 +33,8 @@ export interface ShotSpec {
   lighting: string;
   // Narration spoken over this shot; null when it has none (or the ad has no voiceover).
   voLine: string | null;
+  // Stop-motion look: how this shot hands to the next in the edit (paper tear, fold, slide-in).
+  transition?: string | null;
   // Screen-insert shot: index of the client's product screen shown full-frame instead of generated
   // footage; null for every live-action shot.
   screen: number | null;
@@ -132,6 +134,7 @@ const SCRIPT_SCHEMA = {
           vo_line: NULLABLE_STRING,
           screen: { type: Type.INTEGER, nullable: true },
           sfx: NULLABLE_STRING,
+          transition: NULLABLE_STRING,
           assets: { type: Type.ARRAY, items: STRING },
         },
         required: ["purpose", "framing", "lens", "movement", "action", "lighting", "assets"],
@@ -162,7 +165,7 @@ const SCRIPT_SCHEMA = {
 // weights the start of a prompt most).
 const sentence = (s: string) => s.trim().replace(/[.\s]+$/, "") + ".";
 
-function composeShot(spec: ShotSpec): string {
+export function composeShot(spec: ShotSpec): string {
   if (spec.screen !== null) return `SCREEN INSERT — the product's real screen, full frame. ${sentence(spec.framing)} ${sentence(spec.movement)} ${spec.action}`;
   return [
     `${sentence(spec.framing)} ${sentence(spec.lens)} ${sentence(spec.movement)}`,
@@ -174,7 +177,7 @@ function composeShot(spec: ShotSpec): string {
     .join(" ");
 }
 
-function composeLookSheet(look: LookSheet, continuity: Continuity): string {
+export function composeLookSheet(look: LookSheet, continuity: Continuity): string {
   return [
     `Set: ${look.productionDesign}`,
     `People: ${look.characters}`,
@@ -254,7 +257,7 @@ function voiceoverSpec(brief: CreativeBrief, plan: ShotPlan): string {
   if (brief.voiceoverScript) return "- vo_line: null on every shot (the client supplied the narration above; it is used as-is). voiceover_direction: how that narration should be performed (voice age, accent, pace, energy, pauses, which words to lean on).";
   const words = Math.round(plan.shotCount * plan.cutSeconds * VOICEOVER_WORDS_PER_SECOND);
   const perShot = Math.max(3, Math.round(plan.cutSeconds * VOICEOVER_WORDS_PER_SECOND));
-  return `- vo_line: the narration spoken over that shot, in ${VOICEOVER_LANGUAGE_NAMES[brief.voiceoverLanguage]}${brief.voiceoverLanguage === "en" ? "" : " (native script, natural everyday phrasing — not a stiff translation)"}, at most ~${perShot} words so it fits the shot; null where the picture should breathe (the first shot usually lands silent). All lines together: at most ${words} words, read as one flowing piece, landing the key message by the last line. Only the words to be spoken — no stage directions or quotes.
+  return `- vo_line: the narration spoken over that shot, in ${VOICEOVER_LANGUAGE_NAMES[brief.voiceoverLanguage]}${brief.voiceoverLanguage === "en" ? "" : " (native script, natural everyday phrasing — not a stiff translation)"}, at most ~${perShot} words so it fits the shot; null where the picture should breathe (the first shot usually lands silent). All lines together: at most ${words} words, read as one flowing piece, landing the key message by the last line. Only the words to be spoken — no stage directions or quotes; when the client concept gives characters their own spoken lines, write each such line as "NAME: line" (e.g. "DRAGON: …") so it can be voiced by that character, and narration without a prefix.
 - voiceover_direction (~150 characters): how the narration is performed — voice age, accent, pace (words per minute), energy, where to pause, which words to lean on. Conversational, never announcer-like.`;
 }
 
@@ -271,7 +274,7 @@ async function generateJson(contents: string): Promise<AdScript> {
   const parsed = JSON.parse(text) as {
     idea: string;
     look_sheet: { production_design: string; characters: string; props: string; environment: string; lighting: string; grade: string; exclusions: string };
-    shots: { purpose: string; framing: string; lens: string; movement: string; action: string; performance?: string | null; lighting: string; vo_line?: string | null; screen?: number | null; sfx?: string | null; assets?: string[] }[];
+    shots: { purpose: string; framing: string; lens: string; movement: string; action: string; performance?: string | null; lighting: string; vo_line?: string | null; screen?: number | null; sfx?: string | null; transition?: string | null; assets?: string[] }[];
     continuity: { characters: string; props: string; environment: string };
     sound_ambience: string;
     end_card_tagline?: string | null;
@@ -301,6 +304,7 @@ async function generateJson(contents: string): Promise<AdScript> {
       voLine: shot.vo_line?.trim() || null,
       screen: typeof shot.screen === "number" ? shot.screen : null,
       sfx: shot.sfx?.trim() || null,
+      transition: shot.transition?.trim() || null,
     };
     return { description: composeShot(spec), spec, assetNames: shot.assets ?? [] };
   });
@@ -329,7 +333,7 @@ function toScriptJson(script: AdScript) {
     look_sheet: { production_design: l.productionDesign, characters: l.characters, props: l.props, environment: l.environment, lighting: l.lighting, grade: l.grade, exclusions: l.exclusions },
     shots: script.shots.map(({ spec, assetNames }) => ({
       purpose: spec.purpose, framing: spec.framing, lens: spec.lens, movement: spec.movement, action: spec.action,
-      performance: spec.performance, lighting: spec.lighting, vo_line: spec.voLine, screen: spec.screen, sfx: spec.sfx, assets: assetNames,
+      performance: spec.performance, lighting: spec.lighting, vo_line: spec.voLine, screen: spec.screen, sfx: spec.sfx, transition: spec.transition ?? null, assets: assetNames,
     })),
     continuity: script.continuity,
     sound_ambience: script.soundAmbience,
@@ -393,6 +397,9 @@ export async function generateAdScript(
 
   const direction = directionBrief(concept, brief, plan, options);
   const assetNames = (options.assets ?? []).map((a) => `"${a.name}"`);
+  const stopMotion = brief.look === "stopmotion";
+  const puppet = brief.look === "puppet";
+  const folk = brief.look === "folkpuppet";
   const outputSpec = `Write a production treatment as JSON:
 - idea (one sentence): the single idea or human insight the film turns on — not a feature list.
 - look_sheet — the fixed visual bible, repeated into every shot, so be concrete (materials, colors, sizes), never generic ("modern", "minimal" alone mean nothing):
@@ -413,13 +420,26 @@ export async function generateAdScript(
   - lighting: this shot's light within the setup above (e.g. "window key camera-left, soft screen glow on her face").
   ${voiceoverSpec(brief, plan).split("\n").join("\n  ")}
   - screen: ${brief.screens.length ? "for a SCREEN INSERT shot, the number of the PRODUCT SCREEN it shows (its framing is \"full-frame screen insert\", its movement a slow push-in, its action what the screen shows happening, performance null, lens and lighting \"n/a\"); null for every live shot" : "null on every shot"}.
-  - sfx: one subtle sound effect for the edit that the picture motivates (a pen set down on wood, a soft trackpad click, a page turn), or null — intimate and quiet, never techy whooshes.
+  - sfx: ${folk
+    ? "one crisp, characterful sound the picture motivates (a thavil thud for the dragon's step, a morsing twang, a crowd gasp, a clay pot clink, a huge real crunch), or null — rooted in a South Indian village soundscape, never digital whooshes."
+    : puppet
+    ? "one tactile foley effect the picture motivates, like a real miniature set recorded up close (a wooden door creak, a clay pot set down, wings beating like leather flaps, a crowd murmur, a big real crunch), or null — handmade and warm, never digital whooshes."
+    : stopMotion
+    ? "one playful foley effect the picture motivates, crisp and tactile (a paper rustle, a card flap, a pop-up snapping open, a real crunch, a tabla tap on a hop), or null — handmade sounds, never digital whooshes."
+    : "one subtle sound effect for the edit that the picture motivates (a pen set down on wood, a soft trackpad click, a page turn), or null — intimate and quiet, never techy whooshes."}
+  - transition: ${folk
+    ? "how this shot hands to the next in the edit, like a painted scroll being unrolled in a storyteller's performance (\"the next painted panel slides in from the right\", \"a painted border closes in like an iris\", \"cut on the action\"); mostly cuts on action, with one or two scroll moves where time or place jumps; null on the last shot. Never ask the shot itself to perform the transition."
+    : puppet
+    ? "how this shot hands to the next in the edit, like a classic storybook film (\"cut on the action\", \"a soft dissolve\", \"an iris closes to black like an old picture book\", \"the lantern light fades down\"); mostly cuts on action, with one or two storybook moves where time or place jumps; null on the last shot. Never ask the shot itself to perform the transition."
+    : stopMotion
+    ? "how this shot hands to the next in the edit, as a paper-cut move built from the two shots (e.g. \"a torn-paper edge rips across left to right revealing the next shot\", \"the frame folds shut like a card\", \"the next scene slides in as a paper layer from the top\", or \"cut on the hop\"); vary them across the film; null on the last shot. Never ask the shot itself to perform the transition."
+    : "null on every shot."}
   - assets: the exact names of the reference assets and characters visible in the shot${assetNames.length ? `, from: ${assetNames.join(", ")}${options.characterSheet ? " plus your characters" : ""}` : options.characterSheet ? ", i.e. your character names" : " — an empty list when there are none"}.
 - continuity — what must stay identical across shots, as short comma-separated lists: characters (face, hair, wardrobe, accessories — and nothing added), props (each object's model, color, position), environment (the same room or place, light direction, time of day, weather).
 - sound_ambience (~120 chars): the room tone under the whole film (a quiet apartment with faint city hum, a busy kitchen through a wall).
 - end_card_tagline (at most 8 words): the supporting line shown under the brand name on the end card — the product in one phrase, using the client's words where possible (e.g. "Your personal AI tutor"). The key message is shown separately below it.
 ${options.characterSheet ? `- characters: each recurring person not already a reference asset — "name" (a short first name) and "description" (~250 characters: age, ethnicity, build, face, hair, and exact wardrobe; identical to the look sheet).` : "- characters: an empty list."}
-- music_prompt (~250 characters): an instrumental score for exactly this film — genre, instruments, tempo, and how it moves with the arc (starts sparse, swells at the turn, resolves on the payoff), ending on one clean resolved final chord or motif that lands as the end card appears (the brand sting). Style direction for this tone: ${TONE_MUSIC[brief.tone]}. Instrumental only, no vocals.`;
+- music_prompt (~250 characters): an instrumental score for exactly this film — genre, instruments, tempo, and how it moves with the arc (starts sparse, swells at the turn, resolves on the payoff), ending on one clean resolved final chord or motif that lands as the end card appears (the brand sting). Style direction for this tone: ${TONE_MUSIC[brief.tone]} — but if the client concept names a music style or instruments, that wins. Instrumental only, no vocals.`;
 
   const checklist = `- Does the first shot hook within 1–2 seconds (tight on a face or one striking image, brand color present), and does the treatment follow the CRAFT RULES and the matching CATEGORY PLAYBOOK?
 - Is there one clear idea, and does every shot have a purpose that moves the story (problem → turn → payoff), or is it a generic montage of the person, the room and the product? Sharpen it.
@@ -440,12 +460,21 @@ ${options.characterSheet ? `- characters: each recurring person not already a re
 - Do the shots cut together — same people, wardrobe, props, place, time of day and light direction; varied shot sizes?
 - Does the last shot land the product's promise — the physical product as hero, or for software and services the person living the result? Is every MUST SHOW item included and every MUST AVOID item absent?
 - Any readable text, signage, crests or logos (including real universities or companies), screens showing an interface${brief.screens.length ? " outside the SCREEN INSERT shots" : ""}, brand names, or on-camera dialogue? Remove it and make sure the exclusions cover it.
-- Does the music prompt fit the tone and the arc?${brief.voiceover && !brief.voiceoverScript ? " Does each vo_line fit its shot's length and picture, and does the narration read as one natural piece that lands the key message?" : ""}
+${folk ? `- FOLK CUT-OUT: does every shot read as a flat hand-painted Cheriyal/Kalamkari world with jointed cut-out puppets moving in stepped poses — never 3D, never CGI, never photographic (except the real pack)? Is each shot one clear puppet action with readable gesture and expression? Does the narration (and any character line) fit its shot's picture and length, in natural spoken Telugu? Is the real pack photographic and exact wherever it appears?
+` : ""}${puppet ? `- PUPPET FILM: does every shot read as a real handmade miniature set with sculpted puppets (clay, wood, felt, fabric, practical lights), animated in stepped poses — never CGI, never real humans or animators' hands? Does every puppet act with a clear, readable face and gesture per shot, and does the story work with the sound off (no one lip-syncs)? Does the narration read as one warm story told aloud, fitting each shot's picture and length? Is the real pack photographic and exact wherever it appears (never sculpted or redrawn)?
+` : ""}${stopMotion ? `- STOP-MOTION: is every shot a handmade paper-collage tabletop set (cut paper, card, printed cutouts, visible cut edges and layer shadows) with stepped object animation, and are there no people or hands anywhere? Do the objects perform — hop, slide, fold, pop up — with a clear gag or beat per shot? Is the real pack photographic and exact wherever it appears (never redrawn in paper)? Does every shot but the last have a transition, varied across the film? Are sfx handmade and playful?
+` : ""}- Does the music prompt fit the tone and the arc, and follow any music the client concept names?${brief.voiceover && !brief.voiceoverScript ? " Does each vo_line fit its shot's length and picture, and does the narration read as one natural piece that lands the key message?" : ""}
 - Does every shot's "assets" list name exactly the reference assets/characters visible in it (spelled exactly as given)?`;
 
   // One director draft plus the creative director's rewrite.
   const writeTreatment = async (): Promise<AdScript> => {
-    const draft = await generateJson(`You are an award-winning commercial director known for ads that feel real, crafted, and true to the brand — never generic AI spectacle. Write the production treatment for this ad as a director would hand it to the cinematographer, performers, and editor.
+    const draft = await generateJson(`${folk
+      ? "You are an award-winning Indian animation director known for folk-art cut-out films that bring Cheriyal scrolls, Kalamkari and Tholu Bommalata puppetry to the screen — witty, emotional and deeply Telugu, never generic AI spectacle. Write the production treatment as you would hand it to the illustrators, puppet riggers, animators, and editor; the 'performance' field is each puppet's gesture and expression."
+      : puppet
+      ? "You are an award-winning stop-motion puppet film director (think Laika, Aardman, Wes Anderson's Fantastic Mr Fox) known for emotional, handmade brand films that feel crafted and true to the brand — never generic AI spectacle. Write the production treatment as you would hand it to the puppet makers, set builders, animators, and editor; the 'performance' field is each puppet's acting — face, eyes, posture, gesture."
+      : stopMotion
+      ? "You are an award-winning stop-motion and paper-craft animation director known for witty, handmade product films that feel crafted and true to the brand — never generic AI spectacle. Write the production treatment for this ad as you would hand it to the set builder, animator, and editor; the 'performance' field is how the animated objects behave (null only when nothing in frame moves)."
+      : "You are an award-winning commercial director known for ads that feel real, crafted, and true to the brand — never generic AI spectacle. Write the production treatment for this ad as a director would hand it to the cinematographer, performers, and editor."}
 
 ${direction}
 

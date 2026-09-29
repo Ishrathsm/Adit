@@ -434,6 +434,20 @@ export async function logoLuminance(logo: Buffer): Promise<number> {
   return weight ? sum / weight : 0.5;
 }
 
+// Share of the logo's visible pixels that carry brand colour (not black/grey/white). A mostly
+// colourful logo reads on light and dark grounds alike, and flipping its neutral parts (a cream
+// sticker outline, white eyes) to black wrecks it.
+export async function colourfulShare(logo: Buffer): Promise<number> {
+  const { data } = await sharp(logo).resize(64, 64, { fit: "inside" }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let colour = 0, visible = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 128) continue;
+    visible++;
+    if (Math.max(data[i], data[i + 1], data[i + 2]) - Math.min(data[i], data[i + 1], data[i + 2]) >= 48) colour++;
+  }
+  return visible ? colour / visible : 0;
+}
+
 // Knockout version (all white or all black, same alpha) — what designers use when a full-color
 // logo would disappear against the photo behind it.
 // Only the neutral (black/grey/white) parts flip; brand colours stay — a two-colour logo like

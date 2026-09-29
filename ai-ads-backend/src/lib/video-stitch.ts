@@ -6,6 +6,7 @@ import { join } from "node:path";
 import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import ffmpegStatic from "ffmpeg-static";
 import { END_CARD_SECONDS } from "./creative-brief";
+import { type PaperTransition, paperTransitionExpr } from "./paper-transitions";
 
 // The Railway image has no system ffmpeg (every storyboard shot failed there with
 // "spawn ffprobe ENOENT"), so use the npm-bundled binaries; fall back to PATH if a host's
@@ -71,6 +72,31 @@ async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 // Splits one narration take into `count` pieces at its longest pauses (the reader was asked to
 // pause between lines), trimming the silence around each piece. Returns null when the take has
 // fewer usable pauses than it needs.
+// Gemini TTS pads short lines with seconds of silence (a one-word line came back as 3–18s), which
+// threw off every length check and every placement. Trims leading and trailing silence, keeping a
+// short breath at each end; the output stays 24kHz mono 16-bit WAV.
+export async function trimSilence(wav: Buffer): Promise<Buffer> {
+  return withTempDir(async (dir) => {
+    const input = join(dir, "in.wav");
+    const output = join(dir, "out.wav");
+    await writeFile(input, wav);
+    const edge = "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.08";
+    await run("ffmpeg", ["-y", "-i", input, "-af", `${edge},areverse,${edge},areverse`, "-ar", "24000", "-ac", "1", "-c:a", "pcm_s16le", output]);
+    const out = await readFile(output);
+    // ffmpeg's WAV header can carry extra chunks; rebuild a plain 44-byte one around the PCM.
+    const dataAt = out.indexOf("data");
+    return dataAt > 0 ? Buffer.concat([out.subarray(0, 0), plainWavHeader(out.readUInt32LE(dataAt + 4)), out.subarray(dataAt + 8)]) : out;
+  });
+}
+
+function plainWavHeader(bytes: number): Buffer {
+  const h = Buffer.alloc(44);
+  h.write("RIFF", 0); h.writeUInt32LE(36 + bytes, 4); h.write("WAVE", 8); h.write("fmt ", 12);
+  h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22); h.writeUInt32LE(24000, 24);
+  h.writeUInt32LE(48000, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write("data", 36); h.writeUInt32LE(bytes, 40);
+  return h;
+}
+
 export async function splitAudioAtPauses(wav: Buffer, count: number): Promise<Buffer[] | null> {
   if (count <= 1) return [wav];
   const dir = await mkdtemp(join(tmpdir(), "vo-split-"));
@@ -156,6 +182,11 @@ export interface StitchOptions {
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
   grade?: string;
+  // Stop-motion look: every shot is held on twos (12 new frames a second).
+  stepped?: boolean;
+  // Paper-cut transitions per join (transitions[k] leads into segment k + 1, the end card
+  // included) in place of dissolves; missing entries fall back to a tear.
+  transitions?: PaperTransition[];
   // Shots that may carry on-screen text, in order; supers[i] goes over superShots[i]. Defaults to
   // every shot after the first. Screen inserts are left out — the product UI is never covered.
   superShots?: number[];
@@ -174,7 +205,7 @@ export interface StitchOptions {
 // Which stretch of a clip to keep: image-to-video starts on the (static) keyframe and the motion
 // develops, so take the window just before the middle; the last shot keeps its ending, where the
 // product hero moment lands.
-function trimWindow(duration: number, cut: number, isLast: boolean): { start: number; length: number } {
+export function trimWindow(duration: number, cut: number, isLast: boolean): { start: number; length: number } {
   if (cut >= duration) return { start: 0, length: duration };
   const start = isLast ? duration - cut : (duration - cut) * 0.4;
   return { start, length: cut };
@@ -209,6 +240,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       return input++;
     };
     const videoNorm = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},fps=${FPS}${options.grade ? `,${options.grade}` : ""},format=yuv420p,setsar=1`;
+    // On twos: drop to 12fps, then back to the timeline rate so each frame is held twice.
+    const clipNorm = options.stepped ? `fps=12,${videoNorm}` : videoNorm;
     const audioNorm = "aresample=48000,aformat=channel_layouts=stereo";
 
     // ---- video segments: each clip's kept window (+ the dissolve overlap), then the end card ----
@@ -220,7 +253,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     clipPaths.forEach((path, i) => {
       const idx = addInput("-i", path);
       const { start, length } = clipWindows[i];
-      filters.push(`[${idx}:v]trim=start=${f3(start)}:end=${f3(start + length)},setpts=PTS-STARTPTS,${videoNorm}[v${i}]`);
+      filters.push(`[${idx}:v]trim=start=${f3(start)}:end=${f3(start + length)},setpts=PTS-STARTPTS,${clipNorm}[v${i}]`);
       segments.push({ label: `v${i}`, length });
     });
     if (options.endCard) {
@@ -247,7 +280,10 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       joined = segments[0].label;
       for (let k = 1; k < segments.length; k++) {
         const out = k === segments.length - 1 ? "vjoined" : `x${k}`;
-        filters.push(`[${joined}][${segments[k].label}]xfade=transition=fade:duration=${f3(T)}:offset=${f3(starts[k])}[${out}]`);
+        const kind = options.transitions ? options.transitions[k - 1] ?? "tear-right" : null;
+        // A paper cut is a mask; "cut" switches halfway through the overlap so timing stays the same.
+        const transition = kind === null ? "transition=fade" : `transition=custom:expr='${paperTransitionExpr(kind) ?? "if(gte(P,0.5),A,B)"}'`;
+        filters.push(`[${joined}][${segments[k].label}]xfade=${transition}:duration=${f3(T)}:offset=${f3(starts[k])}[${out}]`);
         joined = out;
       }
     } else {
@@ -306,9 +342,26 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     if (soundtrack) {
       const parts: string[] = [];
       if (options.music) {
-        const idx = addInput("-i", await write("music.wav", options.music));
+        const musicPath = await write("music.wav", options.music);
+        const idx = addInput("-i", musicPath);
+        // Lyria returns ~32s, and a 50s film went silent after 30s. A shorter track is repeated with
+        // a 3s crossfade (the same piece, so it stays one score) and padded, so it always spans the film.
+        const musicLength = (await probe(musicPath)).duration;
+        let source = `[${idx}:a]${audioNorm}`;
+        if (musicLength < total - 0.5) {
+          const copies = Math.min(4, Math.ceil((total - 3) / (musicLength - 3)));
+          const labels = [`[m0]`];
+          filters.push(`${source}[m0]`);
+          for (let c = 1; c < copies; c++) {
+            const cidx = addInput("-i", musicPath);
+            filters.push(`[${cidx}:a]${audioNorm}[m${c}]`);
+            filters.push(`${labels[labels.length - 1]}[m${c}]acrossfade=d=3:c1=tri:c2=tri[mx${c}]`);
+            labels.push(`[mx${c}]`);
+          }
+          source = labels[labels.length - 1];
+        }
         filters.push(
-          `[${idx}:a]${audioNorm},atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8[mus]`,
+          `${source}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8[mus]`,
         );
       }
       if (voLines.length) {
@@ -355,7 +408,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         filters.push(`[vo]asplit=2[vo1][vosc]`);
         filters.push(`[mus]volume=0.8[mus2]`);
         filters.push(`[mus2][vosc]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[duck]`);
-        filters.push(`[duck][vo1]amix=inputs=2:duration=first:normalize=0[mix]`);
+        // Longest, then cut to the film: a voice line must never be clipped by a shorter music track.
+        filters.push(`[duck][vo1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${f3(total)}[mix]`);
         parts.push("mix");
       } else {
         parts.push(options.music ? "mus" : "vo");
@@ -393,5 +447,71 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     );
     await run("ffmpeg", args);
     return readFile(outputPath);
+  });
+}
+
+export interface PackInsert {
+  // Shot index the real pack is composited into.
+  shot: number;
+  // "drop": falls in from above in held steps and settles with a small bounce; "hold": in place
+  // for the whole shot.
+  motion: "drop" | "hold";
+  // Pack centre across the frame and its bottom edge down the frame, as fractions of the frame.
+  x: number;
+  ground: number;
+  // Pack height as a fraction of the frame height.
+  height: number;
+  // Seconds into the clip when the drop starts (defaults to just after the kept window opens).
+  at?: number;
+}
+
+// Lays the client's real pack (a transparent cutout) over a generated shot, so the pack is always
+// the exact artwork — the video model scrambles packaging text. A soft layer shadow sits under it
+// like a paper cutout on the set; movement runs on twos to match the stop-motion shots.
+export async function compositePack(clip: Buffer, pack: Buffer, insert: PackInsert): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
+  return withTempDir(async (dir) => {
+    const input = join(dir, "clip.mp4");
+    await writeFile(input, clip);
+    const { width, height, duration } = await probe(input);
+    const packH = Math.round(height * insert.height);
+    const scaled = await sharp(pack).resize({ height: packH }).png().toBuffer();
+    const { width: packW = packH } = await sharp(scaled).metadata();
+    // Shadow: the pack's silhouette, blurred and darkened, offset down-right under the cutout.
+    const pad = Math.round(packH * 0.08);
+    const offset = Math.round(packH * 0.025);
+    const alpha = await sharp(scaled).extractChannel("alpha").toBuffer();
+    const shadow = await sharp({ create: { width: packW, height: packH, channels: 3, background: { r: 20, g: 18, b: 12 } } })
+      .joinChannel(await sharp(alpha).linear(0.45, 0).toBuffer())
+      .png()
+      .toBuffer();
+    const layer = await sharp({ create: { width: packW + pad * 2, height: packH + pad * 2, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([
+        { input: await sharp(shadow).blur(Math.max(1, packH * 0.018)).toBuffer(), left: pad + offset, top: pad + offset },
+        { input: scaled, left: pad, top: pad },
+      ])
+      .png()
+      .toBuffer();
+    const layerPath = join(dir, "pack.png");
+    await writeFile(layerPath, layer);
+
+    const left = Math.round(width * insert.x - packW / 2 - pad);
+    const rest = Math.round(height * insert.ground - packH - pad);
+    const top = -(packH + pad * 2);
+    const at = insert.at ?? 0.8;
+    // Held steps: position only changes 12 times a second.
+    const t = "(floor(t*12)/12)";
+    const fall = 0.45, bounce = 0.25, lift = Math.round(height * 0.035);
+    const y =
+      insert.motion === "hold"
+        ? String(rest)
+        : `if(lt(${t},${at}),${top},if(lt(${t},${at + fall}),${top}+(${rest - top})*pow((${t}-${at})/${fall},2),if(lt(${t},${at + fall + bounce}),${rest}-${lift}*sin(PI*(${t}-${at + fall})/${bounce}),${rest})))`;
+    const output = join(dir, "out.mp4");
+    await run("ffmpeg", [
+      "-y", "-i", input, "-loop", "1", "-i", layerPath,
+      "-filter_complex", `[0:v][1:v]overlay=x=${left}:y='${y}':eval=frame:shortest=1,format=yuv420p[v]`,
+      "-map", "[v]", "-t", duration.toFixed(3), "-c:v", "libx264", "-crf", "16", "-preset", "fast", output,
+    ]);
+    return readFile(output);
   });
 }

@@ -6,20 +6,22 @@ import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
 import { type ClipProblem, findMarksInVideo, findSuddenEffects } from "./lib/video-check";
 import { posterDirection } from "./lib/poster-brief";
-import { type CreativeBrief, directionText, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
+import { type CreativeBrief, directionText, FOLK_IMAGE_STYLE, FOLK_VIDEO_STYLE, STOP_MOTION_IMAGE_STYLE, STOP_MOTION_VIDEO_STYLE, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
-import { synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
+import { synthesizeCastLines, synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
 import sharp from "sharp";
 import { pickBestKeyframe } from "./lib/keyframe-pick";
 import { generateCleanImage } from "./lib/image-gen";
 import { type BrandContext, refineImagePrompt, refineShotImagePrompt, refineShotVideoPrompt, refineVideoPrompt, splitNegativePrompt } from "./lib/prompt-refiner";
 import { applyBrandOverlay } from "./lib/poster-overlay";
+import { fillTemplate, generateTemplatePoster } from "./lib/template-poster";
 import { getProjectById } from "./lib/projects";
 import { getProductById, type ProductRow, toBrandContext } from "./lib/products";
 import { getTemplateById } from "./lib/templates";
 import { ensureMediaBucket, uploadPoster, uploadVideo } from "./lib/storage";
-import { extractLastFrame, stitchVideos } from "./lib/video-stitch";
+import { compositePack, extractLastFrame, stitchVideos } from "./lib/video-stitch";
+import { parsePaperTransition } from "./lib/paper-transitions";
 import { renderScreenInsert } from "./lib/screen-insert";
 import {
   getShot,
@@ -41,6 +43,8 @@ if (!redisConnection) {
 }
 
 const DEFAULT_VIDEO_DURATION_SECONDS = 8;
+// Paper-cut transitions run 0.5s: six held steps on twos.
+const PAPER_TRANSITION_SECONDS = 0.5;
 
 async function getBrandContextForProject(projectId: string): Promise<BrandContext | undefined> {
   const project = await getProjectById(projectId);
@@ -73,14 +77,18 @@ async function processGenerationJob(jobId: string): Promise<void> {
     const brief = job.poster_brief;
     // References: the brief's product / person / location photos (labeled), plus an older-style
     // single reference image. The user's own product photos may show genuine branding.
+    // A logo uploaded with the poster replaces the brand kit's logo on the finished image; it is
+    // never sent to the image model (models garble logos).
+    const uploadedLogo = brief?.assets.find((a) => a.kind === "logo")?.imageUrl ?? null;
+    const logoUrl = uploadedLogo ?? product?.logo_url;
     const assetRefs = await Promise.all(
-      (brief?.assets ?? []).map(async (asset) => {
+      (brief?.assets ?? []).filter((a) => a.kind !== "logo").map(async (asset) => {
         const res = await fetch(asset.imageUrl);
         if (!res.ok) throw new Error(`failed to fetch reference asset "${asset.name}": ${res.status}`);
         return {
           image: { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" },
-          label: ASSET_LABEL[asset.kind](asset.name),
-          kind: asset.kind,
+          label: ASSET_LABEL[asset.kind as AssetKind](asset.name),
+          kind: asset.kind as AssetKind,
         };
       }),
     );
@@ -97,6 +105,38 @@ async function processGenerationJob(jobId: string): Promise<void> {
       ...(job.reference_image_role === "subject" && referenceImage ? [referenceImage] : []),
     ];
 
+    if (template?.thumbnail_url) {
+      // Template remix: the model draws the whole typeset layout in the template's style (see
+      // template-poster.ts); only the real logo is added afterwards.
+      const res = await fetch(template.thumbnail_url);
+      if (!res.ok) throw new Error(`failed to fetch template image: ${res.status}`);
+      const templateImage = { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
+      const products = assetRefs.map((r, i) => ({ image: r.image, name: brief!.assets.filter((a) => a.kind !== "logo")[i].name }));
+      // Details typed into the brief's copy fields are the client's own facts — the only ones the
+      // poster may show besides what the request says; anything left blank stays off the poster.
+      const given = [
+        brief?.headline && `Headline: ${brief.headline}`,
+        brief?.subline && `Supporting line: ${brief.subline}`,
+        brief?.offer && `Offer: ${brief.offer}`,
+        brief?.cta && `Call to action: ${brief.cta}`,
+        brief?.contactLine && `Contact / website: ${brief.contactLine}`,
+        brief?.features.length && `Features: ${brief.features.join("; ")}`,
+        brief?.mustShow && `Must show: ${brief.mustShow}`,
+        brief?.avoid && `Avoid: ${brief.avoid}`,
+      ].filter(Boolean);
+      const request = given.length ? `${job.prompt}\n${given.join("\n")}` : job.prompt;
+      const filled = await fillTemplate(template.template_prompt, request, brand, { productNames: products.map((p) => p.name) });
+      const poster = await generateTemplatePoster(filled, job.aspect_ratio, templateImage, products);
+      const finalBuffer = await applyBrandOverlay(Buffer.from(poster.imageBytes, "base64"), {
+        logoUrl,
+        primaryColor: product?.primary_color,
+        font: product?.font,
+      });
+      outputUrl = await uploadPoster(jobId, finalBuffer);
+      await updateJobStatus(jobId, { status: "completed", output_url: outputUrl });
+      return;
+    }
+
     const refinedPrompt = await refineImagePrompt(
       job.prompt,
       job.aspect_ratio,
@@ -110,7 +150,7 @@ async function processGenerationJob(jobId: string): Promise<void> {
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
     const finalBuffer = await applyBrandOverlay(rawBuffer, {
-      logoUrl: product?.logo_url,
+      logoUrl,
       primaryColor: product?.primary_color,
       tagline: job.tagline,
       copy: brief,
@@ -226,7 +266,10 @@ async function processShotChoices(shotId: string): Promise<void> {
       });
     }
     let previousFrame: { imageBytes: string; mimeType: string } | undefined;
-    if (shot.shot_index > 0) {
+    // Stop-motion shots are separate little set-ups (a chase, a close-up, an empty tabletop), and the
+    // previous frame made the image model copy its layout into every later shot; the look sheet and
+    // the fixed paper-craft style carry the world instead.
+    if (shot.shot_index > 0 && storyboard.creative_brief?.look !== "stopmotion") {
       const siblingShots = await listShots(shot.storyboard_id);
       // Continuity comes from the last live shot — a screen insert's product screen is no reference
       // for people, place, or light.
@@ -262,10 +305,12 @@ async function processShotChoices(shotId: string): Promise<void> {
       directionText(storyboard.creative_brief),
       references.map((r) => r.label),
     );
+    const look = storyboard.creative_brief?.look;
+    const imagePrompt = look === "stopmotion" ? `${refinedPrompt}\n\n${STOP_MOTION_IMAGE_STYLE}` : look === "folkpuppet" ? `${refinedPrompt}\n\n${FOLK_IMAGE_STYLE}` : refinedPrompt;
     // Sequential, not parallel — bursting the image API is what trips its rate limit.
     const images = [];
     for (let i = 0; i < SHOT_CHOICE_COUNT; i++) {
-      images.push(await generateCleanImage(refinedPrompt, storyboard.aspect_ratio, referenceImages, allowedMarks));
+      images.push(await generateCleanImage(imagePrompt, storyboard.aspect_ratio, referenceImages, allowedMarks));
     }
     const urls = await Promise.all(
       images.map((image, i) => uploadPoster(`${shotId}-choice-${i}`, Buffer.from(image.imageBytes, "base64"))),
@@ -330,10 +375,20 @@ async function processShotVideo(shotId: string): Promise<void> {
       { imageBytes, mimeType: "image/png" },
       storyboard.reference_image_role === "subject" || (await listAssets(storyboard.id)).some((a) => a.kind === "product"),
     );
-    const { prompt, negativePrompt: refinedNegative } = splitNegativePrompt(refinedPrompt);
+    const { prompt: refinedMotion, negativePrompt: refinedNegative } = splitNegativePrompt(refinedPrompt);
+    const look = storyboard.creative_brief?.look;
+    const prompt = look === "stopmotion" ? `${refinedMotion}\n\n${STOP_MOTION_VIDEO_STYLE}` : look === "folkpuppet" ? `${refinedMotion}\n\n${FOLK_VIDEO_STYLE}` : refinedMotion;
     const brief = storyboard.creative_brief;
     const negativePrompt =
-      [refinedNegative, brief?.avoid, brief?.exclusions, brief?.look !== "surreal" ? VIDEO_ARTIFACT_NEGATIVES : null].filter(Boolean).join(", ") || undefined;
+      [
+        refinedNegative,
+        brief?.avoid,
+        brief?.exclusions,
+        brief?.look !== "surreal" ? VIDEO_ARTIFACT_NEGATIVES : null,
+        // Veo turns animated objects into characters (feet, arms, eyes appeared on a corn stick).
+        brief?.look === "stopmotion" ? "faces, eyes, mouths, arms, legs, feet, limbs on objects, bending, melting, real food, liquid" : null,
+        brief?.look === "folkpuppet" ? "3D rendering, CGI, shading, gradients, photorealism, blur, depth of field, camera movement, uneven outlines, text, lettering" : null,
+      ].filter(Boolean).join(", ") || undefined;
 
     // Every take is checked for painted-in text/marks and for sudden effects, skin artifacts, prop
     // swaps, and over-acting. A flagged take is re-rendered with the findings fed back (short
@@ -346,10 +401,15 @@ async function processShotVideo(shotId: string): Promise<void> {
       if (!res.ok) throw new Error(`failed to fetch reference image: ${res.status}`);
       return { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
     });
+    // The client's real pack shows their own product (e.g. orange corn sticks); without it the mark
+    // check read those sticks as a competitor's trade dress and re-rendered clean takes.
+    const packRef = brief?.pack?.url
+      ? await fetch(brief.pack.url).then(async (r) => (r.ok ? [{ imageBytes: Buffer.from(await r.arrayBuffer()).toString("base64"), mimeType: "image/png" }] : []))
+      : [];
     const checkTake = async (clip: Buffer) => {
       const [marks, effects] = await Promise.all([
-        storyboard.reference_image_role !== "subject" ? findMarksInVideo(clip, productRefs) : Promise.resolve([]),
-        brief?.look !== "surreal" ? findSuddenEffects(clip) : Promise.resolve([]),
+        storyboard.reference_image_role !== "subject" ? findMarksInVideo(clip, [...productRefs, ...packRef]) : Promise.resolve([]),
+        brief?.look !== "surreal" ? findSuddenEffects(clip, shot.description, brief?.look) : Promise.resolve([]),
       ]);
       return [...marks, ...effects];
     };
@@ -428,8 +488,19 @@ async function editBriefedAd(
           return undefined;
         })
       : undefined,
-    perShot
-      ? synthesizeVoiceoverLines(lines!, brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio?.voiceoverDirection).catch((err) => {
+    brief.voiceTakes?.length
+      ? Promise.all(
+          brief.voiceTakes.map(async (t) => {
+            const res = await fetch(t.url);
+            if (!res.ok) throw new Error(`failed to fetch voice take: ${res.status}`);
+            return { shot: t.shot, audio: Buffer.from(await res.arrayBuffer()) };
+          }),
+        )
+      : perShot
+      ? (brief.voiceCast
+          ? synthesizeCastLines(lines!, brief.voiceoverLanguage, brief.voiceCast, brief.tone, brief.audio?.voiceoverDirection)
+          : synthesizeVoiceoverLines(lines!, brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio?.voiceoverDirection)
+        ).catch((err) => {
           console.warn("[worker] voiceover generation failed, continuing without voiceover:", err instanceof Error ? err.message : err);
           return undefined;
         })
@@ -453,12 +524,17 @@ async function editBriefedAd(
   ]);
 
   const plan = planShots(brief);
+  // Hand-animated looks are held on twos and joined by cut-out transitions instead of dissolves.
+  const stopMotion = brief.look === "stopmotion" || brief.look === "puppet" || brief.look === "folkpuppet";
   return stitchVideos(clips, {
     endCard: endCard.background,
     endCardOverlay: endCard.overlay,
     cutSeconds: plan.cutSeconds,
-    transitionSeconds: TRANSITION_SECONDS[effectivePacing(brief)],
+    transitionSeconds: stopMotion ? PAPER_TRANSITION_SECONDS : TRANSITION_SECONDS[effectivePacing(brief)],
     grade: TONE_GRADE[brief.tone],
+    // Stop-motion: held on twos, joined by the director's paper-cut transitions (a tear into the
+    // end card).
+    ...(stopMotion ? { stepped: true, transitions: [...clips.slice(1).map((_, i) => parsePaperTransition(brief.transitions?.[i])), "tear-right" as const] } : {}),
     supers,
     superShots,
     music,
@@ -473,7 +549,7 @@ async function processStoryboardStitch(storyboardId: string): Promise<void> {
       throw new Error("not all shots have a generated video yet");
     }
 
-    const clipBuffers = await Promise.all(
+    const clipBuffers: Buffer[] = await Promise.all(
       shots.map(async (shot) => {
         const res = await fetch(shot.video_url!);
         if (!res.ok) throw new Error(`failed to fetch shot clip: ${res.status}`);
@@ -485,6 +561,16 @@ async function processStoryboardStitch(storyboardId: string): Promise<void> {
     const project = storyboard ? await getProjectById(storyboard.project_id) : null;
     const product = project?.product_id ? await getProductById(project.product_id) : null;
     const brief = storyboard?.creative_brief ?? null;
+    if (brief?.pack?.inserts.length) {
+      // The real pack goes over its shots before anything else, so the end card and every check
+      // downstream see the finished frames.
+      const res = await fetch(brief.pack.url);
+      if (!res.ok) throw new Error(`failed to fetch pack cutout: ${res.status}`);
+      const pack = Buffer.from(await res.arrayBuffer());
+      for (const insert of brief.pack.inserts) {
+        if (clipBuffers[insert.shot]) clipBuffers[insert.shot] = await compositePack(clipBuffers[insert.shot], pack, insert);
+      }
+    }
     const lastFrame = await extractLastFrame(clipBuffers[clipBuffers.length - 1]);
 
     let finalBuffer: Buffer;

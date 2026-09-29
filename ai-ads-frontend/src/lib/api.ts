@@ -521,6 +521,8 @@ export interface StoryboardShot {
 // Pro: reference assets (the client's real product / person / location photos) and generated
 // character sheets.
 export type AssetKind = "character" | "product" | "location";
+// Posters also take the client's logo, placed on the finished image (never drawn by the model).
+export type PosterAssetKind = AssetKind | "logo";
 
 export interface StoryboardAsset {
   id: string;
@@ -535,7 +537,7 @@ export interface StoryboardAsset {
 }
 
 export interface UploadedAssetInput {
-  kind: AssetKind;
+  kind: PosterAssetKind;
   name: string;
   description?: string | null;
   imageUrl: string;

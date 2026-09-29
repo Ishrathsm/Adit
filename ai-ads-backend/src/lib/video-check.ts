@@ -40,7 +40,15 @@ const EFFECT_FRAMES = [0.02, 0.14, 0.26, 0.38, 0.5, 0.62, 0.74, 0.86, 0.97];
 // screen-lit face breaking into sparkles, lens-flare ghosts from a backlight, handwriting
 // appearing in a notebook, and actors pulling strong frowns. Compares later frames against the
 // opening frame and reports anything that appears from nowhere, deforms, or is over-played.
-export async function findSuddenEffects(clip: Buffer): Promise<ClipProblem[]> {
+export async function findSuddenEffects(
+  clip: Buffer,
+  // The shot as written: what it describes happening (a bowl hopping in, confetti bursting) is
+  // intended, so it isn't flagged and re-rendered.
+  intended?: string | null,
+  look?: string | null,
+): Promise<ClipProblem[]> {
+  const stopMotion = look === "stopmotion";
+  const folk = look === "folkpuppet";
   if (!genAI) return [];
   try {
     const frames = await sampleFrames(clip, EFFECT_FRAMES);
@@ -49,7 +57,14 @@ export async function findSuddenEffects(clip: Buffer): Promise<ClipProblem[]> {
       parts.push(i === 0 ? "FRAME 0 (opening frame):" : `FRAME ${i}:`);
       parts.push({ inlineData: { data: frame.toString("base64"), mimeType: "image/png" } });
     });
-    parts.push(`These frames are in order from one short live-action ad shot. Compared with FRAME 0, list every visual problem that appears or changes without a real-world cause:
+    const context = [
+      folk &&
+        "This is a flat folk-art cut-out puppet animation: painted characters with faces moving in small stepped, jointed poses (limbs swinging from pins, heads tilting, bodies sliding) is normal animation, not a problem. Always report: anything turning 3D or gaining shading, outlines changing thickness, a character's colours or design changing (the dragon must stay red), extra or missing limbs, morphing, blur, camera moves, and any readable text.",
+      stopMotion &&
+        "This is a stop-motion paper-collage shot: paper cutouts moving in small jerky steps, hopping, sliding, and popping up are normal animation, not problems. Always report, even if the shot's action seems to allow it: any object with a face, eyes, a mouth, arms, legs, or feet (objects here never have them); any object or character that walks in and was not in FRAME 0 and is not named in the shot; and any camera move away from a locked-off frame.",
+      intended && `The shot is written to show: "${intended}" Anything this describes happening is intended — never report it.`,
+    ].filter(Boolean).join("\n");
+    parts.push(`${context ? `${context}\n` : ""}These frames are in order from one short ${folk ? "folk-art cut-out animation" : stopMotion ? "stop-motion" : "live-action"} ad shot. Compared with FRAME 0, list every visual problem that appears or changes without a real-world cause:
 - smoke, fog, haze, mist, steam, dust clouds, or floating particles appearing
 - sudden flashes, glows, light leaks, lens flares, or ghost reflections
 - objects or people appearing, vanishing, melting, morphing, duplicating, or being swapped for a different object; warped faces, hands, or limbs
