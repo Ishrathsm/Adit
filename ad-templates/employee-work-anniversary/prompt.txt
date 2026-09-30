@@ -1,0 +1,45 @@
+Create a premium, modern vertical corporate Work Anniversary poster template for companies, HR teams, internal communication, and social media. Make it reusable for any employee, company, designation, and milestone.
+
+PLACEHOLDERS:
+[Brand Logo] [Employee Photo] [Employee Name] [Years] [Designation] [Recognition Message] [Company Details] [Anniversary Date]
+
+FORMAT & LAYOUT:
+Portrait vertical composition with a clean white, ivory, or very light neutral background. Use a structured vertical grid, balanced margins, intentional whitespace, and clear content sections. Keep the design sophisticated, warm, celebratory, minimal, and professional without looking empty or crowded.
+
+BRANDING:
+Place [Brand Logo] discreetly at the top-left or top-right with generous clear space. Preserve the supplied logo exactly, including proportions, colors, and identity. Never modify or invent branding.
+
+HEADLINE:
+Create a strong upper-section headline such as “WORK ANNIVERSARY”, “CELEBRATING [Years] YEARS”, “HAPPY WORK ANNIVERSARY”, or “[Years] YEARS OF EXCELLENCE”. Make [Years] highly prominent. Use elegant display typography combined with a clean modern sans-serif.
+
+MESSAGE:
+Place [Recognition Message] below the headline. Keep it short, sincere, professional, and focused on appreciation, dedication, contribution, growth, or service. Never invent achievements.
+
+EMPLOYEE PHOTO:
+Make [Employee Photo] the main visual focal point. Preserve the person's exact identity, facial features, natural proportions, skin texture, hairstyle, clothing, and authentic appearance. Apply only subtle professional lighting and background separation. Do not reshape the face, over-smooth skin, or create artificial beauty effects.
+
+Frame the photo using one elegant concept: rounded rectangle, curved portrait frame, thin double border, layered geometric frame, or refined editorial image card. Use subtle shadow or tonal separation.
+
+EMPLOYEE DETAILS:
+Below the photo, display [Employee Name] prominently in bold refined typography. Place [Designation] beneath it in smaller, lighter typography. Add a sophisticated milestone element such as a circular badge, anniversary ring, elegant number treatment, laurel, orbit line, or geometric [Years] design. Keep it subtle and premium.
+
+COLOR & DECORATION:
+Use colors derived from [Brand Logo]. Keep white/off-white dominant with one primary brand color, one accent, dark neutral typography, and optional restrained gold, champagne, or silver detailing. Add minimal lines, curves, circles, geometric markers, or soft abstract shapes. Avoid excessive decoration.
+
+HIERARCHY:
+[Brand Logo] → Anniversary Headline → [Recognition Message] → [Employee Photo] → [Years] Milestone → [Employee Name] → [Designation] → [Company Details]
+
+TYPOGRAPHY:
+Use maximum 2–3 complementary font styles. Ensure crisp, correctly spelled, highly legible typography, professional spacing, alignment, and mobile readability.
+
+FOOTER:
+Reserve a subtle bottom section for [Company Details] and optionally [Anniversary Date]. Show only supplied information. Never invent contact details, websites, QR codes, social handles, or claims.
+
+ADAPTABILITY:
+The design must work for 1, 2, 5, 10, 15, 20+ years and automatically make [Years] visually important while preserving the same design system.
+
+STYLE:
+Premium corporate editorial design, elegant employee portrait, sophisticated milestone celebration, refined typography, authentic photography, restrained branding, subtle metallic accents, balanced whitespace, polished high-resolution social-media graphic.
+
+NEGATIVE:
+No copied artwork, fake information, invented achievements, excessive decorations, crowded layout, excessive gradients, heavy shadows, distorted faces, altered identity, plastic skin, warped logos, duplicated people, malformed hands, misspelled text, illegible typography, random icons, or obvious AI-generated artifacts.
