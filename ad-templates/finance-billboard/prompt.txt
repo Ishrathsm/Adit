@@ -1,0 +1,39 @@
+Create ONLY THE FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, IMAGE-TO-TEXT BALANCE, TYPOGRAPHY-HIERARCHY, AND VISUAL-STRUCTURE REFERENCE. Extract the INTERNAL ADVERTISEMENT DESIGN, NOT the physical display or surrounding environment.
+
+Preserve the fundamental structure: wide horizontal format, large clean/light communication field, oversized headline positioned toward the upper-left, small brand identity near the lower-left, optional small CTA or website near the bottom, ONE large rectangular hero-visual area on the right, clear separation between text and imagery, subtle background geometry, and generous intentional negative space.
+
+Do NOT copy the reference brand, logo, wording, colors, artwork, abstract graphic, typography, or distinctive visual identity. Create completely ORIGINAL artwork.
+
+CATEGORY: Finance / Financial Services
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Financial Growth Visual / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Keep the LEFT communication zone clean and spacious. Place [Brand Name] / [Brand Logo] small and secondary near the lower-left. Make [Main Headline] the dominant text element in the upper-left, ONE concise headline only. Use clean, modern, highly readable typography with controlled line breaks.
+
+Place ONE dominant [Hero Visual] inside a clearly defined rectangular visual zone on the RIGHT. The hero should be polished, visually distinctive, complete, and appropriate to finance/banking — for example an original abstract financial-growth visualization with flowing geometric forms, a chart-inspired composition, or a conceptual visual representing stability and growth.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large uninterrupted areas around the headline, brand, hero visual, and optional information. Do not fill empty areas unnecessarily. Keep the design calm, premium, sophisticated, and immediately readable.
+
+Use ONLY essential content: ONE brand, ONE headline, ONE hero visual, and optionally ONE short [Supporting Message] or [CTA]. Do NOT add feature lists, multiple products, excessive icons, badges, social-media rows, statistics, unnecessary text, or decorative clutter.
+
+Create completely ORIGINAL colors, typography, imagery, graphic shapes, textures, gradients, and visual treatment appropriate to [Brand Name] and [Brand Colors]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all important text, branding, and the COMPLETE hero visual safely inside the canvas. Do not crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, frame, wall, building, room, street, city, outdoor environment, support structure, pole, lighting fixture, installation, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Financial Growth Visual / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the abstract or conceptual hero visual, palette, and geometric motifs to fit the specific finance product described — banking, investing, insurance, lending, wealth management, or trading — while keeping the same upper-left headline, lower-left brand, right-side rectangular hero zone, and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented statistics, prices, or performance claims, cluttered charts, illegible typography, misspelled text, or obvious AI artifacts.
+
+Final result: A premium, minimal, sophisticated horizontal advertising banner with a large upper-left headline, subtle lower-left branding, ONE dominant right-side rectangular hero visual, strong visual hierarchy, strict reference-based composition, and MORE INTENTIONAL NEGATIVE SPACE.

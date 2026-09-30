@@ -1,0 +1,58 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Sportswear / Athletic Footwear
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+HERO VISUAL: [Footwear Product]
+
+Create a bold, premium, high-impact sportswear advertising banner with a modern athletic campaign aesthetic, reusable for running shoes, sneakers, training shoes, basketball shoes, hiking boots, and lifestyle footwear brands.
+
+Use the uploaded reference STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Preserve its wide horizontal proportions, oversized brand treatment, dominant product placement, strong color-blocking, typography hierarchy, spacing, scale relationships, and overall advertising rhythm. Recreate the STRUCTURAL LOGIC ONLY with completely original artwork. Do not copy the reference's exact visual design, imagery, colors, typography treatment, or any specific logo mark — every brand element must be freshly designed for [Brand Name].
+
+COMPOSITION:
+Create a wide horizontal banner using ONE dominant background color or controlled color field drawn from [Brand Colors]. Place [Brand Logo] prominently in the left zone with intentional restraint — an oversized, stylized wordmark or brand shape sized to match the reference's brand treatment, never a copy of a real logo. Use a large [Footwear Product] as the primary visual focal point, positioned centrally or slightly off-center.
+
+Make the shoe photorealistic, highly detailed, dynamic, and premium. Show realistic mesh, stitching, sole construction, material texture, subtle reflections, controlled shadows, and professional commercial lighting. Give the shoe a slight floating or forward-moving presentation to communicate speed and athletic performance.
+
+Place [Main Headline] in a strong, bold typographic zone opposite or around the hero product. Make it the dominant communication, with [Supporting Message] set beneath it as concise, secondary copy. Keep the typography clean and highly readable.
+
+Use minimal athletic graphic elements such as subtle directional shapes, motion accents, geometric forms, or restrained shadows. These elements should support the shoe and never compete with it.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain MORE intentional negative space than the reference. Preserve large clean areas around [Brand Logo], [Main Headline], the hero shoe, and [Supporting Message]. Do not fill the canvas with excessive graphics, patterns, particles, repeated text, icons, or decorative effects. The background should remain visually calm and allow the main communication to breathe.
+
+Maintain this hierarchy:
+[Brand Logo] → [Main Headline] → [Footwear Product] → [Supporting Message]
+
+Typography must be bold, modern, clean, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, claims, prices, offers, specifications, or information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Wide horizontal format
+- Full-bleed edge-to-edge artwork
+- Strong sportswear composition
+- Oversized but controlled brand presence
+- One dominant hero shoe
+- Large intentional negative space
+- Strong typography hierarchy
+- Premium athletic advertising aesthetic
+- Original campaign artwork
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard perspective
+- No photograph of a billboard
+- No device mockup
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Supporting Message] [Footwear Product]
+
+ADAPTABILITY:
+Automatically adjust the shoe style, materials, colorway, and accent graphics to suit running, training, basketball, hiking, or lifestyle footwear, while preserving the same bold, high-contrast, single-hero composition and typographic rhythm.
+
+Final result: the ACTUAL FINISHED, PRINT-READY FOOTWEAR ADVERTISING BANNER, not a photograph or visualization of a billboard.
