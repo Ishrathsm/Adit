@@ -1,0 +1,61 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Sports & Recreation
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Sport / Recreation Action Visual]
+
+Create a premium, energetic, cinematic sports-recreation advertisement with a modern sports-entertainment aesthetic. Use the uploaded reference STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Preserve its wide horizontal proportions, split visual structure, typography-to-image relationship, spacing, focal placement, and advertising rhythm. Recreate the STRUCTURAL LOGIC ONLY with completely original artwork.
+
+COMPOSITION:
+Create a wide horizontal banner divided visually into two complementary zones. Use the LEFT side for a large, dynamic action scene matched to [Sport / Recreation Action Visual] (bowling, arcade, trampoline park, climbing, go-karting, escape room, fitness studio, or similar venue) and the RIGHT side for the brand communication.
+
+Place the hero action in the foreground captured at its most dynamic moment — impact, motion, or peak action — with realistic movement, reflections, subtle sparks or particles where appropriate, and dramatic cinematic lighting. Keep the action as the primary visual focal point.
+
+On the RIGHT side, place [Brand Logo] and [Brand Name] near the upper area with generous breathing room, preserving the supplied logo exactly with no distortion, stretching, or recoloring. Position [Main Headline] prominently beneath it using bold, modern sports typography. Place [Supporting Message] as concise supporting text below the headline and [CTA] as a clean, highly visible button or badge.
+
+Use a sophisticated dark, energetic visual direction with controlled accent lighting drawn from [Brand Colors]. Keep graphic elements subtle and purposeful.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain MORE intentional negative space than the reference. Keep generous clean breathing room around the logo, headline, supporting message, CTA, and hero action. Do not overcrowd the design with excessive particles, neon lines, patterns, or decorative effects. Preserve calm visual areas around the communication.
+
+Maintain this hierarchy:
+BRAND → HEADLINE → HERO ACTION → SUPPORTING MESSAGE → CTA.
+
+Typography must be bold, clean, modern, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, offers, prices, claims, contact details, or information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Wide horizontal format
+- Full-bleed edge-to-edge artwork
+- Left-side action + right-side communication
+- Large intentional negative space
+- One dominant action hero
+- Premium sports-recreation advertising aesthetic
+- Original campaign design
+- Clean professional composition
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard photograph
+- No billboard perspective
+- No device mockup
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Sport / Recreation Action Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the recreation activity, action moment, and accent color scheme to match the specific venue supplied (bowling alley, trampoline park, climbing gym, go-kart track, arcade, escape room, fitness or sports club), while keeping the same left-action / right-communication split, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented offers or prices, distorted equipment or motion, duplicated subjects, overcrowded particles, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+The final output must be the ACTUAL FINISHED PRINT-READY SPORTS & RECREATION ADVERTISING BANNER, not a photograph or visualization of a billboard.
+
+FINAL RESULT: A premium, cinematic, high-impact sports and recreation advertising banner with one dominant left-side action hero, clean right-side communication, strong hierarchy, and MORE INTENTIONAL NEGATIVE SPACE.

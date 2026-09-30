@@ -1,0 +1,41 @@
+Create ONLY THE FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, IMAGE-TO-TEXT BALANCE, TYPOGRAPHY-HIERARCHY, DIAGONAL STRUCTURE, AND VISUAL-RHYTHM REFERENCE. Extract the INTERNAL ADVERTISEMENT DESIGN, NOT the physical billboard, room, building, street, or surrounding environment.
+
+Strictly preserve the fundamental structure: wide horizontal format, spacious left-side communication zone, small brand placement near the upper-left, large bold headline beneath the brand, ONE dominant realistic hero visual occupying the right side, a strong diagonal/angular transition separating text and imagery, optional small CTA or website near the lower-left, and generous intentional negative space.
+
+Do NOT copy the reference brand, logo, wording, colors, person, photography, interface, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Telecom / Communication / SaaS Technology
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Communication / Telecom Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Keep the LEFT communication zone clean and dominant. Place [Brand Name] / [Brand Logo] near the upper-left and make [Main Headline] the strongest text element. Use bold, modern, highly readable typography with controlled line breaks. Keep [Supporting Message] and [CTA] minimal and secondary.
+
+Place ONE dominant [Hero Visual] on the RIGHT side. Make it realistic, polished, visually engaging, and completely visible — for example a person using a communication platform on a laptop or phone, a network/connectivity concept, or a device showing a messaging or calling interface.
+
+Use ONE strong diagonal, angular, curved, or geometric transition between the communication zone and hero zone. The transition should create visual movement and separation without becoming decorative clutter.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around the brand, headline, hero visual, CTA, and supporting information. Do not fill empty space unnecessarily. The negative space must feel deliberate, premium, balanced, and functional.
+
+Use ONLY essential content: ONE brand, ONE headline, ONE hero visual, and optionally ONE short [Supporting Message] or [CTA]. Do NOT add multiple products, feature lists, icons, badges, social-media rows, statistics, excessive patterns, random objects, or unnecessary copy.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, gradients, geometric shapes, and graphic treatment appropriate to [Brand Name] and [Brand Colors]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all important text, branding, and the COMPLETE hero subject safely inside the canvas. Do not crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, wall, building, room, street, city, auditorium, stage, sky, outdoor environment, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Communication / Telecom Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the hero visual — the device, gesture, and interface shown — to fit the specific telecom or communication product described — mobile networks, messaging apps, video calling, unified communications, or ISP/broadband services — while keeping the same left-copy / right-hero diagonal-transition structure and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented statistics or claims, distorted hands, devices, or interfaces, cluttered icon rows, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: A premium, modern horizontal advertising banner with a spacious left communication zone, bold headline, ONE dominant right-side hero visual, strong diagonal visual transition, clean typography hierarchy, strict reference-based internal composition, and MORE INTENTIONAL NEGATIVE SPACE.
