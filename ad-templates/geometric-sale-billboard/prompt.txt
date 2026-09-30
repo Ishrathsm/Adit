@@ -1,0 +1,38 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, GEOMETRIC STRUCTURE, AND VISUAL-HIERARCHY REFERENCE. Strictly preserve its internal advertising structure: wide horizontal format, strong diagonal geometric divisions, a large hero visual contained on one side, a dominant headline/communication zone, a prominent central offer or message area, secondary information positioned in designated zones, and clear separation between all major elements.
+
+Do NOT copy the reference brand, logo, wording, colors, model, product, imagery, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: [Category]
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual]
+OFFER / MESSAGE: [Offer / Discount]
+CTA: [CTA]
+
+This design is reusable across fashion, food, automotive, technology, real estate, education, entertainment, travel, and any other retail or service category running a promotion. Adapt the content naturally to the selected [Category] while strictly maintaining the reference's fundamental layout — for FASHION use one model or fashion product, for FOOD use one primary food product, for AUTOMOTIVE use one vehicle, for TECHNOLOGY use one device, for REAL ESTATE use one property, for EDUCATION use one academic subject, for ENTERTAINMENT use one primary subject, for TRAVEL use one destination. The CATEGORY changes the content, NOT the composition.
+
+Place [Brand Logo] in its own small corner zone near the top, sized and positioned to match the reference's brand treatment, but redrawn as completely original artwork — never a copy of a real logo.
+
+Maintain a strong asymmetric visual structure. Keep [Hero Visual] fully contained within its designated section and make it large enough to create impact without touching or being cropped by the canvas edges. Keep [Main Headline], [Offer / Discount], and [CTA] clearly separated into their own communication zones — for example a bold diamond, badge, or capsule for the offer, and a clean button or highlighted bar for the CTA.
+
+Use geometric shapes, diagonal panels, angular divisions, color blocks, or rays only when they support the reference's structural rhythm. Do not turn the design into a collection of random shapes.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Leave deliberate clean breathing room around [Brand Logo], [Main Headline], [Hero Visual], [Offer / Discount], and [CTA]. Do not fill empty areas unnecessarily. Avoid excessive decoration, multiple products, icons, badges, feature lists, random objects, or excessive copy.
+
+Use ONLY essential information: [Brand Logo], ONE dominant [Main Headline], ONE [Hero Visual], optionally ONE [Offer / Discount], and ONE [CTA]. Do not invent additional text.
+
+Create completely ORIGINAL colors, typography, imagery, geometric styling, textures, and branding appropriate to [Brand Colors] and the selected [Category]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. The COMPLETE banner must be visible edge-to-edge. Keep all important text, branding, offer information, CTA, and the COMPLETE hero subject safely inside the canvas. Do NOT crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard frame, pole, wall, building, street, store, city, outdoor environment, installation, lighting fixture, bus shelter, physical advertising display, perspective presentation, or photograph of a billboard.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Category] [Main Headline] [Hero Visual] [Offer / Discount] [CTA]
+
+ADAPTABILITY:
+Automatically change the hero visual, colors, and category-specific styling to match [Category] — fashion, food, automotive, technology, real estate, education, entertainment, or travel — while strictly preserving the same bold diagonal geometry, offer-badge treatment, and negative-space discipline.
+
+Final result: a premium, bold, modern horizontal advertising banner that strictly follows the uploaded reference's internal layout, uses category-appropriate content, maintains strong visual hierarchy, and provides MORE INTENTIONAL NEGATIVE SPACE.

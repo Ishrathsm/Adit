@@ -1,0 +1,41 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK, a bold, geometric, color-blocked gourmet-burger banner reusable for burger restaurants, casual-dining brands, cloud kitchens, and premium quick-service concepts.
+
+CATEGORY: Gourmet Burger / Restaurant
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Burger]
+OFFER / SUPPORTING MESSAGE: [Offer / Discount]
+CTA: [CTA]
+
+FORMAT & COMPOSITION:
+Preserve this fundamental structure: wide horizontal format, strong graphic color blocking, a clean communication zone on the left, small brand placement near the upper-left, one large bold headline, one optional promotional badge near the center, ONE dominant hero visual toward the center/right, controlled supporting accents, and generous intentional negative space.
+
+Use bold geometric color blocks, diagonal divisions, angled panels, curves, or simple graphic shapes built from [Brand Colors] to create visual energy. These elements must support the composition rather than create clutter.
+
+BRAND & HEADLINE:
+Keep the LEFT communication zone clean and visually dominant. Place [Brand Logo] and [Brand Name] small and secondary near the upper-left. Make [Main Headline] large, bold, concise, and highly readable, split across two short lines if it naturally allows for it.
+
+OFFER & CTA:
+If [Offer / Discount] is supplied, present it as ONE simple promotional badge or capsule positioned between the headline and the hero visual; if it is not supplied, leave that space empty rather than inventing one. Keep [CTA] short and secondary, placed in a clean pill or button beneath the headline.
+
+HERO VISUAL:
+Place ONE dominant [Hero Burger] toward the center/right. Make it realistic, polished, attractive, and completely visible, showing a premium bun, fresh vegetables, cheese, and sauce detail appropriate to the specific item described. Supporting ingredients or small floating accents may appear only when they directly support the hero and remain secondary.
+
+NEGATIVE SPACE:
+Maintain generous, intentional negative space around the brand, headline, offer, hero visual, and CTA. Do not fill empty areas unnecessarily. Keep the negative space deliberate, premium, balanced, and functional for readability.
+
+CONTENT DISCIPLINE:
+Use ONLY essential content: [Brand Logo] / [Brand Name], ONE headline, ONE hero visual, and optionally ONE offer/supporting message and ONE CTA. Do NOT add multiple products, feature lists, icons, badges, statistics, social-media elements, random objects, excessive patterns, or unnecessary copy.
+
+STRICT OUTPUT:
+Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the complete canvas edge-to-edge. Keep all text, branding, promotional information, and the COMPLETE hero subject safely inside the canvas. Do not crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, support structure, wall, building, road, street, sky, city, outdoor environment, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Burger] [Offer / Discount] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the hero burger's toppings, bun style, and plating, along with the geometric color-block palette drawn from [Brand Colors], to the specific gourmet burger or sandwich described, while keeping the same bold diagonal color-blocking, left-side communication zone, and center/right hero placement across every variation within this category.
+
+Final result: a premium, bold, high-impact horizontal gourmet-burger advertising banner with strong graphic color blocking, clean left-side communication, ONE dominant center/right hero visual, concise promotional messaging, and generous intentional negative space.
