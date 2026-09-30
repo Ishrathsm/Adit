@@ -1,0 +1,35 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, AND VISUAL-HIERARCHY REFERENCE. Strictly preserve its internal advertising structure: brand placement in the upper-left, strong headline on the left, oversized motorcycle hero on the right, dynamic background movement, and clear separation between typography and product. Do NOT copy the reference brand, logo, wording, colors, motorcycle, imagery, or distinctive artwork.
+
+CATEGORY: Motorcycles / Two-Wheelers
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Motorcycle Model / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+The motorcycle must be the primary visual focus, shown large and realistically in a premium three-quarter or appropriate advertising angle, fully visible with no cropped wheels, handlebars, or exhaust. Use a cinematic environment such as an open road, mountain pass, coastal highway, or urban street at dawn, dusk, or golden hour, with motion streaks, atmospheric haze, gradients, or other automotive-appropriate visual treatment to create energy without overwhelming the typography.
+
+Maintain strong left-side communication and right-side product emphasis. Keep [Main Headline] bold, large, highly readable, and separated from the motorcycle. Position [Brand Logo] and [Brand Name] clearly but subtly above or near [Main Headline], in the upper-left corner. Preserve the supplied logo exactly — no distortion, stretching, recoloring, or fake branding. Place [Supporting Message] as a short secondary line beneath the headline and [CTA] as a clean, small, legible element near the bottom of the communication zone.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve generous clean breathing room around the brand, headline, motorcycle, and any supporting information. Do not fill every area with graphics. Keep the left communication zone sufficiently open so the headline remains instantly readable from a distance.
+
+Use ONLY essential information: ONE brand, ONE dominant headline, ONE primary motorcycle, and optionally ONE short supporting message or CTA. Do NOT add feature lists, specifications, multiple motorcycles, multiple headlines, social-media icons, unnecessary badges, random objects, excessive promotional text, or decorative clutter. Never invent prices, model numbers, specifications, or claims that were not supplied.
+
+Create colors, lighting, motion effects, and graphic styling that complement [Brand Colors] and the mood of [Brand Name]. Adapt the road environment, time of day, and finish (matte, chrome, cruiser, sport, adventure, retro, electric) to suit the specific motorcycle described in [Motorcycle Model / Hero Visual]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a physical billboard, billboard frame, pole, support structure, city billboard, street advertising installation, bus shelter, photograph of a billboard, perspective mockup, or surrounding advertising environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Motorcycle Model / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the motorcycle type (cruiser, sport bike, scooter, adventure tourer, electric bike, retro classic), road environment, time of day, and color grading to match the brand and model supplied, while keeping the same left-communication / right-hero-vehicle composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented specifications or prices, distorted wheels or frames, duplicated motorcycles, random riders, excessive glare, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium, cinematic, high-impact motorcycle advertising banner with strong left-side messaging, one dominant right-side motorcycle, dynamic visual energy, clean hierarchy, and MORE INTENTIONAL NEGATIVE SPACE.
