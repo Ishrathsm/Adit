@@ -1,0 +1,37 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY for its LAYOUT, COMPOSITION, PROPORTIONS, SPACING, VISUAL HIERARCHY, AND ELEMENT PLACEMENT. Recreate the same overall advertising structure while producing completely original artwork.
+
+CATEGORY: Education / Academic Programs
+BRAND: [Institution / Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Academic Program / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+STRICTLY preserve the reference layout: a wide horizontal format with a large photographic hero area on one side and a dominant graphic communication panel on the other. Maintain the same asymmetrical division, relative proportions, scale relationships, spacing, alignment, and visual hierarchy.
+
+Show an authentic, premium academic or research environment matched to [Academic Program / Hero Visual] — students, researchers, professors, laboratories, engineering or science equipment, technology, libraries, or campus-related subjects that naturally communicate advanced education and innovation. The hero imagery should feel realistic, professional, aspirational, and relevant to the specific program or institution described.
+
+Create a strong communication panel with [Brand Logo] and [Institution / Brand Name], a large bold [Main Headline], and minimal supporting information. Preserve the supplied logo exactly — no distortion, stretching, recoloring, or fake branding. Keep the headline highly readable with controlled line breaks and generous spacing. Place [Supporting Message] as a short academic or research line beneath the headline, and [CTA] as a clear, small call to action (such as apply, enroll, or explore programs) near the bottom of the panel.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Keep substantial clean breathing room around the logo, headline, supporting message, CTA, and image boundaries. Do not fill empty areas simply to make the design look busy. Avoid excessive graphics, icons, decorative patterns, unnecessary objects, excessive text, or visual clutter.
+
+Use ONLY essential information: ONE institution, ONE dominant headline, ONE hero visual, and optionally ONE short supporting message or CTA. Never invent rankings, statistics, accreditation claims, dates, or admission details that were not supplied.
+
+Use a color palette derived from [Brand Colors] and completely original graphic styling while maintaining the reference composition. Keep the design sophisticated, modern, credible, and suitable for a university or academic advertising campaign, adapting the discipline shown (engineering, medicine, business, arts, sciences, vocational training) to the program supplied.
+
+IMPORTANT: Generate ONLY the FINAL FLAT BANNER ARTWORK. The artwork must extend edge-to-edge across the entire canvas.
+
+DO NOT create a billboard mockup, outdoor billboard, street scene, building, billboard structure, poles, supports, lighting fixtures, installation, perspective mockup, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Institution / Brand Name] [Brand Colors] [Main Headline] [Academic Program / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the academic discipline and hero imagery (laboratory research, lecture halls, campus life, medical training, business studies, arts and design, vocational skills) and the panel color palette to match the specific institution and program supplied, while keeping the same asymmetrical photo-panel composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented rankings or statistics, distorted people or equipment, duplicated subjects, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium horizontal academic advertising banner with strict reference-based composition, realistic hero imagery, bold typography, clear information hierarchy, strong brand presence, and MORE INTENTIONAL NEGATIVE SPACE.

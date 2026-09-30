@@ -1,0 +1,52 @@
+Create a premium, high-impact vertical promotional sales poster template for [Campaign Theme], reusable for Big Sale, Festive Sale, Flash Sale, Limited-Time Offer, Discount Campaign, Product Launch, Clearance, Shopping Festival, or commercial advertising.
+
+FORMAT:
+Portrait vertical layout optimized for Instagram, WhatsApp, mobile ads, digital displays, and e-commerce. Maintain safe margins and a clear visual flow:
+[Brand Logo] → [Sale Headline] → [Discount / Offer] → [Product/Campaign Visual] → [Supporting Information] → [Call to Action].
+
+STYLE:
+Modern, energetic, premium commercial advertising with bold typography, strong contrast, vibrant but controlled colors, polished product or lifestyle imagery, dynamic graphic movement, and professional art direction. Make the design exciting without becoming cluttered.
+
+BACKGROUND:
+Use a campaign-appropriate gradient, studio background, retail/lifestyle environment, festive atmosphere, seasonal scene, or clean product-focused setting. Keep the background visually interesting but secondary to the headline, offer, and main visual.
+
+BRANDING:
+Place [Brand Logo] clearly near the top-left, top-right, or top-center. Preserve the supplied logo exactly, including proportions, colors, and identity. Never invent or modify logos, company details, URLs, phone numbers, emails, or QR codes.
+
+HEADLINE:
+Make [Sale Headline] one of the strongest elements. Use bold, large-scale modern typography with optional subtle dimensional depth, shadow, outline, banner, or graphic container.
+
+OFFER:
+Make [Discount / Offer] immediately visible using a refined badge, sticker, ribbon, burst, circle, or geometric promotional label. Never invent discounts, prices, or claims.
+
+MAIN VISUAL:
+Place one dominant [Product or Campaign Visual] in the middle or lower-middle section. Adapt naturally to the campaign: fashion, electronics, food, travel, beauty, lifestyle, technology, home products, automobiles, services, or seasonal products. Use realistic commercial photography or polished 3D/product visualization with accurate proportions and professional lighting. If people appear, maintain natural anatomy, expressions, hands, clothing, and believable poses.
+
+DYNAMIC GRAPHICS:
+Use controlled diagonal shapes, rays, ribbons, curved lines, geometric blocks, subtle speed lines, confetti, particles, or layered banners to create promotional energy. Every graphic element must support the hierarchy.
+
+SUPPORTING INFO:
+Use [Supporting Message], [Offer Details], [Campaign Dates], [Product Category], and [Terms] in small cards, badges, or compact information panels. Keep secondary information concise.
+
+TYPOGRAPHY:
+Use 2–3 complementary fonts with clear hierarchy:
+1. [Sale Headline]
+2. [Discount / Offer]
+3. [Supporting Message]
+4. [Offer Details / Dates]
+5. [Call to Action]
+Typography must be crisp, correctly spelled, professionally aligned, well-kerned, and highly readable on mobile.
+
+COLOR:
+Adapt colors to [Brand Colors], [Campaign Theme], and [Product Category]. Use a controlled palette with strong contrast and 1–2 accent colors.
+
+CTA:
+Place [Call to Action] prominently in a button, capsule, banner, ribbon, or contrasting footer area. Use only the supplied CTA.
+
+ADAPTABILITY:
+Automatically change the products, people, environment, colors, graphics, and campaign mood according to the supplied campaign while preserving the same professional design system.
+
+NEGATIVE:
+No copied artwork, fake branding, invented claims, random objects, unrelated products, distorted people, malformed hands, warped products, excessive gradients, heavy shadows, excessive glow, clutter, excessive empty space, misspelled text, illegible typography, random icons, or obvious AI-generated artifacts.
+
+Final result: a production-ready, premium promotional poster that instantly communicates the campaign, offer, product, and CTA with strong visual impact.
