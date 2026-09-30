@@ -1,0 +1,34 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, IMAGE-TO-TEXT BALANCE, TYPOGRAPHY-HIERARCHY, AND VISUAL-RHYTHM REFERENCE. Extract the internal advertising design, NOT the physical billboard or outdoor environment. Strictly preserve the fundamental structure: wide horizontal format, large realistic hero image occupying the main/right area, a strong headline communication zone on the left, a dark or visually controlled text area, small brand placement near the lower-left, a subtle accent element, and generous open space.
+
+Do NOT copy the reference brand, logo, wording, colors, people, photography, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Health Services / Wellness
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message] (optional)
+CTA: [CTA] (optional)
+
+Use ONE dominant, realistic, emotionally resonant [Hero Visual] occupying the main/right portion — a caregiver and patient, a wellness professional, a therapy or clinic scene, or another meaningful human or medical subject appropriate to the brand. Keep the hero visually strong but avoid excessive detail or clutter. Create a clear communication zone on the left with enough contrast for the headline.
+
+Make [Main Headline] bold, concise, and highly readable from a distance. Use controlled line breaks and strong typography hierarchy. Keep [Brand Logo] and [Brand Name] smaller and secondary, positioned near the lower-left. If [Supporting Message] or [CTA] is provided, keep it subtle and secondary.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around [Main Headline], [Brand Logo], accent elements, and [Hero Visual]. Do not fill empty areas unnecessarily. Allow the background and visual subject to breathe. Avoid feature lists, icons, badges, multiple products, social-media icons, statistics, decorative patterns, random objects, or excessive copy.
+
+Use ONLY essential information: [Brand Logo], ONE dominant [Main Headline], ONE [Hero Visual], and optionally ONE short [Supporting Message] or [CTA]. If optional fields are empty, do not invent additional text.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, and gradients appropriate to [Brand Colors] and the health-services brand. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all important text, branding, and the complete hero subject safely inside the canvas.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, wall, building, street, trees, sky, outdoor environment, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual] [Supporting Message] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the hero subject, tone, and palette to the specific health-services or wellness brand — home care, elder care, mental health, physiotherapy, diagnostics, or general wellness — while keeping the same cinematic left-communication / right-hero composition and generous negative space.
+
+Final result: a premium, cinematic, professional horizontal advertising banner with a strong left-side communication zone, one dominant realistic hero visual on the right, minimal essential content, and MORE INTENTIONAL NEGATIVE SPACE.

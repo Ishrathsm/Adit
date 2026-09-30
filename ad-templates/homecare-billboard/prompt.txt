@@ -1,0 +1,32 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+Preserve the fundamental structure: wide horizontal format, full-bleed background, a large headline concentrated on the left, one simple circular or glowing graphic element supporting the headline, one dominant lifestyle/product hero visual on the right, the primary product positioned naturally near the hero subject, and minimal secondary branding.
+
+CATEGORY: Home Care / Household Products
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual / Lifestyle Scene with Product]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Create ONE dominant hero visual positioned on the right side and ONE primary communication zone on the left. The hero should be a realistic, polished, warm lifestyle scene clearly connected to the product — for example a family or a home setting where the product is naturally in use. Show ONE primary product prominently within the scene and keep it completely visible.
+
+Make [Main Headline] large, bold, memorable, and highly readable. Use controlled line breaks and place it within the left communication zone, with [Brand Logo] and [Brand Name] positioned above or beside it. Use ONE simple circular, curved, glowing, halo, or light-ring graphic element around or behind the headline or the product, built from [Brand Colors], kept subtle and purposeful.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve generous clean breathing room around the headline, graphic element, hero subject, product, and brand. Do not fill empty areas unnecessarily. Avoid excessive decoration, multiple products, feature lists, icons, badges, social-media elements, random objects, or excessive copy.
+
+Use ONLY essential information: one brand, one dominant headline, one hero visual, one primary product, and optionally [Supporting Message] or [CTA] placed beneath the headline, with [Website / Contact] beneath that. If optional fields are empty, do not invent additional text.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, and graphic elements built from [Brand Colors] and appropriate to the selected product.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all important text, branding, product, and the COMPLETE hero subject safely inside the canvas. Do NOT crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, support structure, wall, building, street, city, sky, outdoor environment, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Lifestyle Scene with Product] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the lifestyle scene, room setting, time of day, product type, and glow/halo color to match the specific home-care product supplied — mosquito repellents, air fresheners, surface cleaners, detergents, or pest-control devices — while strictly maintaining the same left-headline, right-hero-scene composition.
+
+FINAL RESULT: a premium, cinematic, high-impact horizontal advertising banner with a strong left-side headline zone, one simple supporting graphic element, one dominant right-side lifestyle/product visual, minimal essential content, and MORE INTENTIONAL NEGATIVE SPACE.
