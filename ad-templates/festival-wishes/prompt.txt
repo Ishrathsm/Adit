@@ -1,0 +1,36 @@
+Create a premium, modern, elegant vertical festival greeting poster template for [Festival Name], designed as a reusable social-media-ready visual system for festivals, cultural celebrations, national occasions, religious events, seasonal greetings, corporate wishes, and special occasions.
+
+FORMAT & COMPOSITION:
+Portrait vertical layout for Instagram, WhatsApp, digital greeting cards, and mobile viewing. Maintain generous safe margins and a clean, centered, balanced composition. Use a bright minimalist background with warm white, ivory, light cream, or subtle neutral tones. Add only a very subtle gradient, paper texture, watercolor wash, soft glow, or abstract pattern.
+
+CENTRAL VISUAL:
+Place one prominent [Festival Visual] in the upper-middle/center as the main focal point. Automatically adapt the imagery to [Festival Name] using culturally appropriate symbols, objects, characters, clothing, architecture, flowers, food, lamps, ornaments, seasonal elements, or ceremonial motifs. Keep the artwork original, polished, and professionally rendered in one consistent style: premium illustration, semi-realistic, painterly, vector, editorial, or refined 3D. Support the visual with a subtle watercolor splash, translucent shapes, or soft artistic halo.
+
+LOGO:
+Place [Brand Logo] discreetly near the top-right, top-center, or another suitable position. Keep it visible but secondary, with generous clear space.
+
+TYPOGRAPHY:
+Create a strong hierarchy:
+[Greeting Intro]
+[FESTIVAL NAME]
+[Greeting Message]
+[Supporting Message]
+Make [Festival Name] the largest and strongest element. Combine elegant serif, calligraphic, or refined display typography with a clean modern sans-serif. Use centered alignment, controlled letter spacing, generous line spacing, crisp readable text, and no excessive effects.
+
+COLOR:
+Keep the background neutral and build accent colors around [Festival Name]. Use a controlled palette. Examples: gold/orange/red with ivory for traditional celebrations; vibrant festive colors for colorful festivals; deep green/gold/cream for cultural occasions; navy/silver/gold for formal events; saffron/white/green for national occasions; or soft pastel colors for contemporary celebrations.
+
+DECORATION:
+Use minimal culturally relevant accents such as petals, stars, sparkles, leaves, geometric motifs, tiny festive icons, brush marks, or delicate separators. Avoid clutter. Preserve substantial negative space.
+
+LIGHTING & FINISH:
+Use soft premium lighting, subtle shadows, refined highlights, clean edges, realistic depth, and high-resolution rendering. Ensure excellent readability on mobile screens and professional social-media quality.
+
+REUSABLE PLACEHOLDERS:
+[Festival Name] | [Festival Visual] | [Brand Logo] | [Greeting Intro] | [Greeting Message] | [Supporting Message] | [Footer Text]
+
+ADAPTATION:
+Keep the same overall design system, hierarchy, spacing, and premium aesthetic while automatically changing the central visual, cultural elements, and accent palette according to [Festival Name]. Do not force the same symbols or colors onto every festival.
+
+NEGATIVE:
+No copied artwork, crowded collage, excessive borders, random cultural symbols, heavy ornamentation, excessive text, illegible typography, distorted characters, clip-art appearance, competing focal points, harsh shadows, excessive gradients, clutter, or unnecessary decorative elements. Make it look like a professionally designed festival communication template, not a generic AI greeting.
