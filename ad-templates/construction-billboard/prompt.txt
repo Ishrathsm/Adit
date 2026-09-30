@@ -1,0 +1,41 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, DIAGONAL STRUCTURE, IMAGE-TO-TEXT BALANCE, TYPOGRAPHY-HIERARCHY, AND VISUAL-RHYTHM REFERENCE. Extract the INTERNAL BANNER DESIGN, NOT the physical billboard or surrounding environment.
+
+Strictly preserve the fundamental layout: wide horizontal format, large solid communication panel occupying the left side, dominant headline positioned inside the left panel, strong angular/diagonal transition between the text and visual zones, one large realistic hero image occupying the right side, small brand placement near the lower-left, and generous intentional negative space.
+
+Do NOT copy the reference brand, logo, wording, colors, people, photography, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Construction / Infrastructure
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Construction Project / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Create a strong left-to-right visual flow. Keep [Main Headline] bold, concise, and highly readable within the left communication panel. Use controlled line breaks and generous spacing. Use one clean angular, diagonal, polygonal, or geometric transition to separate the communication zone from the hero-image zone.
+
+Place ONE dominant realistic [Hero Visual] on the right — engineers, architects, or workers reviewing plans, a building under construction, cranes, infrastructure equipment, or a completed structure, matched to the subject supplied. Keep the complete subject visible, naturally positioned, and appropriately scaled. Do not crop important parts of the hero subject.
+
+Place [Brand Logo] and [Brand Name] near the lower-left of the communication panel, preserving the supplied logo exactly with no distortion, stretching, or recoloring. Position [Supporting Message] beneath [Main Headline] and [CTA] as a small, clean element near the brand. Leave either empty if not supplied rather than inventing copy.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around the headline, brand, geometric transition, and hero visual. Do not fill empty areas unnecessarily. Avoid multiple subjects, feature lists, icons, badges, social-media elements, excessive decoration, random objects, or excessive copy.
+
+Use ONLY essential information: ONE brand, ONE dominant headline, ONE hero visual, and optionally ONE short supporting message or CTA. Never invent project names, completion dates, safety statistics, or certifications that were not supplied.
+
+Create colors, typography, imagery, lighting, textures, and geometric shapes that reflect [Brand Colors] and the character of [Brand Name], adapting the panel color and photographic mood to the specific construction, engineering, or infrastructure subject supplied. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all text, branding, and the COMPLETE hero visual safely inside the canvas.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, wall, building exterior, street, city, sky, construction environment, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Construction Project / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the hero subject (residential building, commercial tower, bridge, road, industrial plant, renovation, heavy machinery, engineers on-site) and the panel color palette to match the specific construction or infrastructure business supplied, while keeping the same left-panel / right-hero diagonal composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented statistics or certifications, distorted machinery or people, duplicated subjects, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium, modern, professional horizontal construction advertising banner with a strong left communication panel, bold headline, clean diagonal transition, one dominant right-side hero visual, minimal essential content, strict reference-based composition, and MORE INTENTIONAL NEGATIVE SPACE.
