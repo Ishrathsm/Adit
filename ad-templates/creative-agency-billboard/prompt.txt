@@ -1,0 +1,54 @@
+Create ONLY the FINAL FLAT HORIZONTAL BILLBOARD BANNER ARTWORK. Do NOT create a billboard mockup, physical billboard, outdoor scene, or presentation image. Use the uploaded reference image STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Analyze its structural arrangement and reproduce the same overall design logic while creating completely original artwork.
+
+CATEGORY: Creative & Design Agency
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Creative Work / Hero Visual]
+
+PRESERVE THE REFERENCE STRUCTURE: Use a wide horizontal rectangular composition with a strong centered advertising layout. Maintain the reference's broad proportions, central focal area, balanced horizontal distribution, generous outer margins, simple visual hierarchy, and large uninterrupted background areas. The main communication should remain concentrated around the central visual message rather than being distributed across the entire canvas.
+
+Place [Brand Logo] and [Brand Name] at the top center, preserving the supplied logo exactly with no distortion, stretching, or recoloring. Beneath it, make [Main Headline] the dominant typographic element — bold, large, playful or elegant as suited to the brand, with a secondary accent color from [Brand Colors] used to highlight one key word. Below the headline, place a small central hero graphic representing [Creative Work / Hero Visual] (a portfolio, design tool, illustration, product mockup, or abstract creative icon), rendered as a clean 3D icon, illustration, or photographic vignette. Place [Supporting Message] and [CTA] as a compact pill-shaped button beneath the hero graphic.
+
+Create an original advertising concept specifically suited to a creative, design, or portfolio-platform brand. The hero visual, typography, colors, imagery, and graphic language must be newly designed for the specific brand supplied. Do not copy any recognizable visual elements from the reference.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL: Leave substantial clean empty space surrounding the main headline, logo, hero visual, and supporting information. Do not fill the canvas with decorative graphics, patterns, objects, textures, gradients, or unnecessary elements. The empty areas should feel deliberate, premium, calm, and professionally art-directed. Keep the composition visually breathable and instantly readable from a distance.
+
+Use one dominant focal point with a clear reading sequence: [Brand Logo] / [Brand Name] → [Main Headline] → [Creative Work / Hero Visual] → [Supporting Message] / [CTA]. Keep secondary information minimal and subordinate. Typography should be bold, clean, highly legible, and appropriately scaled for large-format advertising. Never invent statistics, user counts, awards, or claims that were not supplied.
+
+The final artwork should feel like a professionally designed creative-agency campaign — polished, modern, balanced, spacious, visually memorable, and brand-specific, using a confident single-color or duotone background derived from [Brand Colors].
+
+STRICT OUTPUT:
+- FINAL FLAT BANNER ARTWORK ONLY
+- Wide horizontal format
+- Full artwork edge-to-edge
+- Preserve the reference's layout logic
+- Large intentional negative space
+- Clean centered composition
+- Original brand-specific design
+- No billboard mockup
+- No physical billboard
+- No frame
+- No metal structure
+- No support poles
+- No lighting fixtures
+- No road
+- No buildings
+- No sky or outdoor environment
+- No perspective photograph
+- No device mockup
+- No surrounding scene
+- No watermark
+- No unnecessary decorative clutter
+- Do not invent additional copy
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Creative Work / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the central hero graphic, icon style, and accent color to match the specific creative, design, or portfolio brand supplied (design tool, agency, freelance platform, illustration studio, branding house), while keeping the same centered, single-focal-point composition, hierarchy, and negative-space discipline.
+
+The output must be the actual finished flat advertising BANNER, not a photograph or visualization of where the banner would be displayed.
+
+FINAL RESULT: A premium, bold, centered creative-agency advertising banner with one dominant focal message, minimal essential content, generous negative space, and a polished, professionally art-directed finish.
