@@ -1,0 +1,58 @@
+Create a premium, modern vertical Company Milestones & Corporate Timeline poster template for [Timeline Type], suitable for companies, startups, brands, institutions, nonprofits, educational organizations, and professional teams.
+
+Create an original corporate infographic inspired by chronological storytelling, progressive movement, milestone markers, strong typography, clear hierarchy, restrained colors, and visual continuity. Do not copy any existing timeline, artwork, colors, years, text, icons, brand, logo, or composition.
+
+CORE CONCEPT:
+Build one continuous visual journey representing growth, history, transformation, progress, or achievement. Use an elegant structure such as an ascending pathway, flowing road, connected nodes, curved timeline, stepping sequence, progressive blocks, architectural pathway, or abstract growth trajectory. The sequence must clearly move from the earliest milestone to the latest.
+
+FORMAT:
+Use a sophisticated portrait layout optimized for LinkedIn, Instagram, Facebook, WhatsApp, websites, annual reports, investor presentations, company anniversaries, and corporate communication. Maintain safe margins and mobile readability.
+
+HEADER:
+Place [Brand Logo] and [Main Heading] prominently at the top. Keep the heading strong and immediately communicate the timeline purpose.
+
+TIMELINE:
+Create one dominant timeline using [Milestone Data]. Each milestone contains:
+[Year / Date] + [Milestone Title] + [Milestone Description]
+Optional: [Milestone Icon] + [Milestone Metric]
+
+Maintain a clear progression such as:
+Beginning → Development → Expansion → Transformation → Achievement → Present/Future.
+
+Use consistent circular nodes, rings, geometric markers, numbered points, or compact icon containers. Connect each marker clearly to its information block. Keep descriptions concise and easy to scan.
+
+VISUAL PROGRESSION:
+Create subtle forward movement through rising levels, increasing scale, refined forms, changing tones, or expanding branches. Keep the growth visual elegant rather than using exaggerated arrows.
+
+BACKGROUND:
+Use a clean corporate background such as warm white, ivory, light gray, blue-gray, subtle gradient, refined paper texture, architectural texture, or minimal geometric shapes. Keep the timeline dominant.
+
+COLOR:
+Build a cohesive palette from [Brand Colors]. Use professional combinations such as navy/blue, blue/teal, purple/violet, green/blue, charcoal/gold, or neutral gray with one accent. Avoid random rainbow colors.
+
+TYPOGRAPHY:
+Use 1–2 professional typefaces. Hierarchy:
+1. [Main Heading]
+2. [Year / Date]
+3. [Milestone Title]
+4. [Milestone Description]
+5. [Footer / CTA]
+
+Typography must be crisp, correctly spelled, professionally typeset, aligned, kerned, and readable on mobile.
+
+CONTENT:
+Use only supplied facts. Never invent years, achievements, statistics, awards, clients, revenue, employee counts, milestones, or business claims. Clearly distinguish [Current Milestone] and [Future Vision]; never present future goals as completed facts.
+
+FOOTER:
+Reserve space for [Company Name], [Website], [Contact Information], [Footer Text], and optional [CTA]. Use only supplied information.
+
+ADAPTATION:
+Adapt naturally for company history, product journey, brand evolution, startup journey, technology timeline, project timeline, anniversary, career timeline, or event history while maintaining the same visual system.
+
+PLACEHOLDERS:
+[Brand Logo] [Company Name] [Brand Colors] [Main Heading] [Subtitle] [Timeline Type] [Milestone Data] [Year / Date] [Milestone Title] [Milestone Description] [Milestone Icon] [Milestone Metric] [Current Milestone] [Future Vision] [CTA] [Website] [Contact Information] [Footer Text]
+
+NEGATIVE:
+No copied designs, fake branding, fabricated milestones, fake statistics, random icons, clutter, confusing chronology, excessive decoration, excessive 3D, overlapping text, inconsistent spacing, distorted typography, misspelled words, blurry details, excessive empty space, or obvious AI artifacts.
+
+Final result: a premium, clean, highly readable corporate timeline poster that transforms an organization's journey into a visually engaging story and remains reusable across industries, milestones, anniversaries, products, and company histories.
