@@ -1,0 +1,41 @@
+Create ONLY THE FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, TYPOGRAPHY-HIERARCHY, IMAGE-TO-TEXT BALANCE, AND VISUAL-STRUCTURE REFERENCE. Extract the INTERNAL ADVERTISEMENT DESIGN, NOT the physical billboard, environment, building, street, sky, or surrounding scene.
+
+STRICTLY PRESERVE THE CORE DESIGN LOGIC: wide horizontal format, large clean background field, small brand placement near one side, short bold communication divided into two balanced text zones, ONE central hero visual connecting the two messages, simple visual storytelling, strong horizontal balance, minimal graphic treatment, and MORE INTENTIONAL NEGATIVE SPACE.
+
+Do NOT copy the reference brand, logo, wording, colors, person, photography, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Digital Payments / Fintech
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Payment / Fintech Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Use ONE dominant [Hero Visual] positioned centrally or slightly off-center — such as a person making a contactless payment, a smartphone payment interaction, a card tap, or a minimal hand gesture. The hero should clearly communicate the product, service, or concept. Keep it completely visible and avoid unnecessary cropping.
+
+Create a strong relationship between [Main Headline] and [Hero Visual]. If the headline contains two short phrases, divide them into two balanced communication zones on opposite sides of the hero. Keep both phrases concise, bold, memorable, and highly readable.
+
+Place [Brand Name] / [Brand Logo] small and secondary with comfortable margins. Use clean modern typography and a simple visual hierarchy. [Supporting Message] or [CTA] should remain minimal.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Leave large uninterrupted areas around the brand, headline, hero visual, and supporting content. Do NOT fill empty space unnecessarily. The empty space must feel deliberate, premium, balanced, and functional for readability.
+
+Use ONLY essential content: ONE brand, ONE dominant headline, ONE hero visual, and optionally ONE short [Supporting Message] or [CTA]. Do NOT add feature lists, multiple products, icons, badges, statistics, social-media elements, excessive patterns, decorative clutter, random objects, or unnecessary copy.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, shapes, and graphic treatment appropriate to [Brand Name] and [Brand Colors]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge. Keep all important text, branding, and the COMPLETE hero visual safely inside the canvas. Do not crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, support structure, wall, building, road, street, city, sky, outdoor environment, installation, lighting fixture, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Payment / Fintech Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the payment interaction shown, the device or card used, and the surrounding hand/gesture styling to fit the specific fintech product described — contactless cards, UPI/QR payments, mobile wallets, POS terminals, or peer-to-peer transfers — while keeping the same two-zone, one-hero balanced composition and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented statistics or claims, distorted hands or devices, multiple competing visuals, cluttered icon rows, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: A premium, minimal, concept-driven horizontal advertising banner with two balanced communication zones, ONE central hero visual, strong visual storytelling, clean typography, strict reference-based internal composition, and MORE INTENTIONAL NEGATIVE SPACE.
