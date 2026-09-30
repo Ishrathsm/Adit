@@ -1,0 +1,42 @@
+Create a premium, modern vertical Social Media & Digital Marketing poster template for [Marketing Topic], reusable for social media campaigns, brand awareness, content marketing, audience growth, online advertising, influencer marketing, digital strategy, engagement, lead generation, and campaign performance.
+
+FORMAT:
+Portrait layout optimized for Instagram, LinkedIn, Facebook, WhatsApp, websites, presentations, and digital advertising. Use a structured but dynamic grid with balanced margins, intentional whitespace, and clear hierarchy:
+[Brand Logo] → [Main Headline] → [Supporting Message] → Central Digital Visual → Marketing Elements → [CTA] → [Website/Contact].
+
+CENTRAL VISUAL:
+Create one strong visual representing digital connectivity and marketing growth: smartphone, generic social interface, digital dashboard, connected content ecosystem, laptop/mobile workflow, analytics visualization, creative workspace, or abstract digital network. Adapt automatically to [Marketing Topic]. Use realistic proportions, clean edges, natural reflections, professional lighting, and polished rendering.
+
+SOCIAL & MARKETING ELEMENTS:
+Surround the central visual with original abstract representations of likes, comments, shares, saves, notifications, audience indicators, content cards, messaging bubbles, engagement charts, follower growth, campaign statistics, and analytics. Connect them naturally using elegant curved lines, data paths, nodes, light trails, or interface connectors. Do not use recognizable social-media logos or copied platform interfaces.
+
+BACKGROUND:
+Use a sophisticated contemporary environment such as soft corporate gradients, glass-like surfaces, modern office, digital workspace, abstract technology environment, geometric surfaces, subtle data patterns, or flowing color fields. Keep background details understated so the main visual remains dominant.
+
+TYPOGRAPHY:
+Make [Main Headline] the strongest text. Use modern sophisticated sans-serif typography with optional subtle editorial accent. Hierarchy:
+1. [Main Headline]
+2. [Supporting Message]
+3. Supporting Labels/Analytics
+4. [CTA] / [Website/Contact]
+Use 2–3 fonts maximum. Ensure crisp, correctly spelled, highly legible, professionally aligned text.
+
+COLOR:
+Adapt the palette to [Brand Colors] and [Marketing Topic]. Use controlled combinations such as navy/electric blue, blue/cyan, purple/magenta, teal/blue, orange/blue, green/blue, or neutral colors with one vibrant accent.
+
+LIGHTING:
+Use soft commercial lighting, realistic shadows, subtle reflections, depth of field, and polished materials. Avoid excessive glow, bloom, neon effects, or artificial reflections.
+
+BRANDING & CTA:
+Place [Brand Logo] discreetly in the upper corner or footer and preserve it exactly. Place [CTA] in a clean button, capsule, or highlighted area. Reserve the footer for [Website/Contact]. Never invent branding, statistics, URLs, phone numbers, emails, QR codes, or claims.
+
+ADAPTATION:
+For social media, emphasize engagement and audience. For content marketing, emphasize creation and distribution. For brand awareness, emphasize visibility and reach. For advertising, emphasize campaigns and analytics. For influencer marketing, emphasize creators and audience interaction. For analytics, emphasize dashboards, KPIs, charts, and trends.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Colors] [Marketing Topic] [Main Headline] [Supporting Message] [Digital Connectivity Visual] [Supporting Visual Elements] [CTA] [Website/Contact]
+
+NEGATIVE:
+No copied artwork, platform logos, trademarked icons, fake brands, invented statistics, random floating icons, unrelated objects, excessive 3D, excessive glow, heavy gradients, distorted devices, duplicated objects, blurry details, misspelled text, illegible typography, clutter, or obvious AI artifacts.
+
+Final result: a polished, premium, production-ready digital marketing campaign poster where every element supports one clear concept.
