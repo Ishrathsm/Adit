@@ -1,0 +1,57 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK, reusable for quick-commerce, grocery-delivery, instant-delivery, and hyperlocal e-commerce brands.
+
+CATEGORY: Quick Commerce / Instant Delivery
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+HERO VISUAL: [Hero Product / Delivery Visual]
+OFFER: [Offer / Discount]
+CTA: [CTA]
+
+COMPOSITION:
+Create a premium, clean, modern horizontal advertising banner. Use a strong category-appropriate background color or restrained gradient built from [Brand Colors] across the full canvas. Place [Brand Logo] and [Brand Name] together with [Main Headline] toward the upper-left/left area with generous breathing room. Keep [Supporting Message] directly beneath or near the headline.
+
+HERO VISUAL:
+Position ONE dominant [Hero Product / Delivery Visual] toward the center-right or right side — a delivery bag, a grocery basket, a product assortment, or another single visual appropriate to what is being delivered. If the concept requires two related products, use only a small coordinated group. Make the hero large, realistic, highly detailed, recognizable, and visually polished, with realistic shadows, subtle depth, refined lighting, and minimal category-specific effects.
+
+Keep a spacious open middle area between the left communication zone and the right-side hero, so the composition never feels overcrowded.
+
+OFFER & CTA:
+If [Offer / Discount] is supplied, present it as one clean badge near the hero or CTA; if it is not supplied, leave that space empty rather than inventing one. Place [CTA] in a simple, highly visible button.
+
+NEGATIVE SPACE:
+INTENTIONAL NEGATIVE SPACE IS CRITICAL. Preserve large uninterrupted clean areas around the brand, headline, supporting message, hero visual, offer, and CTA. Do not fill empty areas with unnecessary patterns, icons, particles, repeated text, decorative objects, or excessive effects. Empty space must feel deliberate, premium, balanced, and professionally art-directed.
+
+HIERARCHY:
+[Brand Logo] / [Brand Name] → [Main Headline] → [Supporting Message] → [Hero Product / Delivery Visual] → [Offer / Discount] → [CTA].
+
+Use bold, clean, modern, highly legible typography suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, claims, prices, offers, specifications, contact details, or information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Wide horizontal proportions
+- Full-bleed edge-to-edge artwork
+- Left-side communication + right-side hero visual
+- One dominant hero visual
+- Large intentional negative space
+- Clear visual hierarchy
+- Original category-specific design
+- Premium commercial advertising aesthetic
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard perspective
+- No photograph of a billboard
+- No device mockup
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Supporting Message] [Hero Product / Delivery Visual] [Offer / Discount] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the hero visual — a grocery bag, a food-delivery basket, a pharmacy or essentials assortment, or a specific product group — and the background palette drawn from [Brand Colors] to the specific quick-commerce or instant-delivery concept described, while keeping the same left-communication / right-hero layout, negative-space discipline, and typographic hierarchy across every variation within this category.
+
+Final result: a premium, clean, production-ready flat quick-commerce advertising banner with one dominant hero visual, clear offer and CTA when supplied, and large intentional negative space — not a photograph or mockup of a billboard.
