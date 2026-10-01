@@ -310,8 +310,9 @@ export function clipSecondsFor(cutSeconds: number): (typeof VEO_DURATIONS)[numbe
   return VEO_DURATIONS.find((d) => d >= cutSeconds + 0.8) ?? 8;
 }
 
-// A variable-length shot stays between a readable beat and the longest cut an 8s clip allows.
-export const MIN_CUT_SECONDS = 1.5;
+// A variable-length shot stays between a readable beat (a 1s pass-by, as real bike ads cut) and
+// the longest cut an 8s clip allows.
+export const MIN_CUT_SECONDS = 1;
 export const MAX_CUT_SECONDS = 7.2;
 
 // The director's per-shot lengths, scaled to fill the footage exactly and kept within

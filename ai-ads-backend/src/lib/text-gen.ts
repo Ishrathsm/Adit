@@ -106,6 +106,9 @@ export interface ScriptOptions {
   // The ad direction team's signed-off strategy (proposition, device, dials); absent = the
   // director works from the brief alone.
   strategy?: AdStrategy;
+  // With a strategy: skip writing and send this treatment straight to the checks (a re-check of a
+  // saved script).
+  startFrom?: AdScript;
 }
 
 const STRING = { type: Type.STRING };
@@ -512,10 +515,14 @@ ${JSON.stringify(toScriptJson(draft), null, 2)}`);
 
   // Each writing run is a fresh draw that can drop a detail the last one got right, so several are
   // written in parallel and a judge keeps the one that best meets the brief and the checklist.
-  const settled = await Promise.allSettled(Array.from({ length: SCRIPT_CANDIDATES }, writeTreatment));
-  const candidates = settled.flatMap((r) => (r.status === "fulfilled" && r.value.shots.length === plan.shotCount ? [r.value] : []));
-  if (!candidates.length) throw settled.find((r): r is PromiseRejectedResult => r.status === "rejected")?.reason ?? new Error("No usable ad script");
-  let script = candidates.length === 1 ? candidates[0] : candidates[await pickBestTreatment(candidates, direction, checklist)];
+  let script: AdScript;
+  if (options.startFrom && options.strategy) script = options.startFrom;
+  else {
+    const settled = await Promise.allSettled(Array.from({ length: SCRIPT_CANDIDATES }, writeTreatment));
+    const candidates = settled.flatMap((r) => (r.status === "fulfilled" && r.value.shots.length === plan.shotCount ? [r.value] : []));
+    if (!candidates.length) throw settled.find((r): r is PromiseRejectedResult => r.status === "rejected")?.reason ?? new Error("No usable ad script");
+    script = candidates.length === 1 ? candidates[0] : candidates[await pickBestTreatment(candidates, direction, checklist)];
+  }
   // With a strategy, the winner goes to the checks — the dials in code, then the script
   // supervisor — and back to the director with every failure, until it passes (two rewrites at most).
   if (options.strategy) {
@@ -533,7 +540,7 @@ ${JSON.stringify(toScriptJson(draft), null, 2)}`);
       audit.push(failures);
       console.log(`[ad-script] audit round ${round + 1}: ${failures.length} failure(s)`);
       if (!failures.length || round === 2) break;
-      const fixed = await generateJson(`You are the director. The script supervisor and the dial checks failed your treatment. Fix EVERY failure below and return the whole corrected treatment in the same JSON shape; keep everything that passed.
+      const rewrite = () => generateJson(`You are the director. The script supervisor and the dial checks failed your treatment. Fix EVERY failure below and return the whole corrected treatment in the same JSON shape — exactly ${plan.shotCount} shots, never more or fewer; keep everything that passed.
 
 ${direction}
 
@@ -544,7 +551,13 @@ ${outputSpec}
 
 Your treatment:
 ${JSON.stringify(toScriptJson(script), null, 2)}`).catch(() => null);
-      if (!fixed || fixed.shots.length !== plan.shotCount) break;
+      // A rewrite of the wrong shape gets one more try before the loop keeps what it has.
+      let fixed = await rewrite();
+      if (!fixed || fixed.shots.length !== plan.shotCount) fixed = await rewrite();
+      if (!fixed || fixed.shots.length !== plan.shotCount) {
+        console.warn("[ad-script] rewrite came back the wrong shape twice; keeping the last treatment");
+        break;
+      }
       script = fixed;
       script.audit = audit;
     }

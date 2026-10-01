@@ -194,6 +194,7 @@ export function computeDials(ctx: AdContext, flags: DialFlags): Dials {
   start("D5", cat === "apps-services-education" ? 2 : 1, cat);
   if (goal === "offer") move("D5", 1, "goal offer: price, CTA");
   if (goal === "feature" && cat === "tech-electronics") move("D5", 1, "the one spec viewers should repeat");
+  if (goal === "launch" && pos === "new" && !luxuryLike) move("D5", 1, "a new product names its features: one callout per feature close-up (Freedom 125)");
 
   // D6 Cut pace
   const d6 = cat === "beauty" ? { grooming: 2, sportswear: 3, "self-esteem": 2, luxury: 0 }[sub ?? "luxury"] : { automotive: 3, "food-beverage": 2, "tech-electronics": 2, "apps-services-education": 1 }[cat];
@@ -233,6 +234,7 @@ export function computeDials(ctx: AdContext, flags: DialFlags): Dials {
   if (tier === "value" || goal === "offer") move("D11", 1, tier === "value" ? "value tier: features for the price" : "goal offer");
   if (tier === "luxury" || goal === "brand") move("D11", -1, tier === "luxury" ? "luxury" : "goal brand");
   if (pos === "challenger") move("D11", 1, "challenger: prove superiority");
+  if (goal === "launch" && pos === "new" && !luxuryLike) move("D11", 1, "a new product: viewers must be able to list its features back");
 
   // D12 Combativeness
   start("D12", 0, "no rival by default");
@@ -291,7 +293,8 @@ export const DEVICES = `DEVICE (pick ONE to show the proposition), by genre — 
 - tech-electronics: demonstration (GoPro, Samsung) / metaphor (Sony "Balls") / a joke that doesn't reveal the feature
 - beauty: absurd humour (grooming, if asked) · performance (sportswear) · a researched truth (self-esteem) · sensory cinema (luxury) / — / the moving lookbook
 - apps-services-education: dramatised benefit (Mastercard "Elephant") / the product is the story (Google "Parisian Love"), a real UI demo / stylish but vague (Squarespace)
-A NEW brand prefers devices that explain the product (demonstration, real UI demo), because nobody knows it yet.
+A NEW brand prefers devices that explain the product (demonstration, real UI demo), because nobody knows it yet. A NEW PRODUCT LAUNCH is a demonstration: its 3–4 key features each get a dedicated close-up that shows what the feature does, with a callout super naming it (Freedom 125, Triumph). A mood journey with the features only glimpsed is "just a ride" and fails.
+BRAND ON THE PRODUCT: a physical product carries its own badge or logo, seen early and in the hero shot, plus a corner watermark of the logo throughout (all three reference bike ads). "No logos" in a brief means no OTHER brand's logos.
 Propose one FLUENT DEVICE for the brand (a recurring character, sound, shot or line the next ad reuses).`;
 
 // D6 as a median shot length (seconds) for the setups before the hero.

@@ -50,6 +50,9 @@ export interface AdStrategy {
   // Parts of the client concept that break a rail or a dial, and how the film resolves each.
   conceptConflicts: { conflict: string; fix: string }[];
   shotPrinciples: string[];
+  // The features the film demonstrates, each with its callout super.
+  features: { feature: string; callout: string; what_it_does: string; how_shown: string }[];
+  brandPresence: string;
   review: { approved: boolean; notes: string[] };
 }
 
@@ -165,9 +168,11 @@ const STRATEGY_SCHEMA = {
     cta: STRING,
     dial_adjustments: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { dial: enumOf(DIAL_IDS), to: { type: Type.INTEGER }, reason: STRING }, required: ["dial", "to", "reason"] } },
     concept_conflicts: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { conflict: STRING, fix: STRING }, required: ["conflict", "fix"] } },
+    features: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { feature: STRING, callout: STRING, what_it_does: STRING, how_shown: STRING }, required: ["feature", "callout", "what_it_does", "how_shown"] } },
+    brand_presence: STRING,
     shot_principles: STRINGS,
   },
-  required: ["buyer_truth", "proposition", "device", "fluent_device", "tagline_options", "tagline", "cta", "dial_adjustments", "concept_conflicts", "shot_principles"],
+  required: ["features", "brand_presence", "buyer_truth", "proposition", "device", "fluent_device", "tagline_options", "tagline", "cta", "dial_adjustments", "concept_conflicts", "shot_principles"],
 };
 
 interface RawStrategy {
@@ -182,6 +187,8 @@ interface RawStrategy {
   dial_adjustments: { dial: DialId; to: number; reason: string }[];
   concept_conflicts: { conflict: string; fix: string }[];
   shot_principles: string[];
+  features?: { feature: string; callout: string; what_it_does: string; how_shown: string }[];
+  brand_presence?: string;
 }
 
 const STRATEGY_FIELDS = `Return JSON:
@@ -195,6 +202,8 @@ const STRATEGY_FIELDS = `Return JSON:
 - cta: the single, specific call to action at the D13 setting (heard and seen).
 - dial_adjustments: only where this brief truly needs a dial one step away from its computed value, with the reason; usually empty. D1 humour can never go up unless the user asked for humour.
 - concept_conflicts: every part of the client concept or must-show that breaks a rail or a dial (a move Veo can't render realistically, a montage of places, text in shot, a rival's design), each with the fix that keeps the client's intent.
+- features: for a physical product, the 3–4 features that prove the proposition, each with: feature (the part), callout (the super naming it, at most 4 words, using only facts in the brief — never an invented number or spec), what_it_does (for the buyer), how_shown (a dedicated close-up whose action SHOWS it working, not a glint on a static part). An empty list only for products with nothing to demonstrate.
+- brand_presence: exactly where the brand is seen — the badge or logo on the product (which shots), the corner watermark, the end card. The product's own badge appears early and in the hero shot.
 - shot_principles: 3–6 short rules the director must follow for this film, derived from the dials (e.g. "every moving shot is coupled: the camera car at the bike's exact speed").`;
 
 function toStrategy(raw: RawStrategy) {
@@ -209,6 +218,8 @@ function toStrategy(raw: RawStrategy) {
     cta: raw.cta,
     conceptConflicts: raw.concept_conflicts ?? [],
     shotPrinciples: raw.shot_principles ?? [],
+    features: raw.features ?? [],
+    brandPresence: raw.brand_presence ?? "",
   };
 }
 
@@ -261,6 +272,8 @@ Check:
 4. Has every conflict in the client concept been caught, with a fix that keeps what the client wants? Walk the concept line by line: count its locations and its times of day (the D8 limit allows ONE time of day and one light direction; a sky that changes across the film is a conflict), list every camera or subject move (rail 6, the D7 cap), and compare it with "Our own lessons" in the knowledge base — a choice that failed before is a conflict now.
 5. Is each tagline under 8 words, specific, ownable? Does the client's own tagline stay if they gave one?
 6. Is the fluent device something the brand can really reuse?
+7. For a new product: does the film DEMONSTRATE its features (each in its own close-up, shown working, with a callout), or is it just a journey with the product in it? A launch that is "just a ride" fails.
+8. Is the brand on the product itself (its badge, early and in the hero) plus a corner watermark? A product description saying "no logos" means no other brand's logos, never no logo of our own.
 
 ${shared}
 
@@ -302,7 +315,7 @@ export function strategyDirection(s: AdStrategy): string {
 - Proposition, in the viewer's words: ${s.proposition}
 - Buyer truth: ${s.buyerTruth}
 - Device (${s.device.type}): ${s.device.howShown}
-${s.enemy ? `- Enemy: ${s.enemy}\n` : ""}- Fluent device: ${s.fluentDevice}
+${s.enemy ? `- Enemy: ${s.enemy}\n` : ""}${s.features?.length ? `- Features to demonstrate, each in its own close-up with its callout super (typeset in the edit, never in the footage):\n${s.features.map((f) => `  - ${f.feature} — callout "${f.callout}": ${f.what_it_does}. Shown: ${f.how_shown}`).join("\n")}\n` : ""}${s.brandPresence ? `- Brand presence: ${s.brandPresence}\n` : ""}- Fluent device: ${s.fluentDevice}
 - Tagline (end_card_tagline is exactly this): "${s.tagline}"
 - Call to action: ${s.cta}
 - Dials (0–4) — every shot, line, cut and the music must sit at these settings:
@@ -329,9 +342,14 @@ Check each shot for:
 5. The last shot shows the product clearly and fully lit, filling much of the frame: never a silhouette, never a lens flare across it.
 6. The proposition is visible: the shots show what the proposition says.
 7. Every MUST SHOW item is present${brief.mustShow ? ` (${brief.mustShow})` : ""}, delivered within the rails.
-8. Nothing readable, no logos, no real maker's design cues.
+8. Nothing readable except our own brand badge on the product, no other logos, no real maker's design cues.
+9. Every feature in the strategy has its own close-up whose action shows it working, placed where its callout can sit on a calm area of the frame.
+10. The product's own badge is seen within the first 5 seconds and in the hero shot.
+11. The look sheet's grade matches the D8 dial (at 0–1: muted, low saturation, never "vivid" or "pop"), and the music prompt's beats name shots that exist as written (its peak lands on a real shot).
 
 For each failure: shot (1-based; 0 for the film as a whole), rule (the number above), problem (one sentence), fix (a concrete rewrite of that shot's field). An empty list when everything passes.
+
+The number of shots is fixed: never ask to add, delete or split a shot — rewrite the failing shot, or swap its job with another. Where the strategy's own wording breaks a rail (e.g. a feature "shown as the bike accelerates"), the rail wins: fix the shot to the nearest realistic version that still shows the feature.
 
 ${strategyDirection(s)}
 
