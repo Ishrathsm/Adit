@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Wand2, X } from "lucide-react";
@@ -70,7 +70,12 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   // Each picture's true ratio, read once it loads — until then the rounded aspect_ratio label is
   // used as a placeholder so the layout isn't empty while images are still loading in.
   const [naturalRatios, setNaturalRatios] = useState<Record<string, number>>({});
-  const containerRef = useRef<HTMLDivElement>(null);
+  // A callback ref, not useRef: the container <div> doesn't exist yet on the first render or two
+  // (templates === null returns early, before that div is ever mounted), so a plain useRef(null)
+  // effect with an empty dependency array would run once while the ref is still null and never
+  // re-fire once the div actually appears — leaving containerWidth stuck at 0 forever. A callback
+  // ref fires again the moment the real node shows up, so this can't go stale.
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
@@ -80,12 +85,13 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   }, []);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    if (!containerEl) return;
+    // ResizeObserver delivers one entry immediately on observe() even if nothing has resized yet,
+    // so this alone also covers the initial width — no separate synchronous read needed.
     const observer = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
-    observer.observe(el);
+    observer.observe(containerEl);
     return () => observer.disconnect();
-  }, []);
+  }, [containerEl]);
 
   const rows = useMemo(() => {
     if (!templates) return [];
@@ -129,7 +135,7 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
       {/* A justified photo-wall: each row stretches to exactly fill the container's width, with
           every picture kept at its own true shape — rows end up slightly different heights so
           there's never empty space on the right, and nothing is cropped or stretched. */}
-      <div ref={containerRef} className="flex flex-col gap-4">
+      <div ref={setContainerEl} className="flex flex-col gap-4">
         {rows.map((row, i) => (
           <div key={i} className="flex gap-4">
             {row.map(({ template: t, width, height }) => (
