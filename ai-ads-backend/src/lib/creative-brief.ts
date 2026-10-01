@@ -75,6 +75,8 @@ export interface CreativeBrief {
     // The narration split by shot (index = shot index, null = no line on that shot), so each line
     // lands on its own picture. Absent on older storyboards and when the client wrote the VO.
     voiceoverLines?: (string | null)[];
+    // An approved score (URL), used as-is instead of generating one from musicPrompt.
+    musicUrl?: string | null;
   };
   // Also written by the director: things this film must never show, added to the video model's
   // negative prompt (never the image prompt, which paints what it reads).
@@ -89,13 +91,29 @@ export interface CreativeBrief {
   pack?: { url: string; inserts: PackInsert[] } | null;
   // Voices for a film with characters: the narrator and each speaking character (keyed by the
   // upper-case name used in the vo lines, e.g. "DRAGON: …"). `voice` is a Gemini TTS prebuilt voice;
-  // `persona` is who is speaking, in plain words. Absent = one narrator voice from voiceGender.
-  voiceCast?: Record<string, { voice: string; persona: string }> | null;
+  // `persona` is who is speaking, in plain words; `accent` overrides the default English accent
+  // (e.g. "Italian"). Absent = one narrator voice from voiceGender.
+  voiceCast?: Record<string, { voice: string; persona: string; accent?: string }> | null;
   // Approved voice takes (WAV URLs by shot index) used as-is in the edit instead of new reads —
   // for when takes were cast and checked by ear before the render.
-  voiceTakes?: { shot: number; url: string }[] | null;
+  // `offset` places the take exactly (seconds from its segment's start; negative = earlier).
+  voiceTakes?: { shot: number; url: string; offset?: number }[] | null;
   // Also written by the director: sound design notes (ambience and per-shot effects) for the edit.
   soundDesign?: { ambience: string; cues: (string | null)[] } | null;
+  // The director times each shot to its action (a 2s detail, a 5s ride) instead of equal cuts.
+  variableShots?: boolean;
+  // Written at creation when variableShots is on: each shot's length in the edit (index = shot
+  // index), summing to the footage length. Each clip is rendered at the shortest Veo length that
+  // covers it.
+  shotCuts?: number[] | null;
+  // Music-only ad that ends with the brand name and tagline spoken over the end card. Its voice is
+  // voiceCast.NARRATOR when set; its read is audio.voiceoverDirection when set.
+  endCardVoice?: boolean;
+  // Low-shelf boost (dB) on the voice in the edit — deeper without changing its speed.
+  voiceBassDb?: number;
+  // Veo renders each shot with its own sound (the shot's sound cue, never music or voices), kept in
+  // the edit with the music as a faint bed. Doubles the Veo price.
+  veoAudio?: boolean;
 }
 
 export interface ProductScreen {
@@ -178,6 +196,8 @@ export function parseCreativeBrief(raw: unknown): CreativeBrief {
     voiceGender: pick(b.voiceGender, VOICE_GENDERS, DEFAULT_BRIEF.voiceGender, "voiceGender"),
     voiceoverScript: voiceoverScriptFor(b),
     screens: screensFor(b.screens),
+    variableShots: b.variableShots === true,
+    endCardVoice: b.endCardVoice === true,
   };
 }
 
@@ -210,10 +230,10 @@ function shotPlanFor(b: Record<string, unknown>): { shotCount: number | null; sh
 }
 
 // Seconds of footage before the end card.
-export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds" | "shotCount" | "shotSeconds">): number {
+export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds" | "shotCount" | "shotSeconds" | "endCardVoice">): number {
   if (brief.format === "single") return brief.singleSeconds;
   if (brief.shotCount && brief.shotSeconds) return brief.shotCount * brief.shotSeconds;
-  return brief.lengthSeconds - END_CARD_SECONDS;
+  return brief.lengthSeconds - endCardSeconds(brief);
 }
 
 // An explicit plan implies its pacing (shot length sets the rhythm); older briefs chose it.
@@ -252,6 +272,12 @@ function voiceoverScriptFor(b: Record<string, unknown>): string | null {
 // ---------- edit plan ----------
 
 export const END_CARD_SECONDS = 2.5;
+// A spoken brand name + tagline (~3.3s read) needs a longer hold than the silent card.
+export const SPOKEN_END_CARD_SECONDS = 4.5;
+
+export function endCardSeconds(brief: Pick<CreativeBrief, "endCardVoice">): number {
+  return brief.endCardVoice ? SPOKEN_END_CARD_SECONDS : END_CARD_SECONDS;
+}
 const TARGET_CUT_SECONDS: Record<Pacing, number> = { calm: 4.2, balanced: 3, fast: 2.4 };
 const VEO_DURATIONS = [4, 6, 8] as const;
 
@@ -272,11 +298,39 @@ export function planShots(brief: CreativeBrief): ShotPlan {
     const clipSeconds = VEO_DURATIONS.find((d) => d >= brief.shotSeconds! + 0.8) ?? 8;
     return { shotCount: brief.shotCount, cutSeconds: brief.shotSeconds, clipSeconds };
   }
-  const footage = brief.lengthSeconds - END_CARD_SECONDS;
+  const footage = brief.lengthSeconds - endCardSeconds(brief);
   const shotCount = Math.min(8, Math.max(3, Math.round(footage / TARGET_CUT_SECONDS[brief.pacing])));
   const cutSeconds = footage / shotCount;
   const clipSeconds = VEO_DURATIONS.find((d) => d >= cutSeconds + 0.8) ?? 8;
   return { shotCount, cutSeconds, clipSeconds };
+}
+
+// Shortest Veo clip that covers a cut with room to pick the best stretch.
+export function clipSecondsFor(cutSeconds: number): (typeof VEO_DURATIONS)[number] {
+  return VEO_DURATIONS.find((d) => d >= cutSeconds + 0.8) ?? 8;
+}
+
+// A variable-length shot stays between a readable beat and the longest cut an 8s clip allows.
+export const MIN_CUT_SECONDS = 1.5;
+export const MAX_CUT_SECONDS = 7.2;
+
+// The director's per-shot lengths, scaled to fill the footage exactly and kept within
+// MIN/MAX_CUT_SECONDS (a missing or non-numeric length falls back to the average).
+export function fitShotCuts(raw: (number | null | undefined)[], footage: number): number[] {
+  const average = footage / raw.length;
+  const clamp = (n: number) => Math.min(MAX_CUT_SECONDS, Math.max(MIN_CUT_SECONDS, n));
+  let cuts = raw.map((n) => clamp(typeof n === "number" && n > 0 ? n : average));
+  // Scaling can push a shot past a bound, so rescale the free shots a few times.
+  for (let pass = 0; pass < 4; pass++) {
+    const sum = cuts.reduce((a, b) => a + b, 0);
+    if (Math.abs(sum - footage) < 0.05) break;
+    const free = cuts.filter((n) => (sum < footage ? n < MAX_CUT_SECONDS : n > MIN_CUT_SECONDS));
+    const freeSum = free.reduce((a, b) => a + b, 0);
+    if (!freeSum) break;
+    const k = (freeSum + footage - sum) / freeSum;
+    cuts = cuts.map((n) => ((sum < footage ? n < MAX_CUT_SECONDS : n > MIN_CUT_SECONDS) ? clamp(n * k) : n));
+  }
+  return cuts.map((n) => Math.round(n * 10) / 10);
 }
 
 // Dissolve length between shots — soft cuts keep separately generated shots from reading as

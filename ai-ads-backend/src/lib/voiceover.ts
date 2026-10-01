@@ -69,14 +69,14 @@ export async function synthesizeVoiceover(
   // The director's performance notes (pace, energy, pauses, emphasis), when the script has them.
   direction?: string | null,
   // A cast voice: who is speaking (replaces the default young narrator) and which prebuilt voice.
-  cast?: { voice: string; persona: string },
+  cast?: { voice: string; persona: string; accent?: string },
 ): Promise<Buffer> {
   if (!genAI) throw new Error("Voiceover is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
 
   const response = await withRateLimitRetry("voiceover", () =>
     genAI.models.generateContent({
       model: env.voiceoverModel,
-      contents: `Read this ${VOICEOVER_LANGUAGE_NAMES[language]} advertisement voiceover aloud as ${cast ? cast.persona : gender === "female" ? "a young woman" : "a young man"} speaking with a natural ${language === "en" ? ENGLISH_ACCENT : `native ${VOICEOVER_LANGUAGE_NAMES[language]}`} accent, in a ${DELIVERY[tone]} voice, with natural pauses between sentences.${direction ? ` Performance notes: ${direction}.` : ""}${
+      contents: `Read this ${VOICEOVER_LANGUAGE_NAMES[language]} advertisement voiceover aloud as ${cast ? cast.persona : gender === "female" ? "a young woman" : "a young man"} speaking with a natural ${language === "en" ? cast?.accent ?? ENGLISH_ACCENT : `native ${VOICEOVER_LANGUAGE_NAMES[language]}`} accent, in a ${DELIVERY[tone]} voice, with natural pauses between sentences.${direction ? ` Performance notes: ${direction}.` : ""}${
         // One- or two-word lines made TTS improvise ("Korikey!" came back repeated, with an invented
         // sentence after it), so short lines are pinned down hard.
         words(text).length <= 3 ? ` The line is only ${words(text).length === 1 ? "this one word" : "these few words"}: say ${words(text).length === 1 ? "it" : "them"} exactly once, then stop. Say nothing else — no repeats, no extra words.` : ""
@@ -199,7 +199,7 @@ export async function synthesizeVoiceoverLines(
   gender: VoiceGender,
   tone: Tone,
   direction?: string | null,
-  cast?: { voice: string; persona: string },
+  cast?: { voice: string; persona: string; accent?: string },
 ): Promise<{ shot: number; audio: Buffer }[]> {
   const spoken = lines.flatMap((line, shot) => (line?.trim() ? [{ shot, text: line.trim() }] : []));
   if (!spoken.length) return [];
@@ -231,7 +231,7 @@ export async function synthesizeVoiceoverLines(
 export async function synthesizeCastLines(
   lines: (string | null)[],
   language: VoiceoverLanguage,
-  cast: Record<string, { voice: string; persona: string }>,
+  cast: Record<string, { voice: string; persona: string; accent?: string }>,
   tone: Tone,
   direction?: string | null,
 ): Promise<{ shot: number; audio: Buffer }[]> {

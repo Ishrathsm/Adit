@@ -3,7 +3,7 @@ import multer from "multer";
 import { type AuthedRequest, checkFeature } from "../middleware/auth";
 import { getProject } from "../lib/projects";
 import { generateAdScript } from "../lib/text-gen";
-import { type CreativeBrief, footageSeconds, parseCreativeBrief, planShots } from "../lib/creative-brief";
+import { type CreativeBrief, fitShotCuts, footageSeconds, parseCreativeBrief, planShots } from "../lib/creative-brief";
 import { getProductById, toBrandContext } from "../lib/products";
 import { uploadReferenceImage } from "../lib/storage";
 import {
@@ -126,6 +126,7 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
         endCardTagline: script.endCardTagline,
         soundDesign: { ambience: script.soundAmbience, cues: script.shots.map((s) => s.spec.sfx) },
         transitions: brief.look === "stopmotion" || brief.look === "puppet" || brief.look === "folkpuppet" ? script.shots.map((s) => s.spec.transition ?? null) : undefined,
+        shotCuts: brief.variableShots ? fitShotCuts(script.shots.map((s) => s.spec.seconds), footageSeconds(brief)) : undefined,
       },
       status: casting ? "casting" : "drafting",
     });

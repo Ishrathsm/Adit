@@ -22,7 +22,7 @@ const [shotId, out, model = "gemini-omni-flash"] = process.argv.slice(2);
   const { prompt, negativePrompt } = splitNegativePrompt(refined);
   const avoid = [negativePrompt, sb.creative_brief?.avoid, sb.creative_brief?.exclusions, VIDEO_ARTIFACT_NEGATIVES, "3D rendering, CGI, shading, photorealism, blur, camera movement, uneven outlines, text, lettering, standing on hind legs, raised arms"].filter(Boolean).join(", ");
   const text = `Animate this image as one continuous ${sb.shot_duration_seconds}-second silent shot.\n\n${prompt}\n\n${FOLK_VIDEO_STYLE}\n\nAvoid: ${avoid}.`;
-  const ai = new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: "us-central1" });
+  const ai = new GoogleGenAI({ vertexai: true, project: env.googleCloudProjectId, location: process.env.OMNI_LOCATION ?? "us-central1" });
   const started = Date.now();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const interaction: any = await (ai as any).interactions.create({

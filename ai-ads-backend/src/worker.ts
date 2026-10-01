@@ -6,7 +6,7 @@ import { getJob, updateJobStatus } from "./lib/jobs";
 import { generateVideo } from "./lib/veo";
 import { type ClipProblem, findMarksInVideo, findSuddenEffects } from "./lib/video-check";
 import { posterDirection } from "./lib/poster-brief";
-import { type CreativeBrief, directionText, FOLK_IMAGE_STYLE, FOLK_VIDEO_STYLE, STOP_MOTION_IMAGE_STYLE, STOP_MOTION_VIDEO_STYLE, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
+import { clipSecondsFor, type CreativeBrief, directionText, endCardSeconds, FOLK_IMAGE_STYLE, FOLK_VIDEO_STYLE, STOP_MOTION_IMAGE_STYLE, STOP_MOTION_VIDEO_STYLE, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderEndCard, renderSuper } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
 import { synthesizeCastLines, synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
@@ -239,7 +239,7 @@ async function processShotChoices(shotId: string): Promise<void> {
     await updateShot(shotId, { choice_urls: [shot.screen_url], selected_choice: 0, status: "choices_ready" });
     const next = (await listShots(shot.storyboard_id)).find((s) => s.shot_index === shot.shot_index + 1);
     if (next && next.status === "pending" && !next.choice_urls) await enqueueShotChoices(next.id);
-    await enqueueShotVideo(shotId);
+    if (!env.keyframesOnly) await enqueueShotVideo(shotId);
     return;
   }
 
@@ -325,7 +325,7 @@ async function processShotChoices(shotId: string): Promise<void> {
     await selectShotChoice(shotId, best);
     const next = (await listShots(shot.storyboard_id)).find((s) => s.shot_index === shot.shot_index + 1);
     if (next && next.status === "pending" && !next.choice_urls) await enqueueShotChoices(next.id);
-    await enqueueShotVideo(shotId);
+    if (!env.keyframesOnly) await enqueueShotVideo(shotId);
   } catch (err) {
     await updateShot(shotId, { status: "failed", error: err instanceof Error ? err.message : String(err) });
     throw err;
@@ -341,6 +341,9 @@ async function processShotVideo(shotId: string): Promise<void> {
 
   const storyboard = await getStoryboardById(shot.storyboard_id);
   if (!storyboard) throw new Error(`storyboard ${shot.storyboard_id} not found`);
+  // Variable-length ads render each shot at the shortest clip that covers its cut.
+  const cut = storyboard.creative_brief?.shotCuts?.[shot.shot_index];
+  const clipSeconds = cut ? clipSecondsFor(cut) : storyboard.shot_duration_seconds;
 
   try {
     if (shot.screen_url) {
@@ -348,7 +351,7 @@ async function processShotVideo(shotId: string): Promise<void> {
       const res = await fetch(shot.screen_url);
       if (!res.ok) throw new Error(`failed to fetch product screen: ${res.status}`);
       const reveal = storyboard.creative_brief?.screens?.find((s) => s.url === shot.screen_url)?.reveal ?? null;
-      const clip = await renderScreenInsert(Buffer.from(await res.arrayBuffer()), storyboard.aspect_ratio, storyboard.shot_duration_seconds, reveal);
+      const clip = await renderScreenInsert(Buffer.from(await res.arrayBuffer()), storyboard.aspect_ratio, clipSeconds, reveal);
       const videoUrl = await uploadVideo(shotId, clip, "video/mp4");
       await updateShot(shotId, { video_url: videoUrl, status: "video_ready" });
       const siblings = await listShots(shot.storyboard_id);
@@ -367,7 +370,7 @@ async function processShotVideo(shotId: string): Promise<void> {
       storyboard.concept,
       shot.shot_index,
       storyboard.shot_count,
-      storyboard.shot_duration_seconds,
+      clipSeconds,
       storyboard.aspect_ratio,
       brand,
       storyboard.look_sheet,
@@ -415,16 +418,23 @@ async function processShotVideo(shotId: string): Promise<void> {
     };
 
     const avoid = new Set<string>();
+    // Veo sound (opt-in): the shot's own effects from its sound cue, never music or voices.
+    const veoAudio = brief?.veoAudio === true;
+    const cue = brief?.soundDesign?.cues?.[shot.shot_index];
+    const soundPrompt = veoAudio
+      ? `${prompt}\n\nSound: ${cue ?? "the natural sound of the scene"}, recorded naturally. Only the real sound effects of the scene; no music, no voices, no speech, no narration.`
+      : prompt;
+    if (veoAudio) avoid.add("music, singing, speech, voices, dialogue, narration");
     const directions = new Set<string>();
     let best: { clip: Buffer; mimeType: string; problems: ClipProblem[]; take: number } | null = null;
     for (let take = 1; take <= env.videoMaxTakes; take++) {
       let video;
       try {
-        video = await generateVideo(directions.size ? `${prompt}\n\nDirection for this take: ${[...directions].join(" ")}` : prompt, {
-          // Silent footage: Veo's native audio ignored "no dialogue" and produced speech in testing.
-          // Music (and voiceover, when requested) is laid over the whole edit instead.
-          generateAudio: false,
-          durationSeconds: storyboard.shot_duration_seconds,
+        video = await generateVideo(directions.size ? `${soundPrompt}\n\nDirection for this take: ${[...directions].join(" ")}` : soundPrompt, {
+          // Silent footage by default: Veo's native audio ignored "no dialogue" and produced speech in
+          // testing. Music (and voiceover, when requested) is laid over the whole edit instead.
+          generateAudio: veoAudio,
+          durationSeconds: clipSeconds,
           aspectRatio: storyboard.aspect_ratio,
           image: { imageBytes, mimeType: "image/png" },
           negativePrompt: [negativePrompt, ...avoid].filter(Boolean).join(", ") || undefined,
@@ -480,9 +490,16 @@ async function editBriefedAd(
   const { width = 720, height = 1280 } = await sharp(lastFrame).metadata();
 
   const lines = brief.voiceover && !brief.voiceoverScript ? brief.audio?.voiceoverLines : undefined;
+  const brandName = brief.brandName ?? product?.name ?? null;
+  const endCardLine = [brandName, brief.endCardTagline].filter(Boolean).join(". ") || null;
   const perShot = Boolean(lines?.some((l) => l?.trim()));
   const [music, voiceover, endCard, supers] = await Promise.all([
-    brief.audio?.musicPrompt
+    brief.audio?.musicUrl
+      ? fetch(brief.audio.musicUrl).then(async (r) => {
+          if (!r.ok) throw new Error(`failed to fetch approved score: ${r.status}`);
+          return Buffer.from(await r.arrayBuffer());
+        })
+      : brief.audio?.musicPrompt
       ? generateMusic(brief.audio.musicPrompt, `Instrumental background music for a ${brief.tone} ${Math.round(footageSeconds(brief))}-second ad: simple, steady, gentle dynamics, no vocals.`).catch((err) => {
           console.warn("[worker] music generation failed, continuing without music:", err instanceof Error ? err.message : err);
           return undefined;
@@ -493,7 +510,7 @@ async function editBriefedAd(
           brief.voiceTakes.map(async (t) => {
             const res = await fetch(t.url);
             if (!res.ok) throw new Error(`failed to fetch voice take: ${res.status}`);
-            return { shot: t.shot, audio: Buffer.from(await res.arrayBuffer()) };
+            return { shot: t.shot, audio: Buffer.from(await res.arrayBuffer()), offset: t.offset };
           }),
         )
       : perShot
@@ -507,6 +524,12 @@ async function editBriefedAd(
       : brief.voiceover && brief.audio?.voiceoverScript
       ? synthesizeVoiceover(brief.audio.voiceoverScript, brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio.voiceoverDirection).catch((err) => {
           console.warn("[worker] voiceover generation failed, continuing without voiceover:", err instanceof Error ? err.message : err);
+          return undefined;
+        })
+      : brief.endCardVoice && endCardLine
+      ? // One line over the end card (its segment comes after the last shot).
+        synthesizeVoiceoverLines([...clips.map(() => null), endCardLine], brief.voiceoverLanguage, brief.voiceGender, brief.tone, brief.audio?.voiceoverDirection || "Say the brand name, a short beat, then the tagline — warm, confident, unhurried; not an announcer", brief.voiceCast?.NARRATOR).catch((err) => {
+          console.warn("[worker] end card voice failed, continuing without it:", err instanceof Error ? err.message : err);
           return undefined;
         })
       : undefined,
@@ -529,7 +552,10 @@ async function editBriefedAd(
   return stitchVideos(clips, {
     endCard: endCard.background,
     endCardOverlay: endCard.overlay,
-    cutSeconds: plan.cutSeconds,
+    cutSeconds: brief.shotCuts?.length === clips.length ? brief.shotCuts : plan.cutSeconds,
+    endCardSeconds: endCardSeconds(brief),
+    voiceBassDb: brief.voiceBassDb,
+    clipAudio: brief.veoAudio === true,
     transitionSeconds: stopMotion ? PAPER_TRANSITION_SECONDS : TRANSITION_SECONDS[effectivePacing(brief)],
     grade: TONE_GRADE[brief.tone],
     // Stop-motion: held on twos, joined by the director's paper-cut transitions (a tear into the

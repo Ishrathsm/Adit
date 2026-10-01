@@ -175,9 +175,17 @@ export interface StitchOptions {
   // Full-frame transparent PNG (text + logo) laid over the end card unscaled and ungraded, so the
   // type stays crisp while the card behind it pushes in.
   endCardOverlay?: Buffer;
-  // Trim every clip to this length — clips are generated longer than the cut so the edit keeps
-  // the best stretch. Omit to keep full clips.
-  cutSeconds?: number;
+  // Trim every clip to this length (or clip i to cutSeconds[i]) — clips are generated longer than
+  // the cut so the edit keeps the best stretch. Omit to keep full clips.
+  cutSeconds?: number | number[];
+  // How long the end card holds (default END_CARD_SECONDS). A voice line on the end card (shot =
+  // number of clips) holds it longer when needed, so that line is never sped up or cut.
+  endCardSeconds?: number;
+  // Low-shelf boost (dB) on every voice line, for a deeper read without changing its speed.
+  voiceBassDb?: number;
+  // Keep each clip's own sound (Veo-rendered effects) in the mix, crossfaded at the cuts, with the
+  // music lowered to a faint bed under it.
+  clipAudio?: boolean;
   // Dissolve between shots (and into the end card) instead of hard cuts. 0/omitted = hard cuts.
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
@@ -199,7 +207,7 @@ export interface StitchOptions {
   voiceover?: Buffer;
   // Narration read per shot: each line enters just after its shot's dissolve settles. Takes
   // precedence over `voiceover`.
-  voiceoverLines?: { shot: number; audio: Buffer }[];
+  voiceoverLines?: { shot: number; audio: Buffer; offset?: number }[];
 }
 
 // Which stretch of a clip to keep: image-to-video starts on the (static) keyframe and the motion
@@ -230,7 +238,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     const T = options.transitionSeconds ?? 0;
     const voLines = (options.voiceoverLines ?? []).filter((l) => l.shot >= 0).sort((a, b) => a.shot - b.shot);
     const hasVoice = voLines.length > 0 || Boolean(options.voiceover);
-    const soundtrack = Boolean(options.music || hasVoice);
+    const endCardLine = options.endCard ? voLines.find((l) => l.shot === clipBuffers.length) : undefined;
+    const soundtrack = Boolean(options.music || hasVoice || options.clipAudio);
 
     const args = ["-y"];
     const filters: string[] = [];
@@ -247,7 +256,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     // ---- video segments: each clip's kept window (+ the dissolve overlap), then the end card ----
     const segments: { label: string; length: number }[] = [];
     const clipWindows = infos.map((info, i) => {
-      const want = options.cutSeconds !== undefined ? options.cutSeconds + T : info.duration;
+      const cut = Array.isArray(options.cutSeconds) ? options.cutSeconds[i] : options.cutSeconds;
+      const want = cut !== undefined ? cut + T : info.duration;
       return trimWindow(info.duration, want, i === infos.length - 1);
     });
     clipPaths.forEach((path, i) => {
@@ -258,13 +268,16 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     });
     if (options.endCard) {
       const idx = addInput("-i", await write("end-card.png", options.endCard));
-      const frames = Math.round(END_CARD_SECONDS * FPS);
+      // The end card's own line enters after the dissolve and ends 0.8s before the film does.
+      const endLineSeconds = endCardLine ? (await probe(await write("vo-end-card.wav", endCardLine.audio))).duration + (endCardLine.offset ?? T * 0.6 + 0.25) + 0.8 : 0;
+      const cardSeconds = Math.max(options.endCardSeconds ?? END_CARD_SECONDS, endLineSeconds);
+      const frames = Math.round(cardSeconds * FPS);
       // A single still in (no -loop): zoompan emits `d` frames per input frame, so looping the
       // image would multiply the work. Upscale 2x first so the slow 4% push-in doesn't jitter.
       filters.push(
         `[${idx}:v]scale=${width * 2}:${height * 2},zoompan=z='min(zoom+0.0007,1.04)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${width}x${height}:fps=${FPS},${videoNorm}[vend]`,
       );
-      segments.push({ label: "vend", length: END_CARD_SECONDS });
+      segments.push({ label: "vend", length: cardSeconds });
     }
 
     // Segment start times on the final timeline (each dissolve overlaps the previous segment by T).
@@ -361,7 +374,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           source = labels[labels.length - 1];
         }
         filters.push(
-          `${source}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8[mus]`,
+          `${source}${source.endsWith("]") ? "" : ","}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8${options.clipAudio ? ",volume=0.35" : ""}[mus]`,
         );
       }
       if (voLines.length) {
@@ -375,16 +388,18 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           const path = await write(`vo-line-${k}.wav`, line.audio);
           const idx = addInput("-i", path);
           const length = (await probe(path)).duration;
-          const desired = (starts[line.shot] ?? 0) + (line.shot === 0 ? 0.5 : lead);
+          // `offset` (seconds from the segment's start, negative = earlier) places a line exactly.
+          const desired = (starts[line.shot] ?? 0) + (line.offset ?? (line.shot === 0 ? 0.5 : lead));
           const at = Math.max(desired, prevEnd + gap);
           const nextDesired = k + 1 < voLines.length ? (starts[voLines[k + 1].shot] ?? total) + lead - gap : total - tail;
           const room = Math.max(0.5, nextDesired - at);
-          const tempo = length > room ? Math.min(1.12, length / room) : 1;
+          const tempo = line === endCardLine ? 1 : length > room ? Math.min(1.12, length / room) : 1;
           const fitted = length / tempo;
           const isLast = k === voLines.length - 1;
           const fade = isLast && at + fitted > total - tail ? `,afade=t=out:st=${f3(Math.max(0, total - tail - at - 0.5))}:d=0.5` : "";
           const ms = Math.round(at * 1000);
-          filters.push(`[${idx}:a]${audioNorm}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""}${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[vol${k}]`);
+          const bass = options.voiceBassDb ? `,bass=g=${options.voiceBassDb}:f=120:w=0.7,alimiter=limit=0.9` : "";
+          filters.push(`[${idx}:a]${audioNorm}${bass}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""}${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[vol${k}]`);
           labels.push(`[vol${k}]`);
           prevEnd = at + fitted;
         }
@@ -411,8 +426,30 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         // Longest, then cut to the film: a voice line must never be clipped by a shorter music track.
         filters.push(`[duck][vo1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${f3(total)}[mix]`);
         parts.push("mix");
-      } else {
+      } else if (options.music || hasVoice) {
         parts.push(options.music ? "mus" : "vo");
+      }
+      if (options.clipAudio) {
+        // Each clip's own sound over its kept window, crossfaded across the dissolves.
+        const fx = clipPaths.flatMap((_, i) => {
+          if (!infos[i].hasAudio) return [];
+          const { start, length } = clipWindows[i];
+          const fade = f3(Math.max(0.05, T));
+          const ms = Math.round(starts[i] * 1000);
+          filters.push(`[${i}:a]atrim=start=${f3(start)}:end=${f3(start + length)},asetpts=PTS-STARTPTS,${audioNorm},afade=t=in:d=${fade},afade=t=out:st=${f3(Math.max(0, length - Math.max(0.05, T)))}:d=${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[cfx${i}]`);
+          return [`[cfx${i}]`];
+        });
+        if (fx.length) {
+          filters.push(`${fx.join("")}amix=inputs=${fx.length}:normalize=0[cfx]`);
+          if (parts.length) {
+            filters.push(`[${parts[0]}][cfx]amix=inputs=2:duration=first:normalize=0[withfx]`);
+            parts[0] = "withfx";
+          } else parts.push("cfx");
+        }
+      }
+      if (!parts.length) {
+        filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${f3(total)}[silent]`);
+        parts.push("silent");
       }
       filters.push(`[${parts[0]}]loudnorm=I=-16:TP=-1.5:LRA=11,${audioNorm}[outa]`);
     } else if (T > 0) {
@@ -429,7 +466,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         return `[a${i}]`;
       });
       if (options.endCard) {
-        filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${END_CARD_SECONDS}[aend]`);
+        filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${options.endCardSeconds ?? END_CARD_SECONDS}[aend]`);
         audioLabels.push("[aend]");
       }
       filters.push(`${audioLabels.join("")}concat=n=${audioLabels.length}:v=0:a=1[outa]`);

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { type CreativeBrief, END_CARD_SECONDS, footageSeconds, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
+import { type CreativeBrief, endCardSeconds, footageSeconds, MAX_CUT_SECONDS, MIN_CUT_SECONDS, LOOK_DIRECTION, type ShotPlan, TONE_DIRECTION, TONE_MUSIC, VOICEOVER_LANGUAGE_NAMES, VOICEOVER_WORDS_PER_SECOND } from "./creative-brief";
 import { CATEGORY_PLAYBOOKS, CRAFT_RULES } from "./ad-craft";
 import { env } from "./env";
 import { withRateLimitRetry } from "./rate-limit-retry";
@@ -40,6 +40,8 @@ export interface ShotSpec {
   screen: number | null;
   // Sound effect for the edit (e.g. "soft trackpad click"); null when the shot has none.
   sfx: string | null;
+  // Variable-length ads: this shot's length in the edit, timed to its action by the director.
+  seconds?: number | null;
 }
 
 // The film's fixed visual bible, split by department so nothing is left vague.
@@ -135,6 +137,7 @@ const SCRIPT_SCHEMA = {
           screen: { type: Type.INTEGER, nullable: true },
           sfx: NULLABLE_STRING,
           transition: NULLABLE_STRING,
+          seconds: { type: Type.NUMBER, nullable: true },
           assets: { type: Type.ARRAY, items: STRING },
         },
         required: ["purpose", "framing", "lens", "movement", "action", "lighting", "assets"],
@@ -206,7 +209,9 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
     `Client concept: "${concept}"`,
     brief.format === "single"
       ? `Length: ONE continuous ${plan.clipSeconds}s shot (no cuts), then a branded end card (logo + key message) is added automatically, so the shot must not attempt one.`
-      : `Length: ${Math.round(footageSeconds(brief) + END_CARD_SECONDS)}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
+      : brief.variableShots
+      ? `Length: ${Math.round(footageSeconds(brief) + endCardSeconds(brief))}s total — ${plan.shotCount} shots totalling ${footageSeconds(brief).toFixed(1)}s in the final edit, each as long as its action needs (${MIN_CUT_SECONDS}–${MAX_CUT_SECONDS}s: a quick detail ~2s, a reveal or a move through space 4–6s), then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`
+      : `Length: ${Math.round(footageSeconds(brief) + endCardSeconds(brief))}s total — ${plan.shotCount} shots of ~${plan.cutSeconds.toFixed(1)}s each in the final edit, then a branded end card (logo + key message) is added automatically, so the shots must not attempt one.`,
     `Tone: ${TONE_DIRECTION[brief.tone]}`,
     `Look: ${LOOK_DIRECTION[brief.look]}`,
     brief.audience && `Audience: ${brief.audience} — cast, setting, and emotional angle should feel true to them.`,
@@ -239,7 +244,9 @@ Shot structure:
 ${beats}
 
 Hard rules:
-- Each shot is ONE simple, clear action that reads in ~${plan.cutSeconds.toFixed(1)}s (the AI video model renders ${plan.clipSeconds}s and the edit keeps the best part) — no multi-step choreography, no crowds doing complex things.
+- ${brief.variableShots
+    ? `Each shot is ONE simple, clear action, and its length (seconds) is what that action needs to read — vary the rhythm like a real editor (quick detail cuts, longer hero moments). The AI video model renders a little longer than each cut and the edit keeps the best part — no multi-step choreography, no crowds doing complex things.`
+    : `Each shot is ONE simple, clear action that reads in ~${plan.cutSeconds.toFixed(1)}s (the AI video model renders ${plan.clipSeconds}s and the edit keeps the best part) — no multi-step choreography, no crowds doing complex things.`}
 - Consecutive shots must cut together as one film: same people, same product, same location, time of day, and weather; vary shot sizes (wide / medium / close / macro) and cut on motion like a real editor.
 - Nothing written or printed may appear in the generated footage: no text, titles, labels, signage, screens with words, packaging copy, or numbers — express everything visually.${brief.screens.length ? " The one exception is SCREEN INSERT shots, which show the client's real product screens (see PRODUCT SCREENS) — the only place the interface ever appears." : ""}
 - ${hasProductAsset ? "The product is the client's real product (see REFERENCE ASSETS) — keep its genuine design and branding exactly; no other brand names or logos anywhere." : "No brand names, logos, or real products' signature designs."}
@@ -274,7 +281,7 @@ async function generateJson(contents: string): Promise<AdScript> {
   const parsed = JSON.parse(text) as {
     idea: string;
     look_sheet: { production_design: string; characters: string; props: string; environment: string; lighting: string; grade: string; exclusions: string };
-    shots: { purpose: string; framing: string; lens: string; movement: string; action: string; performance?: string | null; lighting: string; vo_line?: string | null; screen?: number | null; sfx?: string | null; transition?: string | null; assets?: string[] }[];
+    shots: { purpose: string; framing: string; lens: string; movement: string; action: string; performance?: string | null; lighting: string; vo_line?: string | null; screen?: number | null; sfx?: string | null; transition?: string | null; seconds?: number | null; assets?: string[] }[];
     continuity: { characters: string; props: string; environment: string };
     sound_ambience: string;
     end_card_tagline?: string | null;
@@ -305,6 +312,7 @@ async function generateJson(contents: string): Promise<AdScript> {
       screen: typeof shot.screen === "number" ? shot.screen : null,
       sfx: shot.sfx?.trim() || null,
       transition: shot.transition?.trim() || null,
+      seconds: typeof shot.seconds === "number" ? shot.seconds : null,
     };
     return { description: composeShot(spec), spec, assetNames: shot.assets ?? [] };
   });
@@ -333,7 +341,7 @@ function toScriptJson(script: AdScript) {
     look_sheet: { production_design: l.productionDesign, characters: l.characters, props: l.props, environment: l.environment, lighting: l.lighting, grade: l.grade, exclusions: l.exclusions },
     shots: script.shots.map(({ spec, assetNames }) => ({
       purpose: spec.purpose, framing: spec.framing, lens: spec.lens, movement: spec.movement, action: spec.action,
-      performance: spec.performance, lighting: spec.lighting, vo_line: spec.voLine, screen: spec.screen, sfx: spec.sfx, transition: spec.transition ?? null, assets: assetNames,
+      performance: spec.performance, lighting: spec.lighting, vo_line: spec.voLine, screen: spec.screen, sfx: spec.sfx, transition: spec.transition ?? null, seconds: spec.seconds ?? null, assets: assetNames,
     })),
     continuity: script.continuity,
     sound_ambience: script.soundAmbience,
@@ -434,6 +442,7 @@ export async function generateAdScript(
     : stopMotion
     ? "how this shot hands to the next in the edit, as a paper-cut move built from the two shots (e.g. \"a torn-paper edge rips across left to right revealing the next shot\", \"the frame folds shut like a card\", \"the next scene slides in as a paper layer from the top\", or \"cut on the hop\"); vary them across the film; null on the last shot. Never ask the shot itself to perform the transition."
     : "null on every shot."}
+  - seconds: ${brief.variableShots ? `this shot's length in the final edit, ${MIN_CUT_SECONDS}–${MAX_CUT_SECONDS}, timed to its action; all shots together total ${footageSeconds(brief).toFixed(1)}.` : "null on every shot."}
   - assets: the exact names of the reference assets and characters visible in the shot${assetNames.length ? `, from: ${assetNames.join(", ")}${options.characterSheet ? " plus your characters" : ""}` : options.characterSheet ? ", i.e. your character names" : " — an empty list when there are none"}.
 - continuity — what must stay identical across shots, as short comma-separated lists: characters (face, hair, wardrobe, accessories — and nothing added), props (each object's model, color, position), environment (the same room or place, light direction, time of day, weather).
 - sound_ambience (~120 chars): the room tone under the whole film (a quiet apartment with faint city hum, a busy kitchen through a wall).
@@ -456,8 +465,9 @@ ${options.characterSheet ? `- characters: each recurring person not already a re
 - Does every shot honor the TONE and LOOK above? Remove any effect, glow, particle, transformation, or spectacle the Look does not allow.
 - Is every field concrete enough to shoot — a real lens, a real move with a speed and a start, a lighting direction — or is anything vague ("cinematic", "modern", "soft light")? Make it specific.
 - If people appear, is there a readable emotional arc across the shots, and do we see real faces and genuine expressions at least once (not only hands)?
-- Is every shot one simple action that reads in ~${plan.cutSeconds.toFixed(1)}s and that an AI video model can render believably (no fast complex motion, crowds, hands doing fine work in close-up, or anyone talking)?
-- Do the shots cut together — same people, wardrobe, props, place, time of day and light direction; varied shot sizes?
+- Is every shot one simple action that reads in ${brief.variableShots ? "its seconds" : `~${plan.cutSeconds.toFixed(1)}s`} and that an AI video model can render believably (no fast complex motion, crowds, hands doing fine work in close-up, or anyone talking)?
+- Do the shots cut together — same people, wardrobe, props, place, time of day and light direction; varied shot sizes?${brief.variableShots ? `
+- Do the shot lengths follow the action — short for a detail or a beat, longer for a reveal or a move — with a real rhythm (not all the same), and do they total ${footageSeconds(brief).toFixed(1)}s?` : ""}
 - Does the last shot land the product's promise — the physical product as hero, or for software and services the person living the result? Is every MUST SHOW item included and every MUST AVOID item absent?
 - Any readable text, signage, crests or logos (including real universities or companies), screens showing an interface${brief.screens.length ? " outside the SCREEN INSERT shots" : ""}, brand names, or on-camera dialogue? Remove it and make sure the exclusions cover it.
 ${folk ? `- FOLK CUT-OUT: does every shot read as a flat hand-painted Cheriyal/Kalamkari world with jointed cut-out puppets moving in stepped poses — never 3D, never CGI, never photographic (except the real pack)? Is each shot one clear puppet action with readable gesture and expression? Does the narration (and any character line) fit its shot's picture and length, in natural spoken Telugu? Is the real pack photographic and exact wherever it appears?

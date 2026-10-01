@@ -36,6 +36,9 @@ export const env = {
   // Veo takes per shot, first included: each is checked, a flagged take is re-rendered with the
   // findings fed back, and the cleanest take is kept. A Veo call is the expensive step.
   videoMaxTakes: Math.max(1, Number(process.env.VIDEO_MAX_TAKES ?? 3)),
+  // Review gate for test runs: keyframes are generated and picked, but no video is queued (Veo is
+  // the expensive step), so the frames can be checked first.
+  keyframesOnly: process.env.KEYFRAMES_ONLY === "1",
   // Imagen (imagen-4.x, all variants) 404s on this project in every region tried — blocked at
   // the account/entitlement level, unrelated to model naming. Gemini's native image output
   // ("Nano Banana") is a separate product/API path and does work. gemini-3.1-flash-image
