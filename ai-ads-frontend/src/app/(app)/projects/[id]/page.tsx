@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Wand2,
+  X,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,6 @@ export default function ProjectDetailPage() {
   // Defaults on: once a project has a result, regenerating is treated as "remixing" it (ground
   // the new generation on the existing output) unless the user opts out.
   const [referenceEnabled, setReferenceEnabled] = useState(true);
-  const [showAllTemplates, setShowAllTemplates] = useState(false);
   // A landing-page hand-off prompt wins over restoring the last brief.
   const handedOff = useRef(false);
 
@@ -237,10 +237,10 @@ export default function ProjectDetailPage() {
   const ratio = (job?.status === "completed" && job.aspect_ratio ? job.aspect_ratio : aspectRatio).split(":").map(Number) as [number, number];
   const resultUrl = job?.output_url && job.output_type === "poster" ? job.output_url : null;
   const generating = job !== null && (job.status === "queued" || job.status === "processing");
-  const visibleTemplates = showAllTemplates ? templates : templates.slice(0, 5);
   // What's already set inside each closed optional section.
   const count = (n: number, word: string) => (n ? `${n} ${word}${n === 1 ? "" : "s"}` : null);
-  const templateNote = templateId ? templates.find((t) => t.id === templateId)?.name ?? "1 selected" : null;
+  // A template comes from the gallery's Remix; the editor only shows it, with a way to drop it.
+  const templateName = templateId ? templates.find((t) => t.id === templateId)?.name ?? "Selected template" : null;
   const copyNote = count([headline, subline, offer, cta, contactLine].filter((v) => v.trim()).length, "line");
   const featureNote = count(featureList.filter((f) => f.trim()).length, "feature");
   const guidanceNote = count([audience, mustShow, avoid].filter((v) => v.trim()).length, "note");
@@ -339,8 +339,8 @@ export default function ProjectDetailPage() {
           </section>
 
           {/* Editing panel (left on wide screens): grouped settings, Generate always in reach at the bottom. */}
-          <section className="rgb-border flex flex-col lg:order-1">
-            <div className="flex flex-col gap-6 p-5">
+          <section className="rgb-border flex flex-col lg:order-1 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)] lg:overflow-hidden">
+            <div className="flex flex-col gap-6 p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               <PanelGroup title="Brief">
                 <div className="relative">
                   <textarea
@@ -365,6 +365,15 @@ export default function ProjectDetailPage() {
                     ))}
                   </div>
                 </div>
+                {templateName && (
+                  <div className="flex items-center gap-2 self-start rounded-full border border-border-subtle py-1 pr-1 pl-3 text-xs">
+                    <span className="text-muted">Using template</span>
+                    <span className="font-medium">{templateName}</span>
+                    <button type="button" disabled={busy} onClick={() => setTemplateId(null)} aria-label="Stop using this template" className="flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-white/5 hover:text-foreground">
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
               </PanelGroup>
 
               <PanelGroup title="Style">
@@ -391,52 +400,8 @@ export default function ProjectDetailPage() {
               </PanelGroup>
 
               {/* Everything optional in one place, closed until opened; a note says what's already set. */}
-              <PanelGroup title="Optional" hint="Template, text on the poster, features, guidance and reference photos.">
+              <PanelGroup title="Optional" hint="Text on the poster, features, guidance and reference photos.">
                 <div className="flex flex-col gap-4">
-                  {templates.length > 0 && (
-                    <Accordion title="Template" badge={templateNote ? <span className="text-xs text-muted">{templateNote}</span> : null}>
-                      <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setTemplateId(null)}
-                      className={`flex aspect-[4/5] items-center justify-center rounded-xl border text-center text-xs font-medium transition-colors disabled:opacity-50 ${
-                        templateId === null ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-muted hover:bg-white/5"
-                      }`}
-                    >
-                      No template
-                    </button>
-                    {visibleTemplates.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          setTemplateId(t.id);
-                          setAspectRatio(t.aspect_ratio);
-                        }}
-                        title={t.description ?? t.name}
-                        className={`flex flex-col gap-1 overflow-hidden rounded-xl border p-1 text-left transition-colors disabled:opacity-50 ${
-                          templateId === t.id ? "border-foreground" : "border-border-subtle hover:bg-white/5"
-                        }`}
-                      >
-                        {t.thumbnail_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- remote curated template thumbnail
-                          <img src={t.thumbnail_url} alt="" className="aspect-[4/5] w-full rounded-lg bg-surface object-contain" />
-                        ) : (
-                          <div className="aspect-[4/5] w-full rounded-lg bg-surface" />
-                        )}
-                        <span className="line-clamp-1 px-0.5 text-[11px]">{t.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {templates.length > 5 && (
-                    <button type="button" onClick={() => setShowAllTemplates((v) => !v)} className="self-start text-xs text-muted underline-offset-4 hover:text-foreground hover:underline">
-                      {showAllTemplates ? "Show fewer" : `Show all ${templates.length} templates`}
-                    </button>
-                  )}
-                    </Accordion>
-                  )}
                   <Accordion title="Text on the poster" badge={copyNote ? <span className="text-xs text-muted">{copyNote}</span> : null}>
                     <p className="text-xs text-muted">Typeset exactly as written; the image itself never contains text.</p>
                     <input value={headline} onChange={(e) => setHeadline(e.target.value)} disabled={busy} maxLength={60} placeholder="Headline, e.g. Run further" className={INPUT} />
@@ -532,7 +497,7 @@ export default function ProjectDetailPage() {
               </PanelGroup>
             </div>
 
-            <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-[inherit] border-t border-border-subtle bg-background/90 p-4 backdrop-blur">
+            <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-[inherit] border-t border-border-subtle bg-background/90 p-4 backdrop-blur lg:static lg:shrink-0 lg:bg-transparent lg:backdrop-blur-none">
               {!has("poster") && <p className="text-xs text-muted">Posters aren&apos;t enabled on your account.</p>}
               {submitError && <p className="text-xs text-red-400">{submitError}</p>}
               <Button onClick={handleGenerate} disabled={busy || !has("poster") || !prompt.trim() || posterAssets.some((a) => !a.name.trim())} className="w-full">
