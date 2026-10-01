@@ -33,8 +33,8 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 
 ### `template.png`
 - A **finished, fully designed** poster, exactly the kind of result users should get.
-- Any of the five ratios Remix supports — 1:1, 3:4, 4:3, 9:16, 16:9 (e.g. a portrait poster at 1080×1920, or a landscape billboard at 1920×1080) — PNG or JPG, under 8 MB.
-- The importer reads this file's actual pixel dimensions and stores the nearest of those five ratios as the template's own `aspect_ratio`. There's no portrait-only assumption and no default ratio applied across templates — whatever ratio this image is designed at is what Remix preselects, and what the final generation uses unless the user picks a different one.
+- Any of the ratios Remix supports — 1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9 (e.g. a portrait poster at 1080×1920, or a landscape billboard at 1920×1080) — PNG or JPG, under 8 MB.
+- The importer reads this file's actual pixel dimensions and stores the nearest of those ratios as the template's own `aspect_ratio`. There's no portrait-only assumption and no default ratio applied across templates — whatever ratio this image is designed at is what Remix preselects, and what the final generation uses unless the user picks a different one.
 - Placeholder text on it (`[Brand Logo]`, `[Website]`) is fine. The model is told never to copy the template's words.
 
 ### `meta.json`
@@ -47,7 +47,7 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 ```
 - `name` must be unique. It's the card title, and the importer skips a name that already exists.
 - `type` is `"poster"`. Video templates aren't supported yet.
-- `aspectRatio` (optional): one of `1:1`, `3:4`, `4:3`, `9:16`, `16:9`. Only set this if the template's intended ratio genuinely isn't what `template.png`'s own pixels say — normally omit it and let the importer derive it from the image.
+- `aspectRatio` (optional): one of `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `9:16`, `16:9`. Only set this if the template's intended ratio genuinely isn't what `template.png`'s own pixels say — normally omit it and let the importer derive it from the image.
 
 ### `prompt.txt`
 - **Write it as a reusable template, never for one brand.** Every piece of content is a `[Placeholder]`, e.g. `[Main Headline]`, `[Offer / Price]`, `[Featured Food / Dish]`, `[Call to Action]`, `[Website / Contact]`. Use clear, descriptive names; the filling step reads them like a copywriter would.

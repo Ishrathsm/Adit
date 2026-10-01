@@ -28,7 +28,7 @@ export interface Folder {
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 export type OutputType = "video" | "poster" | "gif";
-export const ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"] as const;
+export const ASPECT_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9"] as const;
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];
 // Veo 3.1's hard cap is 8 seconds per single generation.
 export const VIDEO_DURATIONS = [4, 6, 8] as const;

@@ -5,17 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createProject, listTemplates, type AspectRatio, type Template } from "@/lib/api";
-
-// Tailwind needs each class spelled out somewhere for its scanner to keep it — a computed string
-// like `aspect-[${w}/${h}]` would get purged from the build.
-const ASPECT_CLASS: Record<AspectRatio, string> = {
-  "1:1": "aspect-square",
-  "3:4": "aspect-[3/4]",
-  "4:3": "aspect-[4/3]",
-  "9:16": "aspect-[9/16]",
-  "16:9": "aspect-[16/9]",
-};
+import { createProject, listTemplates, type Template } from "@/lib/api";
 
 // Curated poster templates: click one to preview it large, then Remix to start a poster in that
 // template's style — the template is preselected, the prompt is left empty for the user's own ad,
@@ -63,7 +53,11 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Wrapping rows, not a grid and not a carousel. Each card's width comes from its own real
+          image dimensions at a shared row height — never stretched to fill a grid column, never
+          forced into a single scrolling line. A row fills up and the next card wraps to a new
+          row, exactly like a photo-gallery wall. */}
+      <div className="flex flex-wrap gap-4">
         {templates.map((t) => (
           <button
             key={t.id}
@@ -74,15 +68,15 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             }}
             className="group flex flex-col gap-2 text-left focus-visible:outline-none"
           >
-            <div className={`rgb-border w-full overflow-hidden ${ASPECT_CLASS[t.aspect_ratio]}`}>
+            <div className="rgb-border h-48 overflow-hidden sm:h-56">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
               <img
                 src={t.thumbnail_url!}
                 alt={t.name}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                className="h-full w-auto transition-transform duration-300 group-hover:scale-[1.03]"
               />
             </div>
-            <span className="text-sm font-medium">{t.name}</span>
+            <span className="max-w-[16rem] truncate text-sm font-medium">{t.name}</span>
           </button>
         ))}
       </div>
