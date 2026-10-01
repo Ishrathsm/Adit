@@ -67,9 +67,18 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             }}
             className="group shrink-0 text-left focus-visible:outline-none"
           >
+            {/* The image's own corners are rounded to match --radius-card (the same token
+                .rgb-border uses) so the picture's edge and its card chrome read as one
+                consistent shape, instead of two different roundings stacked on top of each
+                other. */}
             <div className="rgb-border h-48 sm:h-56">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
-              <img src={t.thumbnail_url!} alt={t.name} className="h-full w-auto" />
+              <img
+                src={t.thumbnail_url!}
+                alt={t.name}
+                className="h-full w-auto"
+                style={{ borderRadius: "var(--radius-card)" }}
+              />
             </div>
           </button>
         ))}
@@ -92,7 +101,8 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
               <img
                 src={preview.thumbnail_url!}
                 alt={preview.name}
-                className="max-h-[75vh] w-full rounded-xl object-contain sm:w-auto sm:max-w-[55%]"
+                className="max-h-[75vh] w-full object-contain sm:w-auto sm:max-w-[55%]"
+                style={{ borderRadius: "var(--radius-card)" }}
               />
               <div className="flex flex-1 flex-col gap-4">
                 <div className="flex items-start justify-between gap-3">
