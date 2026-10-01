@@ -48,8 +48,12 @@ function layoutJustifiedRows(items: { template: Template; ratio: number }[], con
   return rows;
 }
 
-function ratioFromLabel(aspectRatio: Template["aspect_ratio"]): number {
+// Falls back to a square guess if aspect_ratio is missing (an older template row from before
+// that column existed) — the real onLoad-measured ratio replaces this the moment the image loads.
+function ratioFromLabel(aspectRatio: Template["aspect_ratio"] | undefined): number {
+  if (!aspectRatio) return 1;
   const [w, h] = aspectRatio.split(":").map(Number);
+  if (!w || !h) return 1;
   return w / h;
 }
 
