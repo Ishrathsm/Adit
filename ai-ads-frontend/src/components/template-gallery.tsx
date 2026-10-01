@@ -1,11 +1,57 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createProject, listTemplates, type Template } from "@/lib/api";
+
+// Target row height before a row is stretched to exactly fill the container's width (the same
+// "justified gallery" layout Google Photos/Flickr use). Every picture keeps its own true shape;
+// what changes per row is how tall that row ends up, so there's never empty space on the right.
+const TARGET_ROW_HEIGHT = 208;
+const GAP = 16;
+
+interface LaidOutCard {
+  template: Template;
+  width: number;
+  height: number;
+}
+
+// ratio is each picture's own true width/height (read via onLoad below) — never a rounded label
+// — so the box this computes always matches the real image exactly: no crop, no stretch.
+function layoutJustifiedRows(items: { template: Template; ratio: number }[], containerWidth: number): LaidOutCard[][] {
+  if (containerWidth <= 0) return [];
+  const rows: LaidOutCard[][] = [];
+  let row: { template: Template; ratio: number }[] = [];
+  let ratioSum = 0;
+
+  const flushRow = (height: number) => {
+    rows.push(row.map(({ template, ratio }) => ({ template, height, width: height * ratio })));
+    row = [];
+    ratioSum = 0;
+  };
+
+  for (const item of items) {
+    row.push(item);
+    ratioSum += item.ratio;
+    const widthAtTarget = ratioSum * TARGET_ROW_HEIGHT + GAP * (row.length - 1);
+    if (widthAtTarget >= containerWidth) {
+      flushRow((containerWidth - GAP * (row.length - 1)) / ratioSum);
+    }
+  }
+  // A leftover, not-yet-full row keeps the target height instead of stretching huge to fill the
+  // last line — the standard choice every justified-gallery implementation makes.
+  if (row.length) flushRow(TARGET_ROW_HEIGHT);
+
+  return rows;
+}
+
+function ratioFromLabel(aspectRatio: Template["aspect_ratio"]): number {
+  const [w, h] = aspectRatio.split(":").map(Number);
+  return w / h;
+}
 
 // Curated poster templates: click one to preview it large, then Remix to start a poster in that
 // template's style — the template is preselected, the prompt is left empty for the user's own ad,
@@ -17,11 +63,34 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   const [remixing, setRemixing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Each picture's true ratio, read once it loads — until then the rounded aspect_ratio label is
+  // used as a placeholder so the layout isn't empty while images are still loading in.
+  const [naturalRatios, setNaturalRatios] = useState<Record<string, number>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
   useEffect(() => {
     listTemplates("poster")
       .then(({ templates }) => setTemplates(templates.filter((t) => t.thumbnail_url)))
       .catch(() => setTemplates([]));
   }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const rows = useMemo(() => {
+    if (!templates) return [];
+    const items = templates.map((template) => ({
+      template,
+      ratio: naturalRatios[template.id] ?? ratioFromLabel(template.aspect_ratio),
+    }));
+    return layoutJustifiedRows(items, containerWidth);
+  }, [templates, naturalRatios, containerWidth]);
 
   useEffect(() => {
     if (!preview) return;
@@ -53,34 +122,45 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
 
   return (
     <>
-      {/* Every card shares one row height; width comes naturally from the browser scaling each
-          image to that height at its own true shape — never stretched, never cropped. No name
-          shown here; it only appears in the popup below. */}
-      <div className="flex flex-wrap gap-4">
-        {templates.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => {
-              setError(null);
-              setPreview(t);
-            }}
-            className="group shrink-0 text-left focus-visible:outline-none"
-          >
-            {/* The image's own corners are rounded to match --radius-card (the same token
-                .rgb-border uses) so the picture's edge and its card chrome read as one
-                consistent shape, instead of two different roundings stacked on top of each
-                other. */}
-            <div className="rgb-border h-48 sm:h-56">
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
-              <img
-                src={t.thumbnail_url!}
-                alt={t.name}
-                className="h-full w-auto"
-                style={{ borderRadius: "var(--radius-card)" }}
-              />
-            </div>
-          </button>
+      {/* A justified photo-wall: each row stretches to exactly fill the container's width, with
+          every picture kept at its own true shape — rows end up slightly different heights so
+          there's never empty space on the right, and nothing is cropped or stretched. */}
+      <div ref={containerRef} className="flex flex-col gap-4">
+        {rows.map((row, i) => (
+          <div key={i} className="flex gap-4">
+            {row.map(({ template: t, width, height }) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setPreview(t);
+                }}
+                className="group shrink-0 text-left focus-visible:outline-none"
+                style={{ width }}
+              >
+                {/* The image's own corners are rounded to match --radius-card (the same token
+                    .rgb-border uses) so the picture's edge and its card chrome read as one
+                    consistent shape, instead of two different roundings stacked on top of each
+                    other. */}
+                <div className="rgb-border" style={{ width, height }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
+                  <img
+                    src={t.thumbnail_url!}
+                    alt={t.name}
+                    className="h-full w-full"
+                    style={{ borderRadius: "var(--radius-card)" }}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      if (!img.naturalWidth || !img.naturalHeight) return;
+                      const ratio = img.naturalWidth / img.naturalHeight;
+                      setNaturalRatios((prev) => (prev[t.id] === ratio ? prev : { ...prev, [t.id]: ratio }));
+                    }}
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 
