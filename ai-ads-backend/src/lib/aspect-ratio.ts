@@ -1,9 +1,12 @@
 // The image model's full supported set for still images (confirmed against @google/genai's own
-// ImageConfigAspectRatio type, which lists more than this — "2:3"/"3:2" are included because a
-// real template (food-restaurant-promotion, 1024x1536) is actually 2:3; the wider ratios like
-// "21:9"/"1:8" aren't, since nothing in this product needs them yet). Veo (video) only accepts
-// the "9:16" / "16:9" subset of this list — see VIDEO_ASPECT_RATIOS in routes/jobs.ts.
-export const VALID_ASPECT_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9"] as const;
+// ImageConfigAspectRatio type, which lists more than this — only the ones an actual template
+// needs are included here). "2:3"/"3:2" cover the original portrait poster assets (1024x1536).
+// "21:9" covers the real billboards: their un-cropped originals run ~2.0-2.67 wide (e.g.
+// 2048x768), much wider than 16:9 (1.78) — 21:9 (2.33) is the documented ratio closest to that
+// real shape. Still-wider options like "1:8" aren't included, since nothing needs them. Veo
+// (video) only accepts the "9:16" / "16:9" subset of this list — see VIDEO_ASPECT_RATIOS in
+// routes/jobs.ts.
+export const VALID_ASPECT_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"] as const;
 export type AspectRatio = (typeof VALID_ASPECT_RATIOS)[number];
 
 export function isAspectRatio(value: unknown): value is AspectRatio {
@@ -18,6 +21,7 @@ const RATIO_VALUE: Record<AspectRatio, number> = {
   "4:3": 4 / 3,
   "9:16": 9 / 16,
   "16:9": 16 / 9,
+  "21:9": 21 / 9,
 };
 
 // Maps a template image's real pixel dimensions onto the nearest ratio the image model actually

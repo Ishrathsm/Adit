@@ -68,9 +68,12 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             }}
             className="group flex flex-col gap-2 text-left focus-visible:outline-none"
           >
-            {/* No overflow-hidden, no hover-zoom: the full template image shows, full stop — never
-                clipped, not even by a few pixels during a hover animation. */}
-            <div className="rgb-border h-48 sm:h-56">
+            {/* self-start: in a flex-col button, a child otherwise stretches to match the button's
+                own width — which a long name label (the sibling below) can force wider than a
+                narrow portrait image, leaving dead bordered space. self-start makes this box size
+                to the image alone. No overflow-hidden, no hover-zoom: the full template image
+                shows, full stop — never clipped, not even by a few pixels during hover. */}
+            <div className="rgb-border h-48 self-start sm:h-56">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
               <img src={t.thumbnail_url!} alt={t.name} className="h-full w-auto" />
             </div>
