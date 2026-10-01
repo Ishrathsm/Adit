@@ -68,13 +68,11 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             }}
             className="group flex flex-col gap-2 text-left focus-visible:outline-none"
           >
-            <div className="rgb-border h-48 overflow-hidden sm:h-56">
+            {/* No overflow-hidden, no hover-zoom: the full template image shows, full stop — never
+                clipped, not even by a few pixels during a hover animation. */}
+            <div className="rgb-border h-48 sm:h-56">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
-              <img
-                src={t.thumbnail_url!}
-                alt={t.name}
-                className="h-full w-auto transition-transform duration-300 group-hover:scale-[1.03]"
-              />
+              <img src={t.thumbnail_url!} alt={t.name} className="h-full w-auto" />
             </div>
             <span className="max-w-[16rem] truncate text-sm font-medium">{t.name}</span>
           </button>

@@ -289,7 +289,7 @@ export default function ProjectDetailPage() {
                       >
                         {t.thumbnail_url ? (
                           // eslint-disable-next-line @next/next/no-img-element -- remote curated template thumbnail
-                          <img src={t.thumbnail_url} alt={t.name} className="h-12 w-full rounded-xl object-cover" />
+                          <img src={t.thumbnail_url} alt={t.name} className="h-12 w-full rounded-xl bg-surface object-contain" />
                         ) : (
                           <div className="h-12 w-full rounded-xl bg-surface" />
                         )}
