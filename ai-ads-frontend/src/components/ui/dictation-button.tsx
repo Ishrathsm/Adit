@@ -289,7 +289,9 @@ export function DictationButton({
   if (!mode) return null;
   const listening = state === "listening";
   return (
-    <span className={clsx("relative inline-flex", className)}>
+    // `relative` only when the caller didn't position the button itself: it used to override a
+    // caller's `absolute` (the mic dropped out of the text box to sit under it).
+    <span className={clsx(!/\b(absolute|fixed|sticky)\b/.test(className ?? "") && "relative", "inline-flex", className)}>
       <button
         type="button"
         onClick={toggle}
