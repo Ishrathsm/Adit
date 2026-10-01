@@ -119,6 +119,9 @@ export interface CreativeBrief {
   // Mix levels for the edit (0–1): music, and Veo's own sound when veoAudio is on. Absent = the
   // clip sound leads with the music as a bed.
   mix?: { music?: number; effects?: number };
+  // Per shot, where the edit starts its kept window in the clip (seconds; null = default), to skip
+  // a glitch without re-rendering.
+  clipStarts?: (number | null)[] | null;
 }
 
 export interface ProductScreen {

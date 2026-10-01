@@ -190,6 +190,9 @@ export interface StitchOptions {
   // clip sound up front with the music as a 0.35 bed; a music-led mix sets music 1, effects ~0.25.
   musicLevel?: number;
   clipAudioLevel?: number;
+  // Where each clip's kept window starts (seconds into the clip; null = the default placement),
+  // e.g. to start a shot just after a glitch in its first second. Clamped to what the clip allows.
+  clipStarts?: (number | null)[];
   // Dissolve between shots (and into the end card) instead of hard cuts. 0/omitted = hard cuts.
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
@@ -262,7 +265,9 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     const clipWindows = infos.map((info, i) => {
       const cut = Array.isArray(options.cutSeconds) ? options.cutSeconds[i] : options.cutSeconds;
       const want = cut !== undefined ? cut + T : info.duration;
-      return trimWindow(info.duration, want, i === infos.length - 1);
+      const window = trimWindow(info.duration, want, i === infos.length - 1);
+      const from = options.clipStarts?.[i];
+      return typeof from === "number" && want < info.duration ? { start: Math.max(0, Math.min(from, info.duration - want)), length: window.length } : window;
     });
     clipPaths.forEach((path, i) => {
       const idx = addInput("-i", path);
