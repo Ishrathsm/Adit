@@ -542,6 +542,7 @@ async function editBriefedAd(
       accentColor: product?.primary_color ?? null,
       font,
       uppercaseName: brief.tone === "bold",
+      tone: brief.endCardTone ?? "auto",
     }),
     Promise.all(brief.onScreenText.map((line) => renderSuper(line, width, height, font, product?.primary_color ?? null))),
   ]);

@@ -114,6 +114,8 @@ export interface CreativeBrief {
   // Veo renders each shot with its own sound (the shot's sound cue, never music or voices), kept in
   // the edit with the music as a faint bed. Doubles the Veo price.
   veoAudio?: boolean;
+  // The end card's wash: light (white) or dark; absent = picked from the film's last frame.
+  endCardTone?: "light" | "dark";
 }
 
 export interface ProductScreen {
