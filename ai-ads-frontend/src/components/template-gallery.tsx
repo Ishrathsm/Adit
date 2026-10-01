@@ -53,10 +53,9 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
 
   return (
     <>
-      {/* Wrapping rows, not a grid and not a carousel. Each card's width comes from its own real
-          image dimensions at a shared row height — never stretched to fill a grid column, never
-          forced into a single scrolling line. A row fills up and the next card wraps to a new
-          row, exactly like a photo-gallery wall. */}
+      {/* Every card shares one row height; width comes naturally from the browser scaling each
+          image to that height at its own true shape — never stretched, never cropped. No name
+          shown here; it only appears in the popup below. */}
       <div className="flex flex-wrap gap-4">
         {templates.map((t) => (
           <button
@@ -66,18 +65,12 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
               setError(null);
               setPreview(t);
             }}
-            className="group flex flex-col gap-2 text-left focus-visible:outline-none"
+            className="group shrink-0 text-left focus-visible:outline-none"
           >
-            {/* self-start: in a flex-col button, a child otherwise stretches to match the button's
-                own width — which a long name label (the sibling below) can force wider than a
-                narrow portrait image, leaving dead bordered space. self-start makes this box size
-                to the image alone. No overflow-hidden, no hover-zoom: the full template image
-                shows, full stop — never clipped, not even by a few pixels during hover. */}
-            <div className="rgb-border h-48 self-start sm:h-56">
+            <div className="rgb-border h-48 sm:h-56">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
               <img src={t.thumbnail_url!} alt={t.name} className="h-full w-auto" />
             </div>
-            <span className="max-w-[16rem] truncate text-sm font-medium">{t.name}</span>
           </button>
         ))}
       </div>
