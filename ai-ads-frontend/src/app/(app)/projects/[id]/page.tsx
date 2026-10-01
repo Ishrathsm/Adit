@@ -88,9 +88,6 @@ export default function ProjectDetailPage() {
   // the new generation on the existing output) unless the user opts out.
   const [referenceEnabled, setReferenceEnabled] = useState(true);
   const [showAllTemplates, setShowAllTemplates] = useState(false);
-  // Set once the last poster's brief has been loaded into the form (remounts the panel so the
-  // collapsible sections open where they have content).
-  const [hydrated, setHydrated] = useState(false);
   // A landing-page hand-off prompt wins over restoring the last brief.
   const handedOff = useRef(false);
 
@@ -127,7 +124,6 @@ export default function ProjectDetailPage() {
           setMustShow(b.mustShow ?? "");
           setAvoid(b.avoid ?? "");
         }
-        setHydrated(true);
       })
       .catch(() => {
         /* no existing job is a normal state for a brand-new project — nothing to show */
@@ -242,6 +238,12 @@ export default function ProjectDetailPage() {
   const resultUrl = job?.output_url && job.output_type === "poster" ? job.output_url : null;
   const generating = job !== null && (job.status === "queued" || job.status === "processing");
   const visibleTemplates = showAllTemplates ? templates : templates.slice(0, 5);
+  // What's already set inside each closed optional section.
+  const count = (n: number, word: string) => (n ? `${n} ${word}${n === 1 ? "" : "s"}` : null);
+  const templateNote = templateId ? templates.find((t) => t.id === templateId)?.name ?? "1 selected" : null;
+  const copyNote = count([headline, subline, offer, cta, contactLine].filter((v) => v.trim()).length, "line");
+  const featureNote = count(featureList.filter((f) => f.trim()).length, "feature");
+  const guidanceNote = count([audience, mustShow, avoid].filter((v) => v.trim()).length, "note");
 
   return (
     <main className="relative mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-4 py-6 sm:px-8 lg:py-8">
@@ -338,7 +340,7 @@ export default function ProjectDetailPage() {
 
           {/* Editing panel: grouped settings, Generate always in reach at the bottom. */}
           <section className="rgb-border flex flex-col">
-            <div key={hydrated ? "restored" : "blank"} className="flex flex-col gap-6 p-5">
+            <div className="flex flex-col gap-6 p-5">
               <PanelGroup title="Brief">
                 <div className="relative">
                   <textarea
@@ -365,9 +367,35 @@ export default function ProjectDetailPage() {
                 </div>
               </PanelGroup>
 
-              {templates.length > 0 && (
-                <PanelGroup title="Template" optional>
-                  <div className="grid grid-cols-3 gap-2">
+              <PanelGroup title="Style">
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Tone</span>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_TONES.map((option) => (
+                      <button key={option.value} type="button" disabled={busy} onClick={() => setTone(option.value)} className={chipClass(tone === option.value)}>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Look</span>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_LOOKS.map((option) => (
+                      <button key={option.value} type="button" disabled={busy} onClick={() => setLook(option.value)} className={chipClass(look === option.value)}>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </PanelGroup>
+
+              {/* Everything optional in one place, closed until opened; a note says what's already set. */}
+              <PanelGroup title="Optional" hint="Template, text on the poster, features, guidance and reference photos.">
+                <div className="flex flex-col gap-4">
+                  {templates.length > 0 && (
+                    <Accordion title="Template" badge={templateNote ? <span className="text-xs text-muted">{templateNote}</span> : null}>
+                      <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       disabled={busy}
@@ -407,18 +435,19 @@ export default function ProjectDetailPage() {
                       {showAllTemplates ? "Show fewer" : `Show all ${templates.length} templates`}
                     </button>
                   )}
-                </PanelGroup>
-              )}
-
-              <PanelGroup title="Text on the poster" optional hint="Typeset exactly as written; the image itself never contains text.">
-                <input value={headline} onChange={(e) => setHeadline(e.target.value)} disabled={busy} maxLength={60} placeholder="Headline, e.g. Run further" className={INPUT} />
+                    </Accordion>
+                  )}
+                  <Accordion title="Text on the poster" badge={copyNote ? <span className="text-xs text-muted">{copyNote}</span> : null}>
+                    <p className="text-xs text-muted">Typeset exactly as written; the image itself never contains text.</p>
+                    <input value={headline} onChange={(e) => setHeadline(e.target.value)} disabled={busy} maxLength={60} placeholder="Headline, e.g. Run further" className={INPUT} />
                 <input value={subline} onChange={(e) => setSubline(e.target.value)} disabled={busy} maxLength={120} placeholder="Supporting line, e.g. The lightest runner we've made" className={INPUT} />
                 <div className="grid grid-cols-2 gap-2">
                   <input value={offer} onChange={(e) => setOffer(e.target.value)} disabled={busy} maxLength={24} placeholder="Offer badge, e.g. 30% off" className={INPUT} />
                   <input value={cta} onChange={(e) => setCta(e.target.value)} disabled={busy} maxLength={28} placeholder="Button, e.g. Shop now" className={INPUT} />
                 </div>
                 <input value={contactLine} onChange={(e) => setContactLine(e.target.value)} disabled={busy} maxLength={120} placeholder="Contact line: address, phone, website" className={INPUT} />
-                <Accordion optional title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
+                  </Accordion>
+                  <Accordion title="Feature list" badge={featureNote ? <span className="text-xs text-muted">{featureNote}</span> : null}>
                   {featureList.map((value, i) => (
                     <input
                       key={i}
@@ -432,33 +461,7 @@ export default function ProjectDetailPage() {
                   ))}
                   <p className="text-xs text-muted">Shown as bullets under the headline. Write &ldquo;Label: detail&rdquo; to set the label in bold.</p>
                 </Accordion>
-              </PanelGroup>
-
-              <PanelGroup title="Style">
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-muted">Tone</span>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_TONES.map((option) => (
-                      <button key={option.value} type="button" disabled={busy} onClick={() => setTone(option.value)} className={chipClass(tone === option.value)}>
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-muted">Look</span>
-                  <div className="flex flex-wrap gap-2">
-                    {AD_LOOKS.map((option) => (
-                      <button key={option.value} type="button" disabled={busy} onClick={() => setLook(option.value)} className={chipClass(look === option.value)}>
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </PanelGroup>
-
-              <div className="flex flex-col">
-                <Accordion optional title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
+                  <Accordion title="Guidance" badge={guidanceNote ? <span className="text-xs text-muted">{guidanceNote}</span> : null}>
                   {[
                     { id: "audience", value: audience, set: setAudience, placeholder: "Audience, e.g. Parents of school-age kids in Hyderabad" },
                     { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show, e.g. our campus, students in uniform" },
@@ -467,13 +470,9 @@ export default function ProjectDetailPage() {
                     <input key={field.id} value={field.value} onChange={(e) => field.set(e.target.value)} disabled={busy} maxLength={300} placeholder={field.placeholder} className={INPUT} />
                   ))}
                 </Accordion>
-
-                <Accordion
-                  optional
+                  <Accordion
                   title="Reference photos"
-                  className="mt-4"
                   badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>}
-                  defaultOpen={posterAssets.length > 0}
                 >
                   {posterAssets.map((asset, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -529,7 +528,8 @@ export default function ProjectDetailPage() {
                     </label>
                   )}
                 </Accordion>
-              </div>
+                </div>
+              </PanelGroup>
             </div>
 
             <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-[inherit] border-t border-border-subtle bg-background/90 p-4 backdrop-blur">
