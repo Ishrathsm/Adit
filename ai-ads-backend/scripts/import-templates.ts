@@ -8,42 +8,14 @@
 //   npx tsx scripts/import-templates.ts --dry-run       # check the folders, upload nothing
 //   npx tsx scripts/import-templates.ts food-restaurant-promotion other-folder
 import "../src/lib/gcp-credentials-bootstrap";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { uploadPoster } from "../src/lib/storage";
 import { supabase } from "../src/lib/supabase";
-import { createTemplate, type TemplateType } from "../src/lib/templates";
+import { createTemplate } from "../src/lib/templates";
+import { checkTemplateFolder, resolveAspectRatio } from "./template-folder";
 
 const ROOT = join(__dirname, "..", "..", "ad-templates");
-const IMAGE_FILES = ["template.png", "template.jpg", "template.jpeg", "template.webp"];
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-
-interface Meta {
-  name: string;
-  description?: string;
-  type?: TemplateType;
-}
-
-function check(folder: string): { meta: Meta; prompt: string; image: string } | string {
-  const dir = join(ROOT, folder);
-  const image = IMAGE_FILES.map((f) => join(dir, f)).find(existsSync);
-  if (!image) return `needs one of ${IMAGE_FILES.join(", ")}`;
-  if (statSync(image).size > MAX_IMAGE_BYTES) return "template image is over 8 MB";
-  if (!existsSync(join(dir, "prompt.txt"))) return "needs prompt.txt";
-  if (!existsSync(join(dir, "meta.json"))) return "needs meta.json";
-  let meta: Meta;
-  try {
-    meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8"));
-  } catch {
-    return "meta.json is not valid JSON";
-  }
-  if (!meta.name?.trim()) return 'meta.json needs a "name"';
-  if (meta.type && meta.type !== "poster" && meta.type !== "video") return 'meta.json "type" must be "poster" or "video"';
-  const prompt = readFileSync(join(dir, "prompt.txt"), "utf8").trim();
-  if (prompt.length < 400) return "prompt.txt is too short to be a template (write the full design direction)";
-  if (!/\[[^\]]+\]/.test(prompt)) return "prompt.txt has no [Placeholders] — hard-coded copy can't be remixed";
-  return { meta, prompt, image };
-}
 
 (async () => {
   const args = process.argv.slice(2);
@@ -55,7 +27,7 @@ function check(folder: string): { meta: Meta; prompt: string; image: string } | 
   const have = new Set((existing ?? []).map((t) => t.name));
   let failed = 0;
   for (const folder of folders) {
-    const result = check(folder);
+    const result = checkTemplateFolder(ROOT, folder);
     if (typeof result === "string") {
       console.log(`✗ ${folder}: ${result}`);
       failed++;
@@ -66,13 +38,21 @@ function check(folder: string): { meta: Meta; prompt: string; image: string } | 
       console.log(`– ${folder}: "${meta.name}" is already in the library, skipped`);
       continue;
     }
+    const aspectRatio = await resolveAspectRatio(meta, image);
     if (dryRun) {
-      console.log(`✓ ${folder}: ready ("${meta.name}", ${prompt.length} chars)`);
+      console.log(`✓ ${folder}: ready ("${meta.name}", ${prompt.length} chars, ${aspectRatio})`);
       continue;
     }
     const thumbnailUrl = await uploadPoster(`templates/${folder}`, readFileSync(image));
-    const t = await createTemplate({ type: meta.type ?? "poster", name: meta.name.trim(), description: meta.description?.trim() || null, thumbnailUrl, templatePrompt: prompt });
-    console.log(`✓ ${folder}: imported "${t.name}"`);
+    const t = await createTemplate({
+      type: meta.type ?? "poster",
+      name: meta.name.trim(),
+      description: meta.description?.trim() || null,
+      thumbnailUrl,
+      templatePrompt: prompt,
+      aspectRatio,
+    });
+    console.log(`✓ ${folder}: imported "${t.name}" (${aspectRatio})`);
   }
   process.exit(failed ? 1 : 0);
 })();

@@ -5,7 +5,17 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createProject, listTemplates, type Template } from "@/lib/api";
+import { createProject, listTemplates, type AspectRatio, type Template } from "@/lib/api";
+
+// Tailwind needs each class spelled out somewhere for its scanner to keep it — a computed string
+// like `aspect-[${w}/${h}]` would get purged from the build.
+const ASPECT_CLASS: Record<AspectRatio, string> = {
+  "1:1": "aspect-square",
+  "3:4": "aspect-[3/4]",
+  "4:3": "aspect-[4/3]",
+  "9:16": "aspect-[9/16]",
+  "16:9": "aspect-[16/9]",
+};
 
 // Curated poster templates: click one to preview it large, then Remix to start a poster in that
 // template's style — the template is preselected, the prompt is left empty for the user's own ad,
@@ -64,7 +74,7 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             }}
             className="group flex flex-col gap-2 text-left focus-visible:outline-none"
           >
-            <div className="rgb-border aspect-[2/3] w-full overflow-hidden">
+            <div className={`rgb-border w-full overflow-hidden ${ASPECT_CLASS[t.aspect_ratio]}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
               <img
                 src={t.thumbnail_url!}

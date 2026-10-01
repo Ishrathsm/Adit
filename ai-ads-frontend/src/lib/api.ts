@@ -61,6 +61,9 @@ export interface Template {
   description: string | null;
   thumbnail_url: string | null;
   template_prompt: string;
+  // The ratio this template's own image was designed at — preselect it on remix instead of one
+  // default ratio for every template.
+  aspect_ratio: AspectRatio;
   created_at: string;
 }
 

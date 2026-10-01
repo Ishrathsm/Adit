@@ -128,10 +128,13 @@ export default function ProjectDetailPage() {
     listTemplates(project.type)
       .then(({ templates }) => {
         setTemplates(templates);
-        if (remixTemplateId && templates.some((t) => t.id === remixTemplateId)) {
-          setTemplateId(remixTemplateId);
-          // Curated templates are portrait posters.
-          setAspectRatio("3:4");
+        // Preselect the ratio this specific template was designed at — templates span every
+        // ratio (landscape billboards, portrait posters, square posts), so there is no one
+        // default to assume here.
+        const remixTemplate = remixTemplateId ? templates.find((t) => t.id === remixTemplateId) : undefined;
+        if (remixTemplate) {
+          setTemplateId(remixTemplate.id);
+          setAspectRatio(remixTemplate.aspect_ratio);
         }
       })
       .catch(() => {
@@ -273,7 +276,10 @@ export default function ProjectDetailPage() {
                         key={t.id}
                         type="button"
                         disabled={busy}
-                        onClick={() => setTemplateId(t.id)}
+                        onClick={() => {
+                          setTemplateId(t.id);
+                          setAspectRatio(t.aspect_ratio);
+                        }}
                         title={t.description ?? t.name}
                         className={`flex h-20 w-20 shrink-0 flex-col items-center gap-1 overflow-hidden rounded-2xl border p-1 transition-colors disabled:opacity-50 ${
                           templateId === t.id
