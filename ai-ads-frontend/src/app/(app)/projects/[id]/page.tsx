@@ -258,7 +258,7 @@ export default function ProjectDetailPage() {
       {project && isPoster && (
         <div className="mt-4 grid items-start gap-6 lg:grid-cols-2">
           {/* Canvas (right on wide screens, first on phones): the poster at its real size ratio, pinned while the panel scrolls. */}
-          <section className="flex flex-col gap-3 lg:order-2 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
+          <section className="rgb-border flex flex-col gap-3 p-5 lg:order-2 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight">{project.name}</h1>
               <StatusPill job={job} />
@@ -284,7 +284,7 @@ export default function ProjectDetailPage() {
               )}
             </div>
 
-            <div className="relative flex h-[62vh] min-h-0 items-center justify-center rounded-3xl border border-border-subtle bg-surface/60 p-4 sm:p-6 lg:h-auto lg:flex-1">
+            <div className="relative flex h-[62vh] min-h-0 items-center justify-center rounded-2xl bg-background/60 p-4 sm:p-6 lg:h-auto lg:flex-1">
               {resultUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated poster
                 <img
