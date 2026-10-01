@@ -1,9 +1,8 @@
 "use client";
 
 import { DictationButton } from "@/components/ui/dictation-button";
-import { videoThumbSrc } from "@/lib/utils";
 import { Accordion } from "@/components/ui/accordion";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
@@ -11,7 +10,6 @@ import {
   Download,
   Image as ImageIcon,
   Loader2,
-  Sparkles,
   Wand2,
   XCircle,
 } from "lucide-react";
@@ -89,6 +87,12 @@ export default function ProjectDetailPage() {
   // Defaults on: once a project has a result, regenerating is treated as "remixing" it (ground
   // the new generation on the existing output) unless the user opts out.
   const [referenceEnabled, setReferenceEnabled] = useState(true);
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
+  // Set once the last poster's brief has been loaded into the form (remounts the panel so the
+  // collapsible sections open where they have content).
+  const [hydrated, setHydrated] = useState(false);
+  // A landing-page hand-off prompt wins over restoring the last brief.
+  const handedOff = useRef(false);
 
   useEffect(() => {
     getProject(id)
@@ -101,7 +105,29 @@ export default function ProjectDetailPage() {
     // always landing on a blank generate form for projects that already have a result.
     getLatestJobForProject(id)
       .then(({ job }) => {
-        if (job) setJob(job);
+        if (!job) return;
+        setJob(job);
+        // Reopen the poster's brief so editing means changing it, not retyping it. Uploaded
+        // reference photos aren't restored (they're picked again as files).
+        if (handedOff.current) return;
+        const b = job.poster_brief;
+        setPrompt((p) => p || job.prompt);
+        if ((ASPECT_RATIOS as readonly string[]).includes(job.aspect_ratio)) setAspectRatio(job.aspect_ratio as AspectRatio);
+        if (job.template_id) setTemplateId(job.template_id);
+        if (b) {
+          setHeadline(b.headline ?? "");
+          setSubline(b.subline ?? "");
+          setOffer(b.offer ?? "");
+          setCta(b.cta ?? "");
+          setContactLine(b.contactLine ?? "");
+          setFeatureList([...(b.features ?? []), "", "", "", ""].slice(0, 4));
+          if (b.tone) setTone(b.tone);
+          if (b.look) setLook(b.look);
+          setAudience(b.audience ?? "");
+          setMustShow(b.mustShow ?? "");
+          setAvoid(b.avoid ?? "");
+        }
+        setHydrated(true);
       })
       .catch(() => {
         /* no existing job is a normal state for a brand-new project — nothing to show */
@@ -119,8 +145,11 @@ export default function ProjectDetailPage() {
     }
     // Reading a one-time hand-off from sessionStorage into state, not an external subscription.
     const prefill = consumePrefillForProject(id);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (prefill) setPrompt(prefill);
+    if (prefill) {
+      handedOff.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPrompt(prefill);
+    }
   }, [project, id, router]);
 
   useEffect(() => {
@@ -209,8 +238,13 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const ratio = (job?.status === "completed" && job.aspect_ratio ? job.aspect_ratio : aspectRatio).split(":").map(Number) as [number, number];
+  const resultUrl = job?.output_url && job.output_type === "poster" ? job.output_url : null;
+  const generating = job !== null && (job.status === "queued" || job.status === "processing");
+  const visibleTemplates = showAllTemplates ? templates : templates.slice(0, 5);
+
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10 sm:px-10">
+    <main className="relative mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-4 py-6 sm:px-8 lg:py-8">
       <BackLink href="/projects" label="Projects" />
 
       {loadError && (
@@ -219,59 +253,132 @@ export default function ProjectDetailPage() {
         </p>
       )}
 
-      {project && (
-        <>
-          <h1 className="mt-8 text-2xl font-semibold tracking-tight">{project.name}</h1>
-
-          {isPoster && (
-          <div className="rgb-border mt-8 grid divide-y divide-border-subtle md:grid-cols-2 md:divide-x md:divide-y-0">
-            <div className="flex flex-col gap-4 p-5">
-              {canUseReference && (
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border-subtle bg-background/50 p-3 transition-colors hover:bg-background/80">
-                  <input
-                    type="checkbox"
-                    checked={referenceEnabled}
-                    onChange={(e) => setReferenceEnabled(e.target.checked)}
-                    disabled={busy}
-                    className="h-4 w-4 shrink-0 accent-foreground"
-                  />
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface">
-                    {job?.output_type === "poster" ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated thumbnail
-                      <img src={job.output_url ?? undefined} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <video src={job?.output_url ? videoThumbSrc(job.output_url) : undefined} className="h-full w-full object-cover" muted playsInline preload="metadata" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 text-sm font-medium">
-                      <Wand2 size={12} className="shrink-0 text-muted" />
-                      Remix current design
-                    </p>
-                    <p className="text-xs text-muted">Ground the next generation on what&apos;s already here</p>
-                  </div>
-                </label>
+      {project && isPoster && (
+        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+          {/* Canvas: the poster at its real size ratio, pinned while the panel scrolls. */}
+          <section className="flex flex-col gap-3 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight">{project.name}</h1>
+              <StatusPill job={job} />
+              {resultUrl && (
+                <div className="ml-auto flex gap-2">
+                  <a
+                    href={`${resultUrl}?download`}
+                    download
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
+                  >
+                    <Download size={12} />
+                    Download
+                  </a>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(resultUrl)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
+                  >
+                    Share to WhatsApp
+                  </a>
+                </div>
               )}
+            </div>
+
+            <div className="relative flex h-[62vh] min-h-0 items-center justify-center rounded-3xl border border-border-subtle bg-surface/60 p-4 sm:p-6 lg:h-auto lg:flex-1">
+              {resultUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated poster
+                <img
+                  src={resultUrl}
+                  alt="Generated poster"
+                  className={`max-h-full max-w-full rounded-xl object-contain shadow-2xl transition-opacity ${generating ? "opacity-40" : ""}`}
+                />
+              ) : (
+                <div className="relative flex h-full max-h-full max-w-full items-center justify-center">
+                  <svg viewBox={`0 0 ${ratio[0] * 100} ${ratio[1] * 100}`} className="h-full max-h-full w-auto max-w-full" aria-hidden="true">
+                    <rect x="1" y="1" width={ratio[0] * 100 - 2} height={ratio[1] * 100 - 2} rx="10" fill="none" stroke="currentColor" strokeDasharray="6 6" className="text-border-strong" />
+                  </svg>
+                  {!generating && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+                      <ImageIcon size={18} className="text-muted" />
+                      <p className="text-sm font-medium">Your poster appears here</p>
+                      <p className="text-xs text-muted">{aspectRatio} · describe it on the right and hit Generate</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {generating && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+                  <Loader2 size={22} className="animate-spin" />
+                  <p className="text-sm font-medium">{job?.status === "queued" ? "Queued" : resultUrl ? "Making a new version…" : "Generating your poster…"}</p>
+                  <p className="text-xs text-muted">This usually takes a few seconds.</p>
+                </div>
+              )}
+            </div>
+
+            {job?.status === "failed" && (
+              <p className="flex items-start gap-2 rounded-2xl border border-border-strong bg-surface px-4 py-3 text-xs text-red-400">
+                <XCircle size={14} className="mt-0.5 shrink-0" />
+                Generation failed{job.error ? `: ${job.error}` : ""}
+              </p>
+            )}
+
+            {canUseReference && (
+              <label className="flex cursor-pointer items-center gap-3 self-start rounded-full border border-border-subtle px-4 py-2 text-sm transition-colors hover:bg-white/5">
+                <input
+                  type="checkbox"
+                  checked={referenceEnabled}
+                  onChange={(e) => setReferenceEnabled(e.target.checked)}
+                  disabled={busy}
+                  className="h-4 w-4 shrink-0 accent-foreground"
+                />
+                <Wand2 size={13} className="shrink-0 text-muted" />
+                <span>Build on this design</span>
+                <span className="hidden text-xs text-muted sm:inline">· the next version starts from this one</span>
+              </label>
+            )}
+          </section>
+
+          {/* Editing panel: grouped settings, Generate always in reach at the bottom. */}
+          <section className="rgb-border flex flex-col">
+            <div key={hydrated ? "restored" : "blank"} className="flex flex-col gap-6 p-5">
+              <PanelGroup title="Brief">
+                <div className="relative">
+                  <textarea
+                    id="prompt"
+                    aria-label="Describe the ad"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    disabled={busy}
+                    placeholder="A refreshing bottle of cold brew on ice, condensation dripping, bright summer light"
+                    rows={4}
+                    className="w-full resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 pr-12 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
+                  />
+                  <DictationButton value={prompt} onChange={setPrompt} disabled={busy} className="absolute right-2 bottom-2" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Size</span>
+                  <div className="flex flex-wrap gap-2">
+                    {ASPECT_RATIOS.map((r) => (
+                      <button key={r} type="button" disabled={busy} onClick={() => setAspectRatio(r)} className={chipClass(aspectRatio === r)}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </PanelGroup>
 
               {templates.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">
-                    Template <span className="text-muted">(optional)</span>
-                  </label>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                <PanelGroup title="Template" optional>
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => setTemplateId(null)}
-                      className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border text-center text-[11px] font-medium transition-colors disabled:opacity-50 ${
-                        templateId === null
-                          ? "border-transparent bg-button-bg text-button-fg"
-                          : "border-border-strong text-muted hover:bg-white/5"
+                      className={`flex aspect-[4/5] items-center justify-center rounded-xl border text-center text-xs font-medium transition-colors disabled:opacity-50 ${
+                        templateId === null ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-muted hover:bg-white/5"
                       }`}
                     >
                       No template
                     </button>
-                    {templates.map((t) => (
+                    {visibleTemplates.map((t) => (
                       <button
                         key={t.id}
                         type="button"
@@ -281,306 +388,200 @@ export default function ProjectDetailPage() {
                           setAspectRatio(t.aspect_ratio);
                         }}
                         title={t.description ?? t.name}
-                        className={`flex h-20 w-20 shrink-0 flex-col items-center gap-1 overflow-hidden rounded-2xl border p-1 transition-colors disabled:opacity-50 ${
-                          templateId === t.id
-                            ? "border-foreground"
-                            : "border-border-strong hover:bg-white/5"
+                        className={`flex flex-col gap-1 overflow-hidden rounded-xl border p-1 text-left transition-colors disabled:opacity-50 ${
+                          templateId === t.id ? "border-foreground" : "border-border-subtle hover:bg-white/5"
                         }`}
                       >
                         {t.thumbnail_url ? (
                           // eslint-disable-next-line @next/next/no-img-element -- remote curated template thumbnail
-                          <img src={t.thumbnail_url} alt={t.name} className="h-12 w-full rounded-xl bg-surface object-contain" />
+                          <img src={t.thumbnail_url} alt="" className="aspect-[4/5] w-full rounded-lg bg-surface object-contain" />
                         ) : (
-                          <div className="h-12 w-full rounded-xl bg-surface" />
+                          <div className="aspect-[4/5] w-full rounded-lg bg-surface" />
                         )}
-                        <span className="line-clamp-1 w-full text-[10px] text-foreground">{t.name}</span>
+                        <span className="line-clamp-1 px-0.5 text-[11px]">{t.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {templates.length > 5 && (
+                    <button type="button" onClick={() => setShowAllTemplates((v) => !v)} className="self-start text-xs text-muted underline-offset-4 hover:text-foreground hover:underline">
+                      {showAllTemplates ? "Show fewer" : `Show all ${templates.length} templates`}
+                    </button>
+                  )}
+                </PanelGroup>
+              )}
+
+              <PanelGroup title="Text on the poster" optional hint="Typeset exactly as written; the image itself never contains text.">
+                <input value={headline} onChange={(e) => setHeadline(e.target.value)} disabled={busy} maxLength={60} placeholder="Headline, e.g. Run further" className={INPUT} />
+                <input value={subline} onChange={(e) => setSubline(e.target.value)} disabled={busy} maxLength={120} placeholder="Supporting line, e.g. The lightest runner we've made" className={INPUT} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={offer} onChange={(e) => setOffer(e.target.value)} disabled={busy} maxLength={24} placeholder="Offer badge, e.g. 30% off" className={INPUT} />
+                  <input value={cta} onChange={(e) => setCta(e.target.value)} disabled={busy} maxLength={28} placeholder="Button, e.g. Shop now" className={INPUT} />
+                </div>
+                <input value={contactLine} onChange={(e) => setContactLine(e.target.value)} disabled={busy} maxLength={120} placeholder="Contact line: address, phone, website" className={INPUT} />
+                <Accordion optional title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
+                  {featureList.map((value, i) => (
+                    <input
+                      key={i}
+                      value={value}
+                      onChange={(e) => setFeatureList((list) => list.map((f, j) => (j === i ? e.target.value : f)))}
+                      disabled={busy}
+                      maxLength={70}
+                      placeholder={i === 0 ? "e.g. Test Prep: SAT, ACT and AP" : `Feature ${i + 1}`}
+                      className={INPUT}
+                    />
+                  ))}
+                  <p className="text-xs text-muted">Shown as bullets under the headline. Write &ldquo;Label: detail&rdquo; to set the label in bold.</p>
+                </Accordion>
+              </PanelGroup>
+
+              <PanelGroup title="Style">
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Tone</span>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_TONES.map((option) => (
+                      <button key={option.value} type="button" disabled={busy} onClick={() => setTone(option.value)} className={chipClass(tone === option.value)}>
+                        {option.label}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <label htmlFor="prompt" className="text-sm font-medium">
-                  Describe the ad
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    disabled={busy}
-                    placeholder={
-                      isPoster
-                        ? "A refreshing bottle of cold brew on ice, condensation dripping, bright summer light"
-                        : "A sleek smartphone rotating on a reflective podium, dramatic studio lighting, cinematic product ad style"
-                    }
-                    rows={4}
-                    className="w-full pr-12 resize-none rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                  />
-                  <DictationButton value={prompt} onChange={setPrompt} disabled={busy} className="absolute right-2 bottom-2" />
-                </div>
-              </div>
-
-              {isPoster && (
-                <>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">Aspect ratio</label>
-                    <div className="flex flex-wrap gap-2">
-                      {ASPECT_RATIOS.map((ratio) => (
-                        <button
-                          key={ratio}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setAspectRatio(ratio)}
-                          className={`rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
-                            aspectRatio === ratio
-                              ? "border-transparent bg-button-bg text-button-fg"
-                              : "border-border-strong text-foreground hover:bg-white/5"
-                          }`}
-                        >
-                          {ratio}
-                        </button>
-                      ))}
-                    </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Look</span>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_LOOKS.map((option) => (
+                      <button key={option.value} type="button" disabled={busy} onClick={() => setLook(option.value)} className={chipClass(look === option.value)}>
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
+                </div>
+              </PanelGroup>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">
-                      Poster copy <span className="text-muted">(optional)</span>
+              <div className="flex flex-col">
+                <Accordion optional title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
+                  {[
+                    { id: "audience", value: audience, set: setAudience, placeholder: "Audience, e.g. Parents of school-age kids in Hyderabad" },
+                    { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show, e.g. our campus, students in uniform" },
+                    { id: "avoid", value: avoid, set: setAvoid, placeholder: "Avoid, e.g. no crowds, no night scenes" },
+                  ].map((field) => (
+                    <input key={field.id} value={field.value} onChange={(e) => field.set(e.target.value)} disabled={busy} maxLength={300} placeholder={field.placeholder} className={INPUT} />
+                  ))}
+                </Accordion>
+
+                <Accordion
+                  optional
+                  title="Reference photos"
+                  className="mt-4"
+                  badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>}
+                  defaultOpen={posterAssets.length > 0}
+                >
+                  {posterAssets.map((asset, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
+                      <img src={asset.previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                      <select
+                        value={asset.kind}
+                        onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, kind: e.target.value as PosterAssetKind } : a)))}
+                        disabled={busy}
+                        className="rounded-full border border-border-subtle bg-background px-3 py-2 text-xs outline-none"
+                      >
+                        <option value="product">Product</option>
+                        <option value="character">Person</option>
+                        <option value="location">Location</option>
+                        <option value="logo">Logo</option>
+                      </select>
+                      <input
+                        value={asset.name}
+                        onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, name: e.target.value } : a)))}
+                        disabled={busy}
+                        maxLength={60}
+                        placeholder="Name"
+                        className={`min-w-0 flex-1 ${INPUT}`}
+                      />
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => {
+                          URL.revokeObjectURL(asset.previewUrl);
+                          setPosterAssets((list) => list.filter((_, i) => i !== index));
+                        }}
+                        className="text-xs text-muted hover:text-red-400"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {!has("reference_assets") && <p className="text-xs text-muted">Reference uploads aren&apos;t enabled on your account.</p>}
+                  {posterAssets.length < MAX_POSTER_ASSETS && has("reference_assets") && (
+                    <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${busy ? "pointer-events-none opacity-50" : "hover:bg-white/5"}`}>
+                      <Upload size={14} /> Upload a product, person, location, or logo
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        disabled={busy}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setPosterAssets((list) => [...list, { file, previewUrl: URL.createObjectURL(file), kind: "product", name: "" }]);
+                          e.target.value = "";
+                        }}
+                      />
                     </label>
-                    {[
-                      { id: "headline", value: headline, set: setHeadline, max: 60, placeholder: "Headline — e.g. Run further" },
-                      { id: "subline", value: subline, set: setSubline, max: 120, placeholder: "Supporting line — e.g. The lightest runner we've made" },
-                      { id: "offer", value: offer, set: setOffer, max: 24, placeholder: "Offer badge — e.g. 30% off" },
-                      { id: "cta", value: cta, set: setCta, max: 28, placeholder: "Button — e.g. Shop now, Enrol today" },
-                      { id: "contact", value: contactLine, set: setContactLine, max: 120, placeholder: "Contact line — address, phone, website" },
-                    ].map((field) => (
-                      <input
-                        key={field.id}
-                        value={field.value}
-                        onChange={(e) => field.set(e.target.value)}
-                        disabled={busy}
-                        maxLength={field.max}
-                        placeholder={field.placeholder}
-                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                      />
-                    ))}
-                    <p className="text-xs text-muted">Typeset exactly as written. The image itself never contains text.</p>
-                  </div>
+                  )}
+                </Accordion>
+              </div>
+            </div>
 
-                  <Accordion optional title="Feature list" defaultOpen={featureList.some((f) => f.trim())}>
-                    {featureList.map((value, i) => (
-                      <input
-                        key={i}
-                        value={value}
-                        onChange={(e) => setFeatureList((list) => list.map((f, j) => (j === i ? e.target.value : f)))}
-                        disabled={busy}
-                        maxLength={70}
-                        placeholder={i === 0 ? "e.g. Test Prep: SAT, ACT and AP" : `Feature ${i + 1}`}
-                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                      />
-                    ))}
-                    <p className="text-xs text-muted">Shown as bullets under the headline. Write &ldquo;Label: detail&rdquo; to set the label in bold.</p>
-                  </Accordion>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">Tone</label>
-                    <div className="flex flex-wrap gap-2">
-                      {AD_TONES.map((option) => (
-                        <button key={option.value} type="button" disabled={busy} onClick={() => setTone(option.value)} className={chipClass(tone === option.value)}>
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">Look</label>
-                    <div className="flex flex-wrap gap-2">
-                      {AD_LOOKS.map((option) => (
-                        <button key={option.value} type="button" disabled={busy} onClick={() => setLook(option.value)} className={chipClass(look === option.value)}>
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Accordion optional title="Guidance" defaultOpen={Boolean(audience || mustShow || avoid)}>
-                    {[
-                      { id: "audience", value: audience, set: setAudience, placeholder: "Audience — e.g. Parents of school-age kids in Hyderabad" },
-                      { id: "must-show", value: mustShow, set: setMustShow, placeholder: "Must show — e.g. our campus, students in uniform" },
-                      { id: "avoid", value: avoid, set: setAvoid, placeholder: "Avoid — e.g. no crowds, no night scenes" },
-                    ].map((field) => (
-                      <input
-                        key={field.id}
-                        value={field.value}
-                        onChange={(e) => field.set(e.target.value)}
-                        disabled={busy}
-                        maxLength={300}
-                        placeholder={field.placeholder}
-                        className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                      />
-                    ))}
-                  </Accordion>
-
-                  <Accordion optional title="Reference photos" badge={<span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-semibold tracking-wide">PRO</span>} defaultOpen={posterAssets.length > 0}>
-                    {posterAssets.map((asset, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
-                        <img src={asset.previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
-                        <select
-                          value={asset.kind}
-                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, kind: e.target.value as PosterAssetKind } : a)))}
-                          disabled={busy}
-                          className="rounded-full border border-border-subtle bg-background px-3 py-2 text-xs outline-none"
-                        >
-                          <option value="product">Product</option>
-                          <option value="character">Person</option>
-                          <option value="location">Location</option>
-                          <option value="logo">Logo</option>
-                        </select>
-                        <input
-                          value={asset.name}
-                          onChange={(e) => setPosterAssets((list) => list.map((a, i) => (i === index ? { ...a, name: e.target.value } : a)))}
-                          disabled={busy}
-                          maxLength={60}
-                          placeholder="Name"
-                          className="min-w-0 flex-1 rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50"
-                        />
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            URL.revokeObjectURL(asset.previewUrl);
-                            setPosterAssets((list) => list.filter((_, i) => i !== index));
-                          }}
-                          className="text-xs text-muted hover:text-red-400"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    {!has("reference_assets") && <p className="text-xs text-muted">Reference uploads aren&apos;t enabled on your account.</p>}
-                    {posterAssets.length < MAX_POSTER_ASSETS && has("reference_assets") && (
-                      <label className={`flex cursor-pointer items-center gap-2 self-start rounded-full border border-border-strong px-3 py-1.5 text-xs ${busy ? "pointer-events-none opacity-50" : "hover:bg-white/5"}`}>
-                        <Upload size={14} /> Upload a product, person, location, or logo
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          className="hidden"
-                          disabled={busy}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setPosterAssets((list) => [...list, { file, previewUrl: URL.createObjectURL(file), kind: "product", name: "" }]);
-                            e.target.value = "";
-                          }}
-                        />
-                      </label>
-                    )}
-                  </Accordion>
-                </>
-              )}
-
+            <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-[inherit] border-t border-border-subtle bg-background/90 p-4 backdrop-blur">
               {!has("poster") && <p className="text-xs text-muted">Posters aren&apos;t enabled on your account.</p>}
-              <Button
-                onClick={handleGenerate}
-                disabled={busy || !has("poster") || !prompt.trim() || posterAssets.some((a) => !a.name.trim())}
-                className="self-start"
-              >
-                {submitting ? "Starting…" : "Generate"}
+              {submitError && <p className="text-xs text-red-400">{submitError}</p>}
+              <Button onClick={handleGenerate} disabled={busy || !has("poster") || !prompt.trim() || posterAssets.some((a) => !a.name.trim())} className="w-full">
+                {submitting ? "Starting…" : generating ? "Generating…" : resultUrl ? "Generate new version" : "Generate"}
               </Button>
-              {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+              {!prompt.trim() && <p className="text-center text-xs text-muted">Describe the ad to generate.</p>}
             </div>
-
-            <div className="flex flex-col gap-4 p-5">
-              {job ? (
-                <JobStatusCard job={job} />
-              ) : (
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border-strong text-muted">
-                    {isPoster ? <ImageIcon size={16} /> : <Sparkles size={16} />}
-                  </div>
-                  <p className="text-sm font-medium">Nothing generated yet</p>
-                  <p className="text-xs text-muted">Your result will show up here once you hit Generate.</p>
-                </div>
-              )}
-            </div>
-          </div>
-          )}
-        </>
+          </section>
+        </div>
       )}
     </main>
   );
 }
 
-function JobStatusCard({ job }: { job: Job }) {
-  if (job.status === "queued" || job.status === "processing") {
-    const isPoster = job.output_type === "poster";
-    return (
-      <div className="flex items-center gap-3">
-        <Loader2 size={18} className="animate-spin text-muted" />
-        <div>
-          <p className="text-sm font-medium">
-            {job.status === "queued" ? "Queued" : isPoster ? "Generating your poster…" : "Generating your video…"}
-          </p>
-          <p className="text-xs text-muted">
-            {isPoster
-              ? "This usually takes a few seconds."
-              : "This usually takes 1–3 minutes. Feel free to leave this page — it'll keep going."}
-          </p>
-        </div>
-      </div>
-    );
-  }
+const INPUT =
+  "rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-border-strong disabled:opacity-50";
 
-  if (job.status === "failed") {
-    return (
-      <div className="flex items-start gap-3">
-        <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />
-        <div>
-          <p className="text-sm font-medium">Generation failed</p>
-          <p className="mt-1 text-xs text-muted">{job.error}</p>
-        </div>
-      </div>
-    );
-  }
-
+function PanelGroup({ title, optional, hint, children }: { title: string; optional?: boolean; hint?: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <CheckCircle2 size={16} className="text-emerald-400" />
-        <p className="text-sm font-medium">Done</p>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          {title}
+          {optional && <span className="rounded-full border border-border-subtle px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted">Optional</span>}
+        </h2>
+        {hint && <p className="text-xs text-muted">{hint}</p>}
       </div>
-      {job.output_url && job.output_type === "poster" && (
-        // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
-        <img src={job.output_url} alt="Generated poster" className="w-full rounded-xl" />
-      )}
-      {job.output_url && job.output_type !== "poster" && (
-        <video src={job.output_url} controls className="w-full rounded-xl" />
-      )}
-      {job.output_url && (
-        <div className="flex gap-2">
-          <a
-            href={`${job.output_url}?download`}
-            download
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
-          >
-            <Download size={12} />
-            Download
-          </a>
-          {job.output_type === "poster" && (
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(job.output_url)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium transition-colors hover:bg-white/5"
-            >
-              Share to WhatsApp
-            </a>
-          )}
-        </div>
-      )}
+      {children}
     </div>
+  );
+}
+
+function StatusPill({ job }: { job: Job | null }) {
+  if (!job) return null;
+  if (job.status === "queued" || job.status === "processing")
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-xs text-muted">
+        <Loader2 size={12} className="animate-spin" /> {job.status === "queued" ? "Queued" : "Generating"}
+      </span>
+    );
+  if (job.status === "failed")
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-xs text-red-400">
+        <XCircle size={12} /> Failed
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-2.5 py-1 text-xs text-muted">
+      <CheckCircle2 size={12} className="text-emerald-400" /> Done
+    </span>
   );
 }

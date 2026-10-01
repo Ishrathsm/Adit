@@ -48,6 +48,8 @@ export interface Job {
   error: string | null;
   reference_image_url: string | null;
   reference_image_role: "subject" | "style" | null;
+  // The poster brief this job was made from (posters only), so the editor can reopen it.
+  poster_brief?: PosterBrief | null;
   created_at: string;
   updated_at: string;
 }
