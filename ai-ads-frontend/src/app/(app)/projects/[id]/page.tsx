@@ -256,7 +256,7 @@ export default function ProjectDetailPage() {
       )}
 
       {project && isPoster && (
-        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="mt-4 grid items-start gap-6 lg:grid-cols-2">
           {/* Canvas (right on wide screens, first on phones): the poster at its real size ratio, pinned while the panel scrolls. */}
           <section className="flex flex-col gap-3 lg:order-2 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
             <div className="flex flex-wrap items-center gap-3">
