@@ -3,6 +3,8 @@ import { type CreativeBrief, endCardSeconds, footageSeconds, MAX_CUT_SECONDS, MI
 import { CATEGORY_PLAYBOOKS, CRAFT_RULES } from "./ad-craft";
 import { env } from "./env";
 import { withRateLimitRetry } from "./rate-limit-retry";
+import { checkScriptAgainstDials } from "./dials";
+import { type AdStrategy, auditScript, strategyDirection } from "./strategy";
 import { type BrandContext, colorName } from "./prompt-refiner";
 
 const genAI = env.googleCloudProjectId
@@ -78,6 +80,8 @@ export interface AdScript {
   // Each shot's composed description (what the refiners read), its treatment, and the names of the
   // reference assets (characters / product / location) visible in it.
   shots: { description: string; spec: ShotSpec; assetNames: string[] }[];
+  // With a strategy: each supervisor round's failures (the last round is empty when it passed).
+  audit?: string[][];
   // Recurring people to generate a character sheet for (only when requested).
   characters: { name: string; description: string }[];
   // Instrumental score description for the music model, matched to the film's arc and tone.
@@ -99,6 +103,9 @@ export interface ScriptOptions {
   assets?: ScriptAsset[];
   // Pro: define every recurring person so a character sheet can be generated before the shots.
   characterSheet?: boolean;
+  // The ad direction team's signed-off strategy (proposition, device, dials); absent = the
+  // director works from the brief alone.
+  strategy?: AdStrategy;
 }
 
 const STRING = { type: Type.STRING };
@@ -254,7 +261,7 @@ Hard rules:
 
 ${CRAFT_RULES}
 
-${CATEGORY_PLAYBOOKS}`;
+${CATEGORY_PLAYBOOKS}${options.strategy ? `\n\n${strategyDirection(options.strategy)}` : ""}`;
 }
 
 // Roughly 2.3 spoken words per second leaves room to breathe. The narration is written per shot
@@ -450,7 +457,7 @@ export async function generateAdScript(
 ${options.characterSheet ? `- characters: each recurring person not already a reference asset — "name" (a short first name) and "description" (~250 characters: age, ethnicity, build, face, hair, and exact wardrobe; identical to the look sheet).` : "- characters: an empty list."}
 - music_prompt (~250 characters): an instrumental score for exactly this film — genre, instruments, tempo, and how it moves with the arc (starts sparse, swells at the turn, resolves on the payoff), ending on one clean resolved final chord or motif that lands as the end card appears (the brand sting). Style direction for this tone: ${TONE_MUSIC[brief.tone]} — but if the client concept names a music style or instruments, that wins. Instrumental only, no vocals.`;
 
-  const checklist = `- Does the first shot hook within 1–2 seconds (tight on a face or one striking image, brand color present), and does the treatment follow the CRAFT RULES and the matching CATEGORY PLAYBOOK?
+  const checklist = `${options.strategy ? `- Does the film deliver the CREATIVE STRATEGY: would a stranger repeat its proposition after one viewing, is it shown through its device, does every shot, cut, line and the music sit at its dial settings (humour, pace, camera energy, grade, copy, VO, music, sound), and is every concept conflict fixed as it says? Where the strategy and anything below disagree, the strategy wins.\n` : ""}- Does the first shot hook within 1–2 seconds (tight on a face or one striking image, brand color present), and does the treatment follow the CRAFT RULES and the matching CATEGORY PLAYBOOK?
 - Is there one clear idea, and does every shot have a purpose that moves the story (problem → turn → payoff), or is it a generic montage of the person, the room and the product? Sharpen it.
 - Would a viewer who has never heard of the brand understand what the product is and what it does for them by the end? If the brief has a voiceover, does at least one line state the product's real scope using the client concept's own words (e.g. "from school academics to SAT prep and college applications", not a paraphrase like "every subject and test"), and is every phrase concrete ("your first-choice university", not "your first choice")?
 - Is the product shown as what it really is? A software, app or service product must never become an invented device or gadget — only the laptop or phone people already use. Does the product appear before the change it causes, and does the person make the final move themselves?
@@ -508,11 +515,45 @@ ${JSON.stringify(toScriptJson(draft), null, 2)}`);
   const settled = await Promise.allSettled(Array.from({ length: SCRIPT_CANDIDATES }, writeTreatment));
   const candidates = settled.flatMap((r) => (r.status === "fulfilled" && r.value.shots.length === plan.shotCount ? [r.value] : []));
   if (!candidates.length) throw settled.find((r): r is PromiseRejectedResult => r.status === "rejected")?.reason ?? new Error("No usable ad script");
-  const script = candidates.length === 1 ? candidates[0] : candidates[await pickBestTreatment(candidates, direction, checklist)];
+  let script = candidates.length === 1 ? candidates[0] : candidates[await pickBestTreatment(candidates, direction, checklist)];
+  // With a strategy, the winner goes to the checks — the dials in code, then the script
+  // supervisor — and back to the director with every failure, until it passes (two rewrites at most).
+  if (options.strategy) {
+    const strategy = options.strategy;
+    const audit: string[][] = [];
+    script.audit = audit;
+    for (let round = 0; round < 3; round++) {
+      const failures = [
+        ...checkScriptAgainstDials(strategy.dials, script.shots.map((sh) => ({ seconds: sh.spec.seconds ?? null, movement: sh.spec.movement }))),
+        ...(await auditScript(strategy, brief, toScriptJson(script)).catch((err) => {
+          console.warn("[ad-script] audit failed:", err instanceof Error ? err.message : err);
+          return [];
+        })),
+      ];
+      audit.push(failures);
+      console.log(`[ad-script] audit round ${round + 1}: ${failures.length} failure(s)`);
+      if (!failures.length || round === 2) break;
+      const fixed = await generateJson(`You are the director. The script supervisor and the dial checks failed your treatment. Fix EVERY failure below and return the whole corrected treatment in the same JSON shape; keep everything that passed.
+
+${direction}
+
+Failures to fix:
+${failures.map((f) => `- ${f}`).join("\n")}
+
+${outputSpec}
+
+Your treatment:
+${JSON.stringify(toScriptJson(script), null, 2)}`).catch(() => null);
+      if (!fixed || fixed.shots.length !== plan.shotCount) break;
+      script = fixed;
+      script.audit = audit;
+    }
+  }
   // The user's own narration always wins over anything the model wrote; none when not requested.
   script.voiceoverScript = brief.voiceover ? brief.voiceoverScript ?? script.voiceoverScript : null;
   if (!brief.voiceover) script.voiceoverDirection = null;
   if (!options.characterSheet) script.characters = [];
+  if (options.strategy) script.endCardTagline = options.strategy.tagline;
   // Asset names must match real assets/characters, or the shot would silently lose its references.
   const known = new Set([...(options.assets ?? []).map((a) => a.name), ...script.characters.map((c) => c.name)]);
   script.shots = script.shots.map((shot, i) => {
