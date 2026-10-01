@@ -1,0 +1,43 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Instant Food / Packaged Foods
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+OFFER: [Offer / Discount]
+CTA: [CTA]
+HERO VISUAL: [Hero Visual / Instant Food Dish]
+
+Create a premium, appetizing, high-impact instant-food advertisement with a bright, energetic commercial aesthetic and a strong food-product focal point.
+
+COMPOSITION:
+Place [Brand Logo] in a clear upper-left area with generous breathing room, with [Brand Name] set beside or beneath it. Position [Main Headline] prominently in a large, bold typographic treatment, preferably toward the upper-right or right-center. Place [Supporting Message] beneath the headline as concise supporting communication.
+
+Make [Hero Visual / Instant Food Dish] — a steaming, freshly prepared bowl or plate of the food — the dominant hero visual toward the left/center. Show glossy textures, realistic steam, fresh vegetables, herbs, and appetizing detail. Add the packaged product (pouch, cup, or box) toward the center-right as a secondary element. A utensil lifting food can create height and motion, but keep the composition controlled.
+
+Place [Offer / Discount] prominently but secondary to the main headline and hero product, in a clean badge or ribbon, followed by [CTA] and [Website / Contact].
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain substantial intentional negative space. Preserve large clean background areas around the logo, headline, hero food, product pack, offer, and CTA. Do not overcrowd the banner with excessive ingredients, steam, particles, patterns, icons, or decorative graphics. Keep visual effects concentrated around the food.
+
+Use a warm, vibrant food-advertising palette built from [Brand Colors] with strong contrast and clean commercial lighting. Maintain a clear hierarchy:
+BRAND → HEADLINE → HERO FOOD → SUPPORTING MESSAGE → OFFER → CTA.
+
+Use bold, clean, highly legible typography suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, prices, claims, contact details, or promotional information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY, wide format, full-bleed edge-to-edge artwork
+- Large dominant food hero, controlled overlapping product elements, large intentional negative space
+- Clear typography hierarchy, premium food advertising aesthetic, original artwork
+- No billboard mockup, no physical billboard, no outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard photograph, no billboard perspective, no device mockup
+- No surrounding presentation scene, no watermark, no unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Instant Food Dish] [Supporting Message] [Offer / Discount] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the dish, packaging shape, garnish, steam and texture detail, and accent colors to match the specific instant or packaged food supplied — noodles, soups, ready-to-eat meals, pastas, or snack mixes — while preserving the same bright, appetizing, product-focused design system.
+
+The output must be the ACTUAL FINISHED PRINT-READY ADVERTISING BANNER for the supplied instant food brand, not a photograph or visualization of a billboard.

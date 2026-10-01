@@ -1,0 +1,49 @@
+Create a premium, realistic vertical Travel & Tourism promotional poster template for [Travel Theme], reusable for travel agencies, tourism companies, holiday packages, hotels, resorts, airlines, cruises, adventure tours, honeymoon packages, family vacations, corporate travel, weekend getaways, and destination campaigns.
+
+FORMAT:
+Portrait layout optimized for Instagram, WhatsApp, websites, digital advertising, brochures, and travel promotions. Use a professional grid, balanced margins, intentional whitespace, and this visual flow:
+[Brand Logo] → [Main Headline] → [Destination] → [Supporting Message] → [Travel Package / Offer] → [CTA] → [Website / Contact].
+
+HERO DESTINATION:
+Make [Destination] or [Travel Experience] the primary visual focal point. Automatically adapt the scene to the campaign: beach, mountains, luxury resort, city, cultural destination, wildlife, island, adventure, road trip, cruise, snow destination, romantic getaway, family vacation, or nature retreat.
+
+Use realistic, professionally photographed travel scenery with believable landscapes, architecture, vegetation, water, transportation, sunlight, clouds, reflections, shadows, and atmospheric depth. Avoid impossible geography, distorted landmarks, duplicated buildings, or artificial environments.
+
+TRAVEL ELEMENTS:
+Add only relevant supporting elements such as luggage, passport, camera, map, sunglasses, airplane, train, cruise ship, resort amenities, or rental vehicle. If people are included, show natural poses, realistic anatomy, believable clothing, accurate hands, and genuine interaction with the destination.
+
+BACKGROUND:
+Create a complete environment appropriate to the destination. Beach scenes may include ocean, sand, palms and resorts; mountain scenes may include peaks, trails and forests; city scenes may include architecture and streets; luxury travel may include resorts and pools; cultural travel may include authentic surroundings and heritage architecture.
+
+LIGHTING:
+Use premium travel photography with natural sunlight, golden-hour warmth, soft morning light, or sophisticated evening illumination. Add realistic highlights, shadows, reflections, atmospheric perspective, and subtle depth of field. Avoid excessive HDR, artificial glow, or fantasy lighting.
+
+TYPOGRAPHY:
+Make [Main Headline] powerful but never cover important scenery. Use modern sans-serif, refined serif, or elegant display typography. Hierarchy:
+1. [Main Headline]
+2. [Destination]
+3. [Travel Package] / [Offer / Price]
+4. [Supporting Message]
+5. [CTA] / [Website / Contact]
+
+Keep typography crisp, correctly spelled, professionally aligned, and highly readable on mobile.
+
+BRANDING:
+Place [Brand Logo] discreetly near the top corner and preserve it exactly. Never distort, recolor, stretch, or invent branding.
+
+OFFER & CTA:
+Display [Travel Package], [Offer / Price], and [Travel Dates] in refined badges, cards, capsules, or information blocks. Never invent prices, dates, availability, or claims. Add [CTA] such as BOOK NOW, EXPLORE NOW, PLAN YOUR TRIP, or ENQUIRE NOW using only supplied wording.
+
+COLOR:
+Adapt the palette to [Destination], [Travel Theme], and [Brand Colors]. Use natural premium colors: turquoise/sand for beaches, blue/green for mountains, navy/gold for luxury, earthy tones for adventure, or destination-inspired colors for cultural travel.
+
+PLACEHOLDERS:
+[Brand Logo] [Travel Agency / Brand Name] [Brand Colors] [Travel Theme] [Destination] [Main Headline] [Travel Package] [Offer / Price] [Travel Dates] [Supporting Message] [Traveler / Lifestyle Visual] [CTA] [Website / Contact] [Location]
+
+ADAPTABILITY:
+Keep the same premium design system while naturally changing the destination, environment, colors, people, supporting objects, and travel experience.
+
+NEGATIVE:
+No copied artwork, fake logos, invented information, random landmarks, impossible geography, distorted vehicles, duplicated objects, unrealistic architecture, plastic landscapes, excessive glow, extreme HDR, clutter, excessive empty space, distorted people, malformed hands, blurry scenery, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: a premium, realistic, production-ready travel advertisement where the destination is the unmistakable hero and the complete design works across different destinations and campaigns.

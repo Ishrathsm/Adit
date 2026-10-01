@@ -1,0 +1,59 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Consumer Electronics / Audio & Gadgets
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+PRODUCT / MODEL: [Product / Model Name]
+CTA: [CTA]
+
+Create a premium, minimalist electronics/gadgets advertising banner with a sophisticated high-end commercial aesthetic. Use the uploaded reference STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Preserve its wide horizontal proportions, clean left-content/right-product structure, generous spacing, product scale, typography hierarchy, and overall advertising rhythm. Recreate the STRUCTURAL LOGIC ONLY with original artwork. Do not copy any distinctive visual elements from the reference.
+
+COMPOSITION:
+Create a clean LEFT-CONTENT / RIGHT-HERO layout. Place [Brand Logo] / [Brand Name] in the upper-left with generous breathing room. Place [Main Headline] prominently below it using large, bold, modern typography. Position [Supporting Message] beneath the headline with a smaller, restrained typographic treatment. Place [Product / Model Name] and [CTA] below the supporting message.
+
+On the RIGHT side, feature [Hero Product] as the primary hero product, accompanied by up to one or two coordinated secondary products or accessories in the same product family (for example a charging case, a companion device, or packaging). Keep the product group controlled, balanced, and visually separated. Products should appear photorealistic, premium, highly detailed, and professionally lit, with realistic materials, metallic accents, glass surfaces, soft reflections, and subtle shadows.
+
+Use a clean background with a refined tonal gradient and subtle flowing curves or abstract forms relevant to the product category. Keep decorative elements minimal and concentrated around the product area.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain MORE intentional negative space than the reference. Leave large clean breathing areas around the logo, headline, supporting message, product information, CTA, and hero products. Do not fill the canvas with sound waves, particles, icons, patterns, equalizers, excessive glow, or decorative objects. The background should remain calm and uncluttered.
+
+Maintain this hierarchy:
+[Brand Name] → [Main Headline] → [Supporting Message] → [Hero Product] → [Product / Model Name] → [CTA].
+
+Typography must be clean, bold, modern, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, specifications, prices, features, claims, contact details, or promotional information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Wide horizontal format
+- Full-bleed edge-to-edge artwork
+- Left-side communication + right-side product group
+- One dominant hero product
+- Controlled secondary product elements
+- Large intentional negative space
+- Premium minimalist electronics aesthetic
+- Strong typography hierarchy
+- Clean professional composition
+- Original brand campaign artwork
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No photograph of a billboard
+- No billboard perspective
+- No device mockup
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Supporting Message] [Hero Product] [Product / Model Name] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the featured device type, materials, and secondary accessories to fit the specific gadget described — headphones and earbuds, smartwatches, speakers, cameras, or other consumer electronics — while keeping the same left-copy / right-product-group system and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented specifications or claims, distorted product geometry, unrealistic reflections, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: The output must be the ACTUAL FINISHED PRINT-READY advertising banner for the described brand, not a photograph or visualization of a billboard.

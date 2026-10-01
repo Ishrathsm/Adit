@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { VALID_ASPECT_RATIOS } from "../lib/aspect-ratio";
 import { type PosterBrief, parsePosterBrief } from "../lib/poster-brief";
 import { type AuthedRequest, checkFeature } from "../middleware/auth";
 import { enqueueGenerationJob } from "../lib/queue";
@@ -8,7 +9,6 @@ import { getTemplateById } from "../lib/templates";
 
 export const jobsRouter = Router();
 
-const VALID_ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"];
 // Veo rejects anything outside this pair (e.g. "Invalid aspect ratio: 1:1") — unlike image
 // generation, which supports the wider VALID_ASPECT_RATIOS set above.
 const VIDEO_ASPECT_RATIOS = ["9:16", "16:9"];
@@ -73,8 +73,9 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
       return;
     }
 
+    let template = null;
     if (templateId) {
-      const template = await getTemplateById(templateId);
+      template = await getTemplateById(templateId);
       if (!template) {
         res.status(404).json({ error: "template not found" });
         return;
@@ -87,10 +88,11 @@ jobsRouter.post("/", async (req: AuthedRequest, res) => {
 
     const job = await createJob(projectId, prompt.trim(), {
       outputType,
-      // The jobs table's aspect_ratio default ('1:1') is poster-oriented and Veo rejects it —
-      // video jobs need an explicit video-safe fallback when the caller doesn't specify one.
+      // An explicit choice always wins. Otherwise prefer the template's own ratio (it was
+      // designed at that ratio) over one default for every job — the jobs table's '1:1' default
+      // is poster-oriented and Veo rejects it, so video still needs its own safe fallback.
       aspectRatio:
-        typeof aspectRatio === "string" ? aspectRatio : outputType === "video" ? "16:9" : undefined,
+        typeof aspectRatio === "string" ? aspectRatio : (template?.aspect_ratio ?? (outputType === "video" ? "16:9" : undefined)),
       durationSeconds: outputType === "video" && typeof durationSeconds === "number" ? durationSeconds : undefined,
       tagline: typeof tagline === "string" && tagline.trim() ? tagline.trim() : undefined,
       templateId: typeof templateId === "string" ? templateId : undefined,

@@ -1,0 +1,56 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK for an e-commerce / quick-commerce brand.
+
+BRAND: [Brand Name]
+CATEGORY: E-commerce / Quick Commerce
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [E-commerce Product / Shopping Bag / Delivery Visual]
+
+Create a premium, modern, energetic commercial advertisement communicating speed, convenience, everyday shopping, and easy living.
+
+Use a wide horizontal composition with a strong LEFT-TEXT / RIGHT-HERO structure. Place [Brand Logo] / [Brand Name] in the upper-left area, followed by a large bold [Main Headline]. Keep [Supporting Message] short and visually secondary. Place [CTA] below the main communication. Position one large, polished [Hero Visual] on the right side, such as a shopping bag, basket, delivery package, mobile app on a phone, or selected everyday products.
+
+Use a bright, fresh, contemporary color palette appropriate for e-commerce, with a clean background and subtle visual depth. The hero visual should be realistic, attractive, recognizable, and immediately communicate shopping or delivery.
+
+Maintain MORE INTENTIONAL NEGATIVE SPACE. Keep generous clean breathing room between the logo, headline, CTA, and hero visual. Do not fill empty areas with unnecessary graphics, patterns, icons, objects, or excessive effects. Use only a few subtle supporting elements when they directly reinforce speed or convenience.
+
+Create a clear visual hierarchy:
+[Brand Name] → [Main Headline] → [Supporting Message] → [CTA]
+with [Hero Visual] as the major secondary focal point.
+
+Typography should be bold, modern, highly legible, and suitable for large-format advertising. Keep all copy concise and use only the supplied text. Do not invent additional slogans, prices, discounts, delivery-time claims, or promotional information.
+
+The overall design should feel fast, convenient, trustworthy, fresh, premium, clean, and immediately understandable from a distance.
+
+STRICT OUTPUT:
+- FINAL FLAT BANNER ARTWORK ONLY
+- Wide horizontal format
+- Full-bleed edge-to-edge artwork
+- Clean left-text/right-visual composition
+- Large intentional negative space
+- One dominant hero visual
+- Original visual identity for the described brand
+- Professional commercial advertising design
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard photograph
+- No perspective presentation
+- No device mockup
+- No surrounding scene
+- No watermark
+- No unnecessary decorative clutter
+- No invented copy
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Supporting Message] [E-commerce Product / Shopping Bag / Delivery Visual] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the hero visual and supporting product styling to fit the specific e-commerce offering described — grocery and quick-commerce delivery, fashion and marketplace apps, electronics or general retail — while keeping the same left-text / right-hero structure, energetic fresh palette, and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented prices, discounts, or delivery-time claims, cluttered product groupings, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: The final output must be the actual finished printable advertising banner for the described brand, not a photograph or visualization of a billboard.

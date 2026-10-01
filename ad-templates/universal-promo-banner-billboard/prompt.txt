@@ -1,0 +1,61 @@
+Create ONLY the FINAL FLAT VERTICAL ADVERTISING BANNER ARTWORK.
+
+Do NOT create a billboard mockup, physical billboard, digital-signage kiosk, display stand, indoor/outdoor environment, photograph of a screen, perspective presentation, or surrounding scene.
+
+Use the uploaded reference image STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Preserve its vertical orientation, aspect ratio, tall rectangular structure, centered communication, typography hierarchy, spacing, scale relationships, visual rhythm, and overall information flow. Recreate the STRUCTURAL LOGIC ONLY with completely original artwork. Do not copy the reference brand, logo, wording, typography, colors, imagery, products, icons, or distinctive elements.
+
+CATEGORY: [Category]
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+OFFER / PRICE: [Offer / Price]
+CTA: [CTA]
+HERO VISUAL: [Product / Service / Subject]
+
+COMPOSITION:
+Create a premium vertical advertising banner designed for immediate visual communication, reusable for fashion, food and beverage, electronics, beauty, home goods, automotive, or any other product or service category running a promotion. Use a strong category-appropriate background or controlled gradient in [Brand Colors] covering the entire canvas. Keep the main communication concentrated within the central vertical area.
+
+Place [Brand Logo] in a clear upper region with generous breathing room. Make [Main Headline] large, bold, and immediately readable. Position [Product / Service / Subject] in the central or lower-central area according to the reference structure. [Supporting Message], [Offer / Price], and [CTA] should remain secondary and neatly organized.
+
+Use ONE dominant hero visual or a small coordinated group of products for [Product / Service / Subject]. Make the hero large, realistic, detailed, recognizable, and visually compelling. Use controlled shadows, highlights, depth, lighting, and subtle category-specific effects only when they strengthen the concept.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain MORE intentional negative space than the reference. Preserve large clean areas around [Brand Logo], [Main Headline], [Product / Service / Subject], [Offer / Price], and [CTA]. Do not fill the canvas with excessive patterns, repeated text, icons, particles, decorative objects, or unnecessary effects. Empty areas must feel deliberate, premium, balanced, and professionally art-directed.
+
+Maintain this hierarchy:
+[Brand Logo] → [Main Headline] → [Product / Service / Subject] → [Supporting Message] → [Offer / Price] / [CTA]
+
+Use bold, clean, modern, highly legible typography suitable for vertical advertising. Use ONLY the supplied copy. Do not invent additional slogans, claims, prices, offers, specifications, contact details, or promotional information. If [Offer / Price], [Supporting Message], or [CTA] is left empty, leave that zone out entirely rather than inventing content.
+
+STRICT OUTPUT:
+- FINAL FLAT VERTICAL BANNER ONLY
+- Preserve the reference's vertical orientation
+- Preserve its structural layout and proportions
+- Full-bleed edge-to-edge artwork
+- Strong central composition
+- One dominant hero visual
+- Large intentional negative space
+- Clear typography hierarchy
+- Original category-specific visual language
+- Premium commercial advertising aesthetic
+- Clean professional art direction
+- No mockup
+- No physical billboard
+- No digital signage frame
+- No kiosk or display stand
+- No indoor/outdoor environment
+- No road, buildings, sky, poles, supports, or lighting fixtures
+- No perspective presentation
+- No photograph of a screen or billboard
+- No device mockup
+- No surrounding scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Category] [Main Headline] [Supporting Message] [Offer / Price] [CTA] [Product / Service / Subject]
+
+ADAPTABILITY:
+Automatically change the hero visual, background treatment, colors, and storytelling to match [Category] — fashion, food and beverage, electronics, beauty, home goods, automotive, travel, or any other product or service — while keeping the same premium vertical structure, hierarchy, and generous negative space.
+
+Final result: the ACTUAL FINISHED FLAT VERTICAL ADVERTISING BANNER, ready for printing or digital display, with a premium, category-adaptive design and generous intentional negative space — not a visualization of where the advertisement is displayed.

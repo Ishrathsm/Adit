@@ -1,0 +1,40 @@
+Create ONLY THE FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+Use the uploaded reference ONLY as a STYLE AND COMPOSITION REFERENCE. Preserve its overall visual language: wide horizontal format, premium editorial advertising aesthetic, clean light background, strong upper headline area, one dominant central hero subject, dynamic flowing visual elements extending horizontally, minimal branding, restrained supporting information, balanced proportions, elegant visual rhythm, and generous intentional negative space.
+
+Do NOT copy the reference brand, logo, wording, model, clothing, colors, photography, typography, fabric effects, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: [Category]
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual]
+OFFER / SUPPORTING MESSAGE: [Offer / Supporting Message] (optional)
+CTA: [CTA] (optional)
+
+This design is a premium brand spotlight, reusable across fashion, beauty, beverages, technology, automotive, real estate, and other services. Adapt the visual language naturally to the selected [Category] — the CATEGORY changes the subject matter, NOT the overall design philosophy.
+
+Create ONE dominant [Hero Visual] positioned centrally or slightly off-center. Keep the complete subject clearly visible and safely inside the canvas. The hero should feel premium, polished, expressive, and visually connected to [Main Headline].
+
+Use ONE elegant dynamic visual treatment appropriate to [Category], such as flowing fabric for fashion, liquid motion for beverages, light trails for technology, aerodynamic forms for automotive, organic curves for beauty, or architectural lines for real estate. Keep these elements controlled and purposeful.
+
+Place [Main Headline] prominently across the upper communication area as ONE short, memorable line. Use strong typography hierarchy, controlled line breaks, and excellent readability. Keep the headline visually dominant without overwhelming the hero subject.
+
+Place [Brand Logo] and [Brand Name] in a small, refined position, preferably near an upper or lower corner. If [Offer / Supporting Message] or [CTA] is provided, keep it secondary and concise.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around [Main Headline], [Hero Visual], [Brand Logo], and any supporting information. Do not fill empty areas unnecessarily. The negative space must feel deliberate, luxurious, balanced, and functional.
+
+Use ONLY essential content: [Brand Logo], ONE [Main Headline], ONE [Hero Visual], and optionally ONE [Offer / Supporting Message] and ONE [CTA]. Do NOT add feature lists, multiple products, icons, badges, statistics, social-media elements, random objects, excessive patterns, or unnecessary copy.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, gradients, and motion elements appropriate to [Brand Colors] and the selected [Category]. The reference controls the STYLE, STRUCTURE, SPACING, AND VISUAL RHYTHM ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the complete canvas edge-to-edge. Keep all important text, branding, and the COMPLETE hero subject safely inside the canvas. Do not crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, wall, building, street, city, sky, outdoor environment, storefront, installation, lighting fixtures, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Category] [Main Headline] [Hero Visual] [Offer / Supporting Message] [CTA]
+
+ADAPTABILITY:
+Automatically change the hero subject and its dynamic motion treatment to match [Category] — flowing fabric for fashion, liquid motion for beverages, light trails for technology, aerodynamic forms for automotive, organic curves for beauty, or architectural lines for real estate — while keeping the same premium editorial layout, restrained branding, and generous negative space.
+
+Final result: a premium, sophisticated, editorial-style horizontal advertising banner with one dominant hero subject, elegant dynamic visual movement, strong typography hierarchy, minimal essential communication, and MORE INTENTIONAL NEGATIVE SPACE.

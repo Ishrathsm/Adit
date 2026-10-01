@@ -1,0 +1,41 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Snacks / Packaged Foods
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Hero Visual / Snack Product]
+
+Create a bold, energetic, premium snack advertising design. Use one strong category-appropriate background color or restrained gradient, built from [Brand Colors], covering the full canvas edge-to-edge.
+
+COMPOSITION:
+Make [Hero Visual / Snack Product] the dominant hero visual, positioned center-left to center, large, photorealistic, highly detailed, recognizable, appetizing, and professionally lit — for example a can, bag, box, or tray of the snack shown at a dynamic angle. Use a limited number of the snack pieces (chips, crackers, or similar) dynamically surrounding or emerging from the product. Add subtle crumbs, motion, realistic shadows, highlights, depth, and commercial lighting only where they strengthen the hero visual.
+
+Place [Brand Logo] and [Brand Name] on or near the product where natural, and position [Main Headline] toward the right side in large, bold, modern typography, broken into two short punchy lines with one word emphasized in an accent color. Place [Supporting Message] beneath the headline in a smaller line, and [CTA] beneath that in a clean pill-shaped button, followed by [Website / Contact].
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL.
+Maintain substantial intentional negative space. Preserve large clean areas around the brand, headline, hero product, supporting message, and CTA. Do not fill empty areas with excessive chips, ingredients, particles, patterns, icons, repeated text, textures, or decorative graphics. The negative space should feel deliberate, premium, balanced, calm, and professionally art-directed.
+
+Maintain this hierarchy:
+HERO PRODUCT → HEADLINE → SUPPORTING MESSAGE → CTA.
+
+Typography must be bold, clean, modern, highly legible, and appropriately scaled for a wide horizontal advertising format. Use ONLY the supplied copy. Do not invent additional slogans, claims, prices, offers, discounts, contact details, or promotional information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY, full-bleed edge-to-edge artwork
+- One dominant snack hero product, strong product-focused composition
+- Large intentional negative space, clear typography hierarchy
+- Premium commercial snack advertising aesthetic, original artwork
+- No billboard mockup, no physical billboard, no outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard perspective, no photograph of a billboard, no device mockup
+- No surrounding presentation scene, no watermark, no unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Snack Product] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the snack format (chips, crackers, popcorn, pretzels, or namkeen), packaging shape, color palette, and burst/motion styling to match the specific snack product supplied, while preserving the same bold, high-energy, product-focused design system.
+
+The output must be the ACTUAL FINISHED FLAT HORIZONTAL ADVERTISING BANNER, ready for printing or digital display — NOT a photograph or visualization of a billboard.

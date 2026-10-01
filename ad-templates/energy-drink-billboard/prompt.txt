@@ -1,0 +1,40 @@
+Create ONLY a FINAL FLAT HORIZONTAL BILLBOARD ADVERTISEMENT BANNER for an energy drink brand.
+
+CATEGORY: Energy Drinks / Beverages
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Hero Visual / Energy Drink Can]
+
+Create a premium, bold, high-impact commercial beverage advertisement with a clean professional advertising composition. Use a rich, full-bleed background built from [Brand Colors] with subtle tonal depth and strong contrast between the background, typography, and product.
+
+COMPOSITION:
+Place [Brand Logo] prominently in the upper-left area with generous surrounding breathing room, with [Brand Name] set beside or beneath it. Position [Main Headline] beneath the logo, occupying a strong portion of the left side. Use oversized, bold, condensed uppercase typography with a clear hierarchy. Break the headline into two or three visually powerful lines, with the strongest word emphasized in a bright accent color drawn from [Brand Colors]. Use high-contrast typography with a selective accent highlight for emphasis.
+
+Place a large hero can or bottle on the right side, angled slightly for a dynamic premium product-shot appearance, as [Hero Visual / Energy Drink Can]. Make the product highly detailed, realistic, cold, metallic or glossy, and covered with subtle condensation. Surround the lower and side portions of the product with controlled liquid movement, small splashes, droplets, and a few translucent ice cubes. Keep these effects concentrated around the product rather than spreading them across the entire composition.
+
+Maintain strong intentional negative space between the left typography block and the right product area. Do not overcrowd the banner. The composition should feel spacious, balanced, premium, energetic, and immediately readable from a distance.
+
+VISUAL STYLE:
+Premium commercial beverage advertising, photorealistic product photography, dramatic studio lighting, crisp details, high contrast, clean edges, sophisticated art direction, vibrant but controlled color palette, realistic liquid physics, subtle depth, polished advertising finish.
+
+Place [Supporting Message] and [CTA] in a small, clean secondary zone near the bottom-left, and [Website / Contact] beneath it in a compact, legible line. Never invent additional slogans, prices, discounts, or claims beyond the supplied copy.
+
+STRICT REQUIREMENTS:
+- FINAL FLAT BANNER ARTWORK ONLY
+- Wide horizontal composition, full-bleed edge-to-edge
+- No billboard mockup, no outdoor billboard scene
+- No road, sky, buildings, poles, supports, frame, lights, or installation structure
+- No physical billboard perspective, no device mockup, no surrounding environment
+- No extra slogans, no unnecessary text, no decorative clutter
+- Preserve substantial intentional negative space; do not fill every empty area
+- Make the final result look like professionally designed printable advertising artwork, not a photograph of a billboard
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Energy Drink Can] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the can or bottle shape, liquid color, condensation and splash style, accent colors, and typography treatment to match the specific energy drink, flavor, or brand identity supplied, while keeping the same premium, high-contrast, high-energy design system.
+
+Final result: a premium, bold, ready-to-print energy drink advertising banner with a striking typography block on the left and a dynamic hero product shot on the right, professionally art-directed and free of any billboard mockup elements.

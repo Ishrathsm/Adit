@@ -67,7 +67,7 @@
   --color-folder-tab: var(--folder-tab);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --radius-card: 1.75rem;
+  --radius-card: 0.875rem;
 }
 
 html,

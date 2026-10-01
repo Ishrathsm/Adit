@@ -1,0 +1,58 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK, reusable for burger joints, fast-food chains, cloud kitchens, food trucks, and quick-service restaurants promoting a signature burger or sandwich.
+
+CATEGORY: Burger / Fast Food
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Hero Burger / Dish]
+
+FORMAT & COMPOSITION:
+Use a wide horizontal composition with a strong LEFT-CONTENT / RIGHT-HERO structure. Place [Brand Logo] and [Brand Name] in the upper-left with generous breathing room. Position [Main Headline] prominently beneath the brand using large, bold, modern typography. If the headline naturally breaks into two or three short punchy phrases, stack them and give each phrase its own visual weight while keeping a cohesive typographic hierarchy; otherwise set it as one strong bold line.
+
+HERO VISUAL:
+Place one large, photorealistic [Hero Burger / Dish] on the right as the dominant focal point. Show a premium toasted bun, crisp lettuce, fresh tomato, onion, melted cheese, a juicy grilled patty, and subtle sauce details, adapted naturally to the specific item described. Make the food highly appetizing with realistic textures, dramatic commercial lighting, crisp details, and natural depth.
+
+DYNAMIC ACCENTS:
+Add a limited number of dynamic food elements around the hero, such as floating ingredients, crumbs, subtle sauce movement, or small particles. Keep these effects concentrated around the hero and avoid clutter.
+
+BACKGROUND:
+Use a rich, energetic background suitable for fast-food advertising, built from [Brand Colors]. Maintain strong contrast between the background, typography, and the hero food.
+
+NEGATIVE SPACE:
+PRIORITIZE INTENTIONAL NEGATIVE SPACE. Leave large clean breathing areas around the brand, headline, CTA, and hero food. Do not fill empty areas with unnecessary decorations, ingredients, patterns, textures, or effects. The negative space must feel deliberate, premium, balanced, and professionally art-directed.
+
+HIERARCHY:
+Maintain this visual hierarchy: [Brand Logo] / [Brand Name] → [Main Headline] → [Supporting Message] → [CTA], with the hero food as the dominant visual focal point.
+
+TYPOGRAPHY & CTA:
+Use bold, clean, highly legible typography suitable for large-format advertising, with [CTA] placed in a simple, high-contrast button or highlighted shape. Use only the supplied copy. Never invent additional slogans, prices, discounts, offers, contact details, or claims that were not given.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Full-bleed edge-to-edge artwork
+- Wide horizontal format
+- Left-side communication + right-side hero food
+- Large intentional negative space
+- One dominant hero product
+- Premium food advertising aesthetic
+- Clean professional composition
+- Original artwork
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No photograph of a billboard
+- No billboard perspective
+- No device mockup
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Supporting Message] [Hero Burger / Dish] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the hero food's toppings, sauces, bun style, and plating to whatever burger or sandwich item is described, and adjust the background palette to [Brand Colors], while keeping the same left-content / right-hero layout, negative-space discipline, and typographic hierarchy across cheeseburgers, chicken burgers, veggie burgers, gourmet sliders, wraps, and sandwich combos within this category.
+
+Final result: a premium, appetizing, production-ready flat burger advertising banner with one dominant hero product, bold punchy typography, and large intentional negative space — not a photograph or mockup of a billboard.

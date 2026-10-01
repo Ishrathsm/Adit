@@ -1,0 +1,30 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+Preserve a wide horizontal canvas with the brand positioned in the upper-left area, a large bold headline occupying the left communication zone, an oversized hero dessert positioned toward the right, strong contrast, and generous open space between major elements.
+
+CATEGORY: Desserts / Ice Cream & Frozen Treats
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual / Dessert]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Place [Brand Logo] and [Brand Name] clearly in the upper-left communication area, one above the other. Make [Main Headline] the dominant text element, using bold, highly readable typography with controlled line breaks across two lines, the second line set in an accent color drawn from [Brand Colors]. Position ONE large [Hero Visual / Dessert] toward the right side — for example ice cream cones or scoops, a sundae, a popsicle, or a bakery treat — allowing it to become the primary visual attraction without overwhelming the headline. Show it freshly prepared, richly textured, with realistic melt, garnish, fruit, or toppings appropriate to the dessert.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around the headline, brand, and hero visual, using a soft circular or rounded backdrop shape behind the dessert if it strengthens the composition. Do not fill empty areas unnecessarily. Avoid excessive decorative graphics, icons, badges, feature lists, multiple headlines, multiple products, or unnecessary text.
+
+Use ONLY the necessary information: one brand, one headline, one hero visual, and optionally [Supporting Message] or [CTA] placed in a small zone beneath the headline, with [Website / Contact] beneath that. If supporting text or CTA is not provided, do not invent additional copy.
+
+Create completely ORIGINAL colors, imagery, typography, graphic shapes, and textures appropriate to [Brand Colors] and the selected dessert.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. The artwork must fill the entire canvas edge-to-edge.
+
+DO NOT create a billboard mockup, physical billboard, street scene, building, outdoor environment, bus shelter, frame, pole, support structure, lighting fixture, installation, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Dessert] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically change the dessert format, flavor, colors, fruit or topping, serving vessel (cone, cup, bowl, stick, or box), and background tone to match the specific dessert supplied — ice cream, gelato, popsicles, cupcakes, pastries, or other frozen and baked treats — while maintaining the same premium, spacious design system.
+
+FINAL RESULT: a premium, bold, clean horizontal advertising banner with strong left-side communication, an oversized right-side hero dessert, minimal copy, and generous intentional negative space.

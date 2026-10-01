@@ -33,7 +33,8 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 
 ### `template.png`
 - A **finished, fully designed** poster, exactly the kind of result users should get.
-- **Portrait 2:3** (e.g. 1024×1536), PNG or JPG, under 8 MB.
+- Use the template's own real design dimensions — don't crop or resize it to force a "clean" ratio. Any ratio Remix supports works: 1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 21:9. PNG or JPG, under 8 MB.
+- The importer reads this file's actual pixel dimensions and stores the nearest of those ratios as the template's own `aspect_ratio` — used only when generating a *new* remix (the image model only draws at a fixed set of ratios, so an exotic ratio still gets matched to its closest supported one for that step). The thumbnail itself is never cropped, stretched, or forced into a box — it always displays at its true, full, original shape.
 - Placeholder text on it (`[Brand Logo]`, `[Website]`) is fine. The model is told never to copy the template's words.
 
 ### `meta.json`
@@ -46,6 +47,7 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 ```
 - `name` must be unique. It's the card title, and the importer skips a name that already exists.
 - `type` is `"poster"`. Video templates aren't supported yet.
+- `aspectRatio` (optional): one of `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `9:16`, `16:9`, `21:9`. Only set this if the template's intended ratio genuinely isn't what `template.png`'s own pixels say — normally omit it and let the importer derive it from the image.
 
 ### `prompt.txt`
 - **Write it as a reusable template, never for one brand.** Every piece of content is a `[Placeholder]`, e.g. `[Main Headline]`, `[Offer / Price]`, `[Featured Food / Dish]`, `[Call to Action]`, `[Website / Contact]`. Use clear, descriptive names; the filling step reads them like a copywriter would.

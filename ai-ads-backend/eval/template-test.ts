@@ -14,7 +14,7 @@ const [id, request, out, logoUrl] = process.argv.slice(2);
   const templateImage = { imageBytes: Buffer.from(await res.arrayBuffer()).toString("base64"), mimeType: "image/png" };
   const filled = await fillTemplate(t.template_prompt, request, undefined, { productNames: [] });
   console.log("TEXTS:", JSON.stringify(filled.texts));
-  const poster = await generateTemplatePoster(filled, "3:4", templateImage, []);
+  const poster = await generateTemplatePoster(filled, t.aspect_ratio, templateImage, []);
   const buf = await applyBrandOverlay(Buffer.from(poster.imageBytes, "base64"), { logoUrl: logoUrl ?? null });
   writeFileSync(out, buf);
   console.log("wrote", out);

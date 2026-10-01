@@ -1,0 +1,47 @@
+Create a premium, modern vertical educational poster template for [Topic], designed as a reusable visual system for study tips, exam preparation, learning concepts, academic awareness, productivity, skill development, career learning, classroom communication, and educational content.
+
+FORMAT & COMPOSITION:
+Use a portrait, social-media-ready layout with a strong central focal point, structured hierarchy, balanced margins, intentional whitespace, and mobile-friendly readability.
+
+LAYOUT:
+Upper section: [Brand Logo] + [Main Heading].
+Middle section: dominant [Educational Visual] with carefully selected topic-related objects.
+Lower section: [Supporting Message] + [Topic] + [Call to Action] + [Footer Text].
+
+CENTRAL VISUAL:
+Make [Educational Visual] the main focal point and automatically adapt it to [Topic]. Use an original student, teacher, professional, study scene, classroom, laboratory, technology-learning scene, educational object, or topic-specific concept. The subject should actively engage with the learning activity rather than simply pose.
+
+BACKGROUND:
+Use a soft educational environment such as a study room, classroom, library, home desk, creative workspace, laboratory, digital environment, or subtle abstract setting. Use light blue, cream, pastel green, soft yellow, or topic-appropriate colors. Add subtle gradients, soft lighting, rounded shapes, and gentle depth without distracting from the subject.
+
+EDUCATIONAL OBJECTS:
+Include only objects relevant to [Topic], such as books, notebooks, laptop, tablet, calculator, calendar, charts, diagrams, microscope, globe, stationery, flashcards, or topic-specific elements. Avoid random objects.
+
+TYPOGRAPHY:
+Make [Main Heading] the strongest text. Use a modern rounded or geometric sans-serif. Establish hierarchy:
+1. [Main Heading]
+2. [Topic]
+3. [Supporting Message]
+4. [Call to Action] / [Footer Text]
+Use maximum 2–3 complementary fonts. Ensure crisp, correctly spelled, aligned, highly readable typography.
+
+COLOR:
+Use a controlled 3–5 color palette adapted to [Topic], such as blue/white, blue/yellow, teal/cream, pastel green/blue, orange/blue, or purple/yellow. Keep the background light and use stronger accents for the subject and headline.
+
+DECORATION & DEPTH:
+Use minimal purposeful elements such as lightbulbs, stars, arrows, dots, geometric shapes, doodle lines, notes, or learning icons. Create subtle foreground, middle-ground, and background layers with soft shadows and depth.
+
+BRANDING:
+Place [Brand Logo] discreetly in a corner or footer. Preserve supplied branding exactly. Never invent logos, company details, URLs, phone numbers, QR codes, or social handles.
+
+ADAPTABILITY:
+Automatically change the visual, objects, environment, colors, and supporting elements according to [Topic] while maintaining the same overall design system.
+
+PLACEHOLDERS:
+[Topic] [Main Heading] [Supporting Message] [Educational Visual] [Brand Logo] [Call to Action] [Footer Text]
+
+STYLE:
+Premium educational communication, friendly modern illustration, polished editorial design, controlled colors, clean typography, soft lighting, balanced composition, professional social-media graphic, high-resolution, approachable and human-designed.
+
+NEGATIVE:
+No copied artwork, characters, brands, or layouts; no clutter, random objects, excessive decoration, heavy gradients, harsh shadows, distorted anatomy, malformed hands, duplicated objects, fake logos, meaningless text, misspellings, unreadable typography, or obvious AI artifacts.

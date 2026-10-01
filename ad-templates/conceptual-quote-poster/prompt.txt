@@ -1,0 +1,48 @@
+Create a premium, modern vertical conceptual poster template for inspirational quotes, leadership, business philosophy, emotional intelligence, productivity, motivation, creativity, workplace culture, psychology, and professional awareness.
+
+Create an original editorial-style concept built around ONE strong visual metaphor that transforms the meaning of [Main Message] into a memorable visual story. Do not copy existing artwork, characters, objects, quotes, logos, colors, or compositions.
+
+CORE CONCEPT:
+Interpret [Main Message] through a meaningful contrast or relationship such as logic vs emotion, technology vs humanity, speed vs patience, work vs life, creativity vs structure, problem vs solution, challenge vs opportunity, past vs future, human vs AI, leadership vs teamwork, simplicity vs complexity, or growth vs comfort. Choose the metaphor automatically according to the message. Keep it clever, simple, and instantly understandable.
+
+HERO VISUAL:
+Make [Main Visual] the primary focal point. Combine realistic objects, human figures, symbolic elements, architecture, nature, technology, abstract forms, or subtle surrealism. Every object must have a purpose and belong to the same conceptual world.
+
+Use one coherent visual style: realistic photography, premium 3D, surreal editorial illustration, painterly realism, sophisticated collage, or conceptual digital artwork. Avoid generic stock imagery.
+
+TYPOGRAPHY:
+Make [Main Message] the strongest text element. Use modern sans-serif, refined editorial, or sophisticated serif typography. Keep text crisp, correctly spelled, professionally aligned, highly legible, and mobile-friendly. Optional [Key Phrase] may receive subtle emphasis through size, weight, or accent color.
+
+Hierarchy:
+[Main Message] → [Key Phrase] → [Supporting Message] → [Brand Logo / Attribution] → [CTA / Footer]
+
+Keep text minimal; this is a concept poster, not an infographic.
+
+BACKGROUND:
+Use a clean visual environment such as a solid color, soft gradient, paper texture, studio setting, abstract surface, architectural environment, or atmospheric backdrop. Keep it simple so the conceptual artwork remains dominant.
+
+COLOR:
+Adapt the palette to [Theme] and [Main Message]. Use one dominant background color with 1–2 accents. Maintain sophisticated combinations suitable for professional, emotional, creative, leadership, technology, wellness, or corporate themes. Avoid excessive rainbow colors.
+
+COMPOSITION:
+Use a premium vertical layout for LinkedIn, Instagram, Facebook, WhatsApp, presentations, and corporate communication. Suggested structure: top message, central conceptual artwork, bottom supporting message/branding/CTA. Allow intentional asymmetry and let the visual concept determine the most natural placement.
+
+REALISM & INTEGRATION:
+If people appear, use realistic anatomy, natural expressions, hands, clothing, poses, and lighting. If surreal objects are combined, ensure believable perspective, scale, contact shadows, reflections, materials, and consistent light direction. Avoid floating or randomly placed objects.
+
+LIGHTING:
+Use sophisticated editorial lighting—soft studio light, daylight, warm directional light, controlled dramatic light, rim lighting, or atmospheric backlighting. Maintain realistic shadows, highlights, depth, and reflections. Avoid excessive glow, HDR, lens flares, or fantasy lighting unless required by the concept.
+
+BRANDING & FOOTER:
+Place [Brand Logo] subtly and preserve it exactly. If unavailable, reserve a placeholder. Optional: [Website], [Social Media], [Company Name], [Author / Attribution], [Campaign Name]. Use only supplied information; never invent authors, quotes, credentials, websites, or contact details.
+
+ADAPTATION:
+Automatically change the metaphor for leadership, creativity, emotional intelligence, teamwork, innovation, growth, productivity, decision-making, work-life balance, technology, AI, communication, resilience, success, or other themes while preserving the same premium design system.
+
+PLACEHOLDERS:
+[Brand Logo] [Company Name] [Theme] [Main Message] [Key Phrase] [Supporting Message] [Main Visual] [Visual Metaphor] [CTA] [Website] [Social Media] [Author / Attribution] [Footer Text]
+
+NEGATIVE:
+No copied designs, fake logos, invented quotes, fake authors, random objects, unrelated symbols, clutter, excessive decoration, generic stock imagery, distorted anatomy, malformed hands, duplicated objects, inconsistent perspective, unrealistic interactions, excessive 3D/glow, blurry details, misspelled text, unreadable typography, fake statistics, unnecessary QR codes, or obvious AI artifacts.
+
+Final result: a premium, thought-provoking, visually memorable poster where the message and metaphor work as one intelligent idea, creating curiosity and instant recognition while remaining reusable across professional, inspirational, leadership, business, and motivational campaigns.

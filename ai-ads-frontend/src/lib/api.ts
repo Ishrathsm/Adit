@@ -28,7 +28,7 @@ export interface Folder {
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 export type OutputType = "video" | "poster" | "gif";
-export const ASPECT_RATIOS = ["1:1", "3:4", "4:3", "9:16", "16:9"] as const;
+export const ASPECT_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"] as const;
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];
 // Veo 3.1's hard cap is 8 seconds per single generation.
 export const VIDEO_DURATIONS = [4, 6, 8] as const;
@@ -61,6 +61,9 @@ export interface Template {
   description: string | null;
   thumbnail_url: string | null;
   template_prompt: string;
+  // The ratio this template's own image was designed at — preselect it on remix instead of one
+  // default ratio for every template.
+  aspect_ratio: AspectRatio;
   created_at: string;
 }
 

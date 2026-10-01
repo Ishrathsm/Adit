@@ -1,0 +1,39 @@
+Create ONLY the FINAL FLAT VERTICAL ADVERTISING POSTER ARTWORK — a clean, modern, premium restaurant promotional poster reusable for restaurants, cafés, cloud kitchens, quick-service food brands, and healthy-bowl or meal-delivery concepts.
+
+CATEGORY: Restaurant / Quick-Service Food
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Dish]
+CTA: [CTA]
+
+FORMAT & COMPOSITION:
+Use a portrait layout optimized for mobile advertising, Instagram, and WhatsApp. Build a soft, flowing two-tone background out of [Brand Colors] — a light, airy upper field flowing into a bolder accent-color lower field via a gentle organic wave, never a hard rectangle. Create a strong visual flow: [Brand Logo] + [Brand Name] near the top-left → [Main Headline] → [CTA] → [Hero Dish], large and anchored toward the bottom-right, bleeding softly toward the edge for scale.
+
+CONTENT DISCIPLINE:
+Use ONLY these primary elements: brand/logo, one dominant headline, one hero dish, and one clear CTA. Do NOT add feature lists, benefit sections, icons, badges, secondary promotional messages, ingredient labels, service highlights, multiple dishes, or unnecessary information.
+
+HERO DISH:
+Present [Hero Dish] in an appropriate bowl, plate, board, or packaging for the cuisine described — grilled proteins, salads, bowls, wraps, or any single-dish concept. Make it look freshly prepared, realistic, appetizing, professionally styled, richly textured, and commercially photographed, with soft natural shadows and true-to-life color. Preserve authentic ingredients, garnishes, and steam or moisture where relevant; avoid plastic-looking food or impossible proportions.
+
+BRANDING:
+Place [Brand Logo] and [Brand Name] together near the top-left with generous breathing room. Preserve the supplied logo exactly — no distortion, stretching, recoloring, or fake branding.
+
+TYPOGRAPHY:
+Make [Main Headline] bold, modern, and highly readable, using two complementary weights or colors drawn from [Brand Colors] to give it a friendly, energetic rhythm (for example a dark line followed by an accent-colored line). Keep [CTA] in a simple rounded button or pill directly beneath the headline, short and visually distinct.
+
+NEGATIVE SPACE:
+Maintain generous, intentional negative space between the brand, headline, CTA, hero dish, and canvas edges. Do not fill empty areas unnecessarily. The empty space should feel deliberate, premium, balanced, and easy to read.
+
+COLOR & LIGHTING:
+Build the palette from [Brand Colors] with one confident accent color anchoring the lower portion of the poster. Use soft, even, commercial lighting on the hero dish with realistic shadows and depth; avoid harsh contrast, HDR glow, or artificial reflections.
+
+STRICT OUTPUT:
+Generate ONLY the FINAL FLAT POSTER ARTWORK, filling the entire canvas edge-to-edge. Do NOT create a framed print mockup, billboard mockup, phone-screen mockup, physical signage, wall display, outdoor scene, poster-on-a-surface photograph, perspective presentation, or surrounding environment. No watermark. No unnecessary decorative clutter.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Dish] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the hero dish, its plating, ingredients, and the accent color drawn from [Brand Colors] to the specific restaurant or dish described — grilled bowls, salads, wraps, pastas, or other single-dish concepts — while keeping the same top-branding, wave-divided background, and headline-then-CTA-then-dish flow across every variation within this category.
+
+Final result: a clean, premium, minimal vertical restaurant advertising poster with ONE brand, ONE headline, ONE hero dish, ONE CTA, and generous intentional negative space.

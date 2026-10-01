@@ -1,3 +1,4 @@
+import type { AspectRatio } from "./aspect-ratio";
 import { supabase } from "./supabase";
 
 export type TemplateType = "poster" | "video";
@@ -9,6 +10,9 @@ export interface TemplateRow {
   description: string | null;
   thumbnail_url: string | null;
   template_prompt: string;
+  // The ratio the template's own image was designed at — preselected on remix instead of a
+  // single default, and never silently overridden once a job picks it up.
+  aspect_ratio: AspectRatio;
   created_at: string;
 }
 
@@ -32,6 +36,9 @@ export interface CreateTemplateInput {
   description?: string | null;
   thumbnailUrl?: string | null;
   templatePrompt: string;
+  // Required, not defaulted: callers compute this from the template's own image (see
+  // scripts/import-templates.ts) rather than relying on one ratio for every template.
+  aspectRatio: AspectRatio;
 }
 
 export async function createTemplate(input: CreateTemplateInput): Promise<TemplateRow> {
@@ -43,9 +50,28 @@ export async function createTemplate(input: CreateTemplateInput): Promise<Templa
       description: input.description ?? null,
       thumbnail_url: input.thumbnailUrl ?? null,
       template_prompt: input.templatePrompt,
+      aspect_ratio: input.aspectRatio,
     })
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+// Updates an existing template's synced fields (image/prompt/description/ratio may change
+// locally after creation) — never touches name or type, which identify the row.
+export async function updateTemplateSync(
+  id: string,
+  patch: { thumbnailUrl?: string; templatePrompt?: string; description?: string | null; aspectRatio?: AspectRatio },
+): Promise<void> {
+  const { error } = await supabase
+    .from("templates")
+    .update({
+      ...(patch.thumbnailUrl !== undefined ? { thumbnail_url: patch.thumbnailUrl } : {}),
+      ...(patch.templatePrompt !== undefined ? { template_prompt: patch.templatePrompt } : {}),
+      ...(patch.description !== undefined ? { description: patch.description } : {}),
+      ...(patch.aspectRatio !== undefined ? { aspect_ratio: patch.aspectRatio } : {}),
+    })
+    .eq("id", id);
+  if (error) throw error;
 }

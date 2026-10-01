@@ -1,0 +1,59 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK, reusable for fried-chicken chains, quick-service restaurants, cloud kitchens, and chicken-meal promotions.
+
+CATEGORY: Fried Chicken / Fast Food
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+OFFER: [Offer / Discount]
+CTA: [CTA]
+HERO VISUAL: [Hero Chicken Meal]
+
+COMPOSITION:
+Use a wide horizontal format with a powerful background built from [Brand Colors] and a clean central light-colored content area. Place [Brand Logo] and [Brand Name] prominently near the upper-center region, followed by [Main Headline] in large, bold typography.
+
+HERO VISUAL:
+Make ONE dominant [Hero Chicken Meal] the primary focal point in the center. Show a premium bucket or platter filled with crispy golden fried chicken, supported by a limited number of complementary food elements such as fries, dipping sauce, or a small side, adapted to whatever meal is described. Make the food photorealistic, highly detailed, crunchy, warm, and appetizing.
+
+OFFER & CTA:
+Place [Offer / Discount] as a clear secondary promotional element toward the right side, using a simple badge or capsule treatment. Position [CTA] beneath or near the offer using a simple, highly visible button treatment. If no offer is supplied, omit the badge entirely rather than inventing one.
+
+BACKGROUND GRAPHICS:
+Use subtle tonal background graphics or oversized abstract brand-inspired shapes to create depth, but keep them extremely understated.
+
+NEGATIVE SPACE:
+Maintain generous intentional negative space. Keep large clean areas around the logo, headline, hero product, offer, and CTA. Do not fill the background with repeated typography, excessive food elements, particles, patterns, or decorative graphics. The central hero should have enough breathing room to remain immediately recognizable.
+
+HIERARCHY:
+[Brand Logo] / [Brand Name] → [Main Headline] → [Hero Chicken Meal] → [Offer / Discount] → [CTA].
+
+Typography should be bold, clean, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, prices, claims, contact details, or promotional information.
+
+VISUAL STYLE:
+Premium fast-food campaign, photorealistic food photography, crispy textures, warm highlights, controlled shadows, a rich palette built from [Brand Colors], polished commercial art direction, clean spacing, sophisticated advertising finish.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Full-bleed edge-to-edge artwork
+- Wide horizontal composition
+- Strong centered hero
+- Large intentional negative space
+- One dominant product visual
+- Clear offer and CTA when supplied
+- Original campaign artwork for [Brand Name]
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No billboard photograph
+- No billboard perspective
+- No device mockup
+- No surrounding scene
+- No watermark
+- No unnecessary clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Chicken Meal] [Offer / Discount] [CTA]
+
+ADAPTABILITY:
+Automatically adapt the bucket style, side dishes, sauces, and color accents to whatever fried-chicken meal or combo is described, while keeping the same centered composition, offer-badge placement, and typographic hierarchy across buckets, tenders, wings, chicken burgers, and combo meals within this category.
+
+Final result: a premium, appetizing, production-ready flat fried-chicken advertising banner with one dominant hero meal, clear offer and CTA, and large intentional negative space — not a photograph or mockup of a billboard.

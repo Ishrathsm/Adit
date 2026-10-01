@@ -1,0 +1,39 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK, an extremely minimal fast-food banner reusable for burger joints, chicken chains, pizza brands, cafés, bakeries, and any quick-service food brand that wants a single bold visual statement rather than a busy composition.
+
+CATEGORY: Minimal Fast Food
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Symbol / Product]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+FORMAT & COMPOSITION:
+Use a wide horizontal format with one large uninterrupted background field, one dominant brand/product visual positioned on one side, and one short bold headline positioned on the opposite side. Keep the composition extremely clean, with balanced horizontal spacing and a strict one-visual, one-headline hierarchy.
+
+HERO VISUAL:
+Use ONE dominant [Hero Symbol / Product] only — a single recognizable food item or product symbol relevant to the fast-food category described, such as a burger, a piece of fried chicken, a drink, a dessert, a pizza slice, or a bakery item. Make it large, polished, and completely visible inside the canvas. Do not crop important portions of the hero visual.
+
+HEADLINE:
+Use ONE short, memorable [Main Headline]. Keep the typography bold, clean, highly readable, and positioned opposite the hero visual. Do not use long paragraphs or complicated messaging. If [Supporting Message] or [CTA] are supplied, place them as small, secondary elements beneath the headline without crowding the composition; if they are not supplied, leave that space empty.
+
+CONTENT DISCIPLINE:
+Use ONLY essential content: [Brand Logo] / [Brand Name], ONE short [Main Headline], ONE [Hero Symbol / Product], and optionally [Supporting Message] or [CTA]. Do NOT add feature lists, icons, badges, multiple products, social-media icons, specifications, ingredients, promotional panels, decorative patterns, or unnecessary graphics.
+
+NEGATIVE SPACE:
+Maintain MORE intentional negative space than a typical banner. Preserve large uninterrupted areas of background around the hero visual and headline. Do not fill empty space simply because it is available. The empty space must feel deliberate, premium, balanced, and essential to the composition.
+
+COLOR & STYLE:
+Build the palette from [Brand Colors] with confident, flat, poster-like color fields. Use original colors, typography, imagery, lighting, textures, and graphic treatment appropriate to the specific fast-food item and brand.
+
+STRICT OUTPUT:
+Generate ONLY the FINAL FLAT HORIZONTAL BANNER ARTWORK. The complete banner must be visible edge-to-edge. Keep the entire hero visual, headline, and branding safely inside the canvas.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, wall, building, street, city, sky environment, outdoor scene, installation, lighting fixtures, bus shelter, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment. No watermark. No unnecessary decorative clutter.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Symbol / Product] [Supporting Message] [CTA]
+
+ADAPTABILITY:
+Automatically change the hero symbol, colors, and typography style to match the specific fast-food item or brand described — a burger, fried chicken, pizza, a beverage, a dessert, or a bakery product — while keeping the same minimal one-visual / one-headline composition, generous negative space, and strict content discipline across every variation within this category.
+
+Final result: a premium, extremely minimal flat horizontal fast-food advertising banner with ONE dominant visual, ONE short headline, strong brand recognition, and large intentional negative space — not a photograph or mockup of a billboard.

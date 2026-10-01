@@ -1,0 +1,59 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Technology / Consumer Electronics
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Hero Product]
+
+Create a premium, minimalist technology advertisement with a sophisticated, clean, high-end commercial aesthetic.
+
+Use the uploaded reference STRICTLY as a LAYOUT AND COMPOSITION REFERENCE. Preserve its wide horizontal proportions, simple rectangular structure, left-side communication, right-side hero placement, generous spacing, visual hierarchy, scale relationships, and minimal advertising rhythm. Recreate the STRUCTURAL LOGIC ONLY. Do not copy the reference's exact artwork, typography, colors, imagery, or distinctive design elements.
+
+COMPOSITION:
+Create a clean LEFT-CONTENT / RIGHT-HERO composition. Place [Brand Logo] / [Brand Name] in the upper-left with generous breathing room. Position [Main Headline] prominently beneath it using large, bold, elegant typography. Place [Supporting Message] below the headline as concise supporting communication. Position [CTA] as a simple, refined call-to-action beneath the supporting message.
+
+Make ONE [Hero Product] the dominant hero visual on the right side. Show the device large, elegant, photorealistic, highly detailed, with refined materials, realistic reflections where appropriate, and a sophisticated finish. Use a subtle floating or angled product presentation without making it look like a device mockup.
+
+Use a clean, bright, minimalist background with soft gradients, subtle curves, controlled shadows, and restrained abstract forms. Keep the visual language elegant and understated rather than futuristic or overly decorative.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain MORE intentional negative space than the reference. Preserve large uninterrupted clean areas around the logo, headline, supporting message, CTA, and hero product. Do not fill the canvas with excessive graphics, particles, icons, patterns, technology circuitry, or decorative objects. The empty space must feel deliberate, premium, calm, and professionally art-directed.
+
+Maintain this hierarchy:
+
+[Brand Name] → [Main Headline] → [Hero Product] → [Supporting Message] → [CTA]
+
+Typography should be clean, modern, elegant, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent specifications, prices, features, claims, slogans, contact details, or additional information.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY
+- Wide horizontal format
+- Full-bleed edge-to-edge artwork
+- Clean left-content / right-product composition
+- One dominant hero product
+- Strong typography hierarchy
+- Large intentional negative space
+- Minimal premium composition
+- Original advertising artwork for the described brand
+- No billboard mockup
+- No physical billboard
+- No outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No photograph of a billboard
+- No billboard perspective
+- No surrounding presentation scene
+- No watermark
+- No unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Product] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the featured device category, materials, and finish to fit the specific consumer technology product described — phones, laptops, tablets, wearables, or other devices — while keeping the same left-copy / right-hero-product system, elegant restrained aesthetic, and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented specifications or claims, distorted device geometry, unrealistic reflections, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: The output must be the ACTUAL FINISHED PRINT-READY advertising banner for the described brand, not a photograph or visualization of a billboard.

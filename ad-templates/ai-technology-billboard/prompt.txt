@@ -1,0 +1,39 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, VISUAL-RHYTHM, AND TYPOGRAPHY-HIERARCHY REFERENCE. Preserve its fundamental advertising structure while creating completely original artwork. Do NOT copy the reference brand, logo, wording, colors, artwork, or distinctive visual elements.
+
+CATEGORY: Artificial Intelligence / Technology
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Abstract Tech Visual / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Create a wide, premium, minimalist horizontal advertising banner with ONE dominant visual concept and ONE strong headline. Maintain a large uninterrupted visual field with a sophisticated abstract background or [Hero Visual] appropriate to an AI/technology brand.
+
+Use an abstract futuristic visual language such as flowing light, luminous gradients, soft energy waves, atmospheric forms, digital curves, subtle glow, or intelligent abstract structures for [Hero Visual]. Keep the visual language conceptual and non-literal — it should evoke intelligence, computation, or connectivity rather than depict any specific product.
+
+Maintain MORE INTENTIONAL NEGATIVE SPACE. Large portions of the banner should remain visually quiet and uncluttered. Do not fill empty areas simply to make the design busier. Use negative space to create hierarchy, elegance, readability, and visual impact.
+
+Use [Main Headline] as the ONE dominant headline and the primary communication element. Position it according to the reference's structural relationship with the visual field. Use bold, clean, modern typography with controlled line breaks and generous spacing.
+
+Use only ONE [Brand Logo] / [Brand Name] placement, preferably positioned subtly away from the headline. If [Supporting Message] or [CTA] is provided, keep it small and secondary. If either is not provided, DO NOT invent additional copy.
+
+Avoid feature lists, icons, multiple headlines, badges, multiple products, unnecessary illustrations, excessive decorative elements, or visual clutter.
+
+Create completely ORIGINAL colors, gradients, imagery, typography treatment, textures, and graphic details appropriate to [Brand Name] and [Brand Colors]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER. Fill the entire canvas edge-to-edge.
+
+DO NOT create a billboard mockup, wall, building, street scene, outdoor environment, physical billboard, frame, pole, support structure, lighting fixture, installation, bus shelter, perspective presentation, or photograph of an advertisement.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Abstract Tech Visual / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the abstract visual language, gradient palette, and glow treatment to fit the specific AI or technology product described — from generative AI and automation platforms to data, cloud, or intelligent-hardware brands — while keeping the same one-headline, one-visual, one-logo minimalist system and the same generous negative space.
+
+NEGATIVE:
+No copied artwork, fake logos, invented information, literal robots or clichéd circuit-board imagery unless requested, multiple competing visuals, feature lists, icons rows, excessive glow, clutter, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: A sophisticated, premium, minimal horizontal advertising banner with ONE dominant headline, ONE abstract visual concept, ONE brand placement, strong hierarchy, and MORE INTENTIONAL NEGATIVE SPACE.

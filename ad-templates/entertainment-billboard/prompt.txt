@@ -1,0 +1,39 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, TYPOGRAPHY-HIERARCHY, AND VISUAL-RHYTHM REFERENCE. Strictly preserve the fundamental structure: wide horizontal canvas, oversized headline occupying the upper/left area, small brand placement in a corner, one large hero subject positioned toward the right/lower area, strong uninterrupted background field, and generous negative space.
+
+Do NOT copy the reference brand, logo, wording, colors, subject, imagery, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Entertainment / Media / Attractions
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Featured Attraction / Character / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Make [Main Headline] the dominant visual element. Use very large, bold, clean typography with controlled line breaks and strong readability. Allow the headline to occupy substantial space without touching the canvas edges.
+
+Place [Brand Logo] and [Brand Name] smaller and secondary, preferably in a corner with generous surrounding space, preserving the supplied logo exactly with no distortion, stretching, or recoloring.
+
+Place ONE [Hero Visual] on the opposite side of the headline — a distinctive character, exhibit, attraction, performer, or entertainment subject matched to what is supplied. The complete hero subject must be visible and comfortably contained within the banner boundaries. Do NOT crop important parts of the subject. Keep the hero large enough to create visual impact while preserving clear breathing room. Place [Supporting Message] and [CTA] (such as visit, watch now, or book tickets) as small, secondary elements near the headline or brand.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Leave large uninterrupted areas around the headline, brand, and hero visual. Do not fill empty space with unnecessary graphics, patterns, icons, badges, decorative elements, multiple objects, or excessive copy.
+
+Use ONLY ONE brand, ONE dominant headline, ONE hero visual, and optionally ONE short supporting message or CTA. If [Supporting Message] or [CTA] are not supplied, leave that area empty rather than inventing additional text. Never invent dates, ticket prices, ratings, or claims that were not supplied.
+
+Create colors, imagery, typography treatment, textures, and lighting that reflect [Brand Colors] and the mood of [Brand Name] — whimsical, cinematic, dramatic, or family-friendly as suited to a museum, attraction, streaming title, event, or media brand. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, wall, building, street, exterior, city scene, pole, support structure, lighting fixture, bus shelter, installation, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Featured Attraction / Character / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the hero subject and background mood to match the specific entertainment, media, or attraction brand supplied (museum exhibit, streaming series, film, live event, theme-park character, gaming title), while keeping the same oversized-headline / opposite-corner-hero composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented dates or prices, distorted characters or subjects, duplicated hero elements, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium, bold, editorial-style horizontal entertainment advertising banner with oversized typography, one complete hero subject, minimal essential content, strict reference-based composition, and MORE INTENTIONAL NEGATIVE SPACE.

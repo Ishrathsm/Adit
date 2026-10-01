@@ -1,0 +1,38 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, IMAGE-TO-TEXT BALANCE, TYPOGRAPHY-HIERARCHY, AND VISUAL-STRUCTURE REFERENCE. Preserve the internal banner structure: wide horizontal format, spacious left-side communication area, dominant headline on the left, one strong promotional/message strip below the headline, a clean diagonal or angled transition through the center, and one large realistic hero visual occupying the right side.
+
+Do NOT copy the reference brand, logo, wording, colors, people, photography, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: [Category]
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Hero Visual]
+OFFER / SUPPORTING MESSAGE: [Offer / Discount]
+CTA: [CTA]
+
+This design is reusable across fashion, food, automotive, technology, real estate, healthcare, education, travel, entertainment, and any other retail or service category running a promotion. Adapt the content naturally to the selected [Category] while strictly maintaining the same composition — for FASHION use one model or product, for FOOD use one appetizing product, for AUTOMOTIVE use one vehicle, for TECHNOLOGY use one device, for REAL ESTATE use one property, for HEALTHCARE use one relevant subject, for EDUCATION use one academic subject, for TRAVEL use one destination, for ENTERTAINMENT use one main subject. The CATEGORY changes the content, NOT the fundamental layout.
+
+Keep the LEFT SIDE as the primary communication zone. Place [Brand Logo] and [Brand Name] near the upper-left, sized to match the reference's brand treatment but drawn as completely original artwork, and make [Main Headline] the strongest text element. Use [Offer / Discount] and [CTA] only when provided. If an offer is included, place it inside ONE clean horizontal or angled promotional strip.
+
+Use ONE clear diagonal/angled division between the communication area and the hero-image area. The transition should create visual movement while maintaining a clean, professional composition.
+
+Place ONE dominant, realistic, complete [Hero Visual] on the RIGHT side. Keep the subject fully visible and safely inside the canvas. Do not crop important portions of the product, person, vehicle, property, or subject.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around [Brand Logo], [Main Headline], the offer strip, [CTA], and [Hero Visual]. Do not fill empty areas unnecessarily. Avoid excessive patterns, icons, badges, multiple products, feature lists, social-media icons, random objects, or unnecessary decoration.
+
+Use ONLY essential content: [Brand Logo], ONE [Main Headline], ONE [Hero Visual], and optionally ONE [Offer / Discount] and ONE [CTA]. If optional fields are empty, do not invent additional text.
+
+Create completely ORIGINAL colors, typography, imagery, lighting, textures, shapes, and graphic styling appropriate to [Brand Colors] and the selected [Category]. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the complete canvas edge-to-edge. Keep all text, branding, promotional information, and the COMPLETE hero visual safely inside the canvas.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard frame, pole, wall, building, store, street, city, outdoor environment, installation, lighting fixture, bus shelter, perspective presentation, photograph of a billboard, or physical advertising display.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Category] [Main Headline] [Hero Visual] [Offer / Discount] [CTA]
+
+ADAPTABILITY:
+Automatically change the hero visual, colors, and tone to match [Category] — fashion, food, automotive, technology, real estate, healthcare, education, travel, or entertainment — while strictly preserving the same left-communication / diagonal-split / right-hero composition.
+
+Final result: a premium, modern horizontal advertising banner with a spacious left communication zone, bold headline, simple promotional strip, strong diagonal transition, one dominant right-side hero visual, minimal essential content, and MORE INTENTIONAL NEGATIVE SPACE.

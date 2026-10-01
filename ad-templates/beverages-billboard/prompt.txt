@@ -1,0 +1,44 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Beverages / Coffee & Cafe Drinks
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+OFFER: [Offer / Discount]
+CTA: [CTA]
+HERO VISUAL: [Hero Visual / Two Beverages]
+
+Create a premium, fresh, modern beverage advertising banner with a clean commercial aesthetic. Use a spacious horizontal composition with the communication concentrated on the LEFT and the hero beverages on the CENTER/RIGHT.
+
+COMPOSITION:
+Place [Brand Logo] in the upper-left with generous breathing room, with [Brand Name] set beside or beneath it in clean, confident lettering. Position [Main Headline] prominently beneath the brand using large, bold, modern typography, broken across two lines for impact. Place [Offer / Discount] below the headline as a strong but secondary promotional badge or capsule. Place [CTA] beneath the offer in a clean pill-shaped button, followed by [Website / Contact] in a small legible line.
+
+Use TWO coordinated hero beverages on the right as [Hero Visual / Two Beverages] — for example one iced coffee-style drink and one botanical or tea-based drink — presented side by side on simple pedestal blocks or a clean surface. Make both drinks large, photorealistic, highly detailed, appetizing, and visually separated from the background. Show condensation, realistic ice, creamy or frothy textures, subtle highlights, and polished commercial product photography.
+
+Add only a few category-relevant elements around the drinks, such as coffee beans, tea leaves, fresh herbs, citrus, or subtle botanical accents appropriate to the specific drinks shown. Keep these elements controlled and concentrated around the products, never scattered across the whole banner.
+
+INTENTIONAL NEGATIVE SPACE IS CRITICAL:
+Maintain substantial intentional negative space. Keep clean breathing room around the brand, headline, offer, CTA, and hero drinks. Do not fill empty areas with excessive leaves, beans, particles, patterns, textures, or decorative elements. Large portions of the background should remain calm, clean, and uninterrupted.
+
+Use a sophisticated palette built from [Brand Colors] with strong contrast and soft tonal transitions. Maintain a clear hierarchy:
+BRAND → HEADLINE → OFFER → CTA
+with the TWO BEVERAGES as the dominant visual focal point.
+
+Typography must be bold, clean, highly legible, and suitable for large-format advertising. Use ONLY the supplied copy. Do not invent additional slogans, prices, claims, or contact details.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY, wide format, full-bleed edge-to-edge artwork
+- Left-side communication + center/right hero products
+- Strong visual hierarchy and large intentional negative space
+- Two dominant beverage products, premium commercial photography
+- No billboard mockup, no physical billboard, no outdoor environment
+- No road, buildings, sky, poles, supports, frame, or lighting fixtures
+- No photograph of a billboard, no billboard perspective, no device mockup
+- No surrounding presentation scene, no watermark, no unnecessary decorative clutter
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Two Beverages] [Offer / Discount] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the drink types, garnish, cup or bottle style, ice and condensation detail, and accent colors to match the specific beverages supplied — hot or iced coffee, tea, matcha, juice, smoothies, or specialty drinks — while preserving the same clean, spacious two-product design system.
+
+Final result: the ACTUAL FINISHED PRINT-READY advertising banner for a cafe or beverage brand, not a photograph or visualization of a billboard.

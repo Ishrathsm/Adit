@@ -1,0 +1,46 @@
+Create a premium, realistic vertical Real Estate & Property promotional poster template for [Property Type], suitable for real-estate companies, builders, developers, brokers, apartments, villas, gated communities, plots, commercial properties, rentals, and property launches.
+
+Create an original design inspired only by premium property-advertising principles. Do not copy existing artwork, brands, layouts, buildings, logos, colors, or compositions.
+
+CORE VISUAL:
+Make [Property Visual] the unmistakable hero. Show a physically believable property with accurate architecture, realistic proportions, materials, glass, concrete, wood, stone, metal, landscaping, roads, lighting, reflections, shadows, and atmospheric depth. Adapt naturally to [Property Type] and [Location].
+
+ENVIRONMENT:
+Create a contextual setting rather than an empty background. Use appropriate surroundings such as landscaped gardens, driveway, residential community, cityscape, roads, parking, greenery, commercial surroundings, countryside, or premium interiors. Every environmental element must support the property story.
+
+COMPOSITION:
+Use a sophisticated vertical advertising layout for social media, websites, brochures, digital ads, and property campaigns. Maintain strong alignment, margins, spacing, and visual hierarchy:
+[Brand Logo] → [Main Headline] → [Project Name] → [Property Visual] → [Key Feature] → [Price / Offer] → [Supporting Message] → [CTA] → [Website / Contact]
+
+Keep the property visually dominant and typography clear without covering important architectural details.
+
+BRANDING & TYPOGRAPHY:
+Place [Brand Logo] elegantly and preserve it exactly without distortion or recoloring. If unavailable, reserve a clean placeholder. Use crisp, correctly spelled, highly legible typography with maximum 2–3 complementary fonts. Hierarchy:
+1. [Main Headline]
+2. [Project Name] / [Property Type]
+3. [Key Feature] / [Price / Offer]
+4. [Supporting Message]
+5. [CTA] / [Website / Contact]
+
+PROPERTY INFORMATION:
+Use only supplied information. Never invent prices, discounts, amenities, approvals, distances, returns, guarantees, phone numbers, websites, addresses, or certifications. Present [Key Feature] and [Price / Offer] through refined cards, badges, capsules, or information blocks.
+
+LIGHTING & COLOR:
+Use realistic architectural photography lighting such as daylight, golden hour, soft morning light, elegant evening, or balanced twilight. Keep materials and reflections physically believable. Avoid excessive HDR or artificial glow. Build a restrained palette from [Brand Colors], [Property Type], and [Location].
+
+LIFESTYLE:
+When appropriate, include natural people such as families, couples, professionals, or residents interacting realistically with the property. Use accurate anatomy, natural expressions, clothing, poses, and proportions.
+
+DEPTH:
+Create three layers: background environment, contextual middle ground, and sharp foreground property. Use realistic atmospheric perspective while keeping the main property dominant.
+
+ADAPTATION:
+Automatically adapt architecture, environment, colors, and supporting elements for apartments, villas, gated communities, plots, commercial properties, luxury homes, rentals, and investment campaigns while keeping the same professional design system.
+
+PLACEHOLDERS:
+[Brand Logo] [Real Estate Brand] [Brand Colors] [Main Headline] [Property Type] [Project Name] [Location] [Property Visual] [Key Feature] [Price / Offer] [Supporting Message] [CTA] [Website / Contact] [Phone] [Email]
+
+NEGATIVE:
+No fake logos, invented information, copied designs, impossible architecture, distorted buildings, duplicated windows, warped balconies, floating structures, fake contact details, unrealistic materials, excessive HDR/glow, clutter, distorted people, malformed hands, blurry details, misspelled text, distorted typography, or obvious AI artifacts.
+
+Final result: a polished, production-ready, trustworthy real-estate advertising poster with realistic architecture, strong property focus, elegant branding, clear information, and reusable commercial design.

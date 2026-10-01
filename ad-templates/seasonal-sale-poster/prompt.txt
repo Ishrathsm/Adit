@@ -1,0 +1,43 @@
+Create a premium, high-impact vertical promotional poster template for [Product / Brand], reusable for seasonal sales, festive offers, product launches, clearance events, and limited-time promotions across any product category — skincare, fashion, food, electronics, home goods, or services.
+
+FORMAT & COMPOSITION:
+Use a portrait layout optimized for Instagram, WhatsApp, mobile advertising, and digital campaigns. Maintain a clear visual flow:
+[Brand Logo] → [Main Headline] → [Secondary Headline] → [Hero Product / Subject] → [Offer / Price] → [Supporting Copy] → [CTA].
+Give the hero product generous breathing room with balanced spacing, clean grid alignment, and a single unmistakable focal point.
+
+HERO VISUAL:
+Make [Hero Product / Subject] the dominant visual. If it is a physical product, present it with premium commercial product photography — accurate materials, realistic reflections, clean shadows, and natural proportions. If a person or lifestyle scene fits the brand, show one figure with natural anatomy, genuine expression, and believable interaction with the product. Never invent product features, packaging claims, or certifications not supplied.
+
+BACKGROUND:
+Use a clean, premium background suited to the brand's category — a soft pastel or creamy gradient for gentle/lifestyle brands, a bold saturated field for high-energy retail, or a studio backdrop for tech and premium goods. Keep it uncluttered so it supports rather than competes with the product.
+
+BRANDING:
+Place [Brand Logo] clearly near the top. Preserve the supplied logo exactly — no distortion, stretching, recoloring, or fake branding.
+
+TYPOGRAPHY:
+Make [Main Headline] bold, elegant, and highly readable. Use modern sans-serif, refined serif, or tasteful display typography with a maximum of 2–3 fonts. Hierarchy:
+1. [Main Headline]
+2. [Secondary Headline]
+3. [Offer / Price]
+4. [Supporting Copy]
+5. [CTA]
+
+OFFER & CTA:
+Give [Offer / Price] strong emphasis using a refined badge, capsule, ribbon, or promotional card without overpowering the hero product. Place [CTA] in a clean button or highlighted area. Never invent discounts, prices, or promotional claims that were not supplied — if no offer is given, omit the badge entirely rather than inventing one.
+
+COLOR:
+Adapt the palette to [Brand Colors] and the product category. Use a controlled 3–5 color combination with the hero product as the visual anchor. Avoid random or clashing colors.
+
+DEPTH & LIGHTING:
+Use soft directional lighting, realistic highlights, and natural shadows to give the composition depth. Avoid excessive glow, HDR, or artificial reflections.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand / Product Name] [Brand Colors] [Main Headline] [Secondary Headline] [Hero Product / Subject] [Offer / Price] [Supporting Copy] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically change the hero product, background mood, color palette, and supporting copy according to the supplied brand and category, while keeping the same premium design system.
+
+NEGATIVE:
+No copied artwork, fake logos, invented claims, invented certifications, distorted products, malformed hands, duplicated objects, excessive clutter, excessive empty space, unrealistic lighting, misspelled text, illegible typography, or obvious AI artifacts.
+
+Final result: a premium, production-ready sale poster that instantly communicates the brand, the offer, and the product with strong visual impact, and remains reusable across categories and campaigns.

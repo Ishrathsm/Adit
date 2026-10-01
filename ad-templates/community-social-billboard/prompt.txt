@@ -1,0 +1,37 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, PANEL STRUCTURE, AND VISUAL-HIERARCHY REFERENCE. Strictly preserve its internal advertising structure: wide horizontal format, large dominant left-side communication area, clean right-side brand area, a smooth curved or flowing division between the two zones, strong color blocking, large typography, balanced proportions, and generous negative space.
+
+Do NOT copy the reference brand, logo, wording, colors, typography, imagery, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Community / Social Initiative
+BRAND: [Organization Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Community Symbol / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Create a strong two-zone composition. Place [Main Headline] prominently within the larger left-side section, bold, large, and highly readable with controlled line breaks. Keep [Brand Logo] and [Organization Name] clearly visible but secondary within the right-side section, preserving the supplied logo exactly with no distortion, stretching, or recoloring. Use ONE smooth curved, organic, or flowing graphic division between the sections. The division should create visual separation without becoming overly decorative.
+
+Represent [Community Symbol / Hero Visual] as a clean, symbolic, or community-related visual appropriate to the organization — a church, place of worship, nonprofit, civic initiative, neighborhood association, charity drive, or social cause. Place [Supporting Message] near the headline and [CTA] (such as join us, learn more, or get involved) as a small, clean element near the brand zone. Leave either empty if not supplied rather than inventing copy.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Keep large uninterrupted areas around the headline and brand. Do not fill empty areas unnecessarily. Preserve generous breathing room between typography, graphics, and the canvas edges. The design should feel clean, calm, modern, spacious, and premium.
+
+Use ONLY essential information: ONE organization, ONE dominant headline, ONE hero visual or symbolic graphic, and optionally ONE short supporting message or CTA. Do NOT add feature lists, statistics, icons, badges, multiple subjects, social-media icons, unnecessary claims, extra headings, or excessive copy. Never invent event dates, addresses, or attendance figures that were not supplied.
+
+Create colors, typography, graphic shapes, and textures that reflect [Brand Colors] and the tone of [Organization Name] — welcoming, civic, spiritual, or charitable as appropriate. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. The COMPLETE banner must be visible edge-to-edge. Keep all text, branding, graphics, and hero subject completely inside the canvas. Do NOT crop important elements.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, wall, building, exterior, street, city, sky, pole, support structure, lighting fixture, outdoor environment, installation, physical advertising display, perspective presentation, photograph of a billboard, or surrounding environment.
+
+PLACEHOLDERS:
+[Brand Logo] [Organization Name] [Brand Colors] [Main Headline] [Community Symbol / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the symbolic hero graphic and color palette to suit the specific community, faith-based, civic, or charitable organization supplied (church, temple, mosque, nonprofit, food drive, volunteer program, neighborhood campaign), while keeping the same two-zone curved-division composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented statistics or claims, distorted symbols, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium, clean, modern horizontal community advertising banner with a strong left-side headline, right-side brand area, smooth two-zone curved division, minimal essential content, strict reference-based composition, and MORE INTENTIONAL NEGATIVE SPACE.

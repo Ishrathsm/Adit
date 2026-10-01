@@ -1,0 +1,44 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK.
+
+CATEGORY: Chocolate / Confectionery
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+HERO VISUAL: [Hero Visual / Chocolate Product]
+
+Create a premium, bold, appetizing chocolate advertising banner with a strong product-focused commercial aesthetic. Use a rich, vibrant background color drawn from [Brand Colors] that complements the chocolate product and creates strong contrast with the typography.
+
+COMPOSITION:
+Place [Brand Logo] in the upper-left area with generous breathing room, with [Brand Name] set beside or beneath it. Position [Main Headline] prominently beneath or beside the logo using large, bold, highly readable typography, broken into two impactful lines with a lighter accent color used for the second line.
+
+Make [Hero Visual / Chocolate Product] the dominant visual element on the center-right/lower-right side. Show a realistic, appetizing chocolate product — bars, wafers, pieces, or a broken/melting presentation that reveals its texture. Use controlled chocolate splashes, pieces, crumbs, or flowing chocolate around the product to create energy and depth.
+
+Keep the hero product large and visually dominant, but do not allow the effects to overwhelm the composition. The product should remain immediately recognizable and clearly separated from the background.
+
+NEGATIVE SPACE:
+Maintain substantial intentional negative space around the logo and headline. Do not cover the entire background with chocolate, crumbs, particles, patterns, or decorative elements. Concentrate dynamic effects around the hero product while preserving large calm areas elsewhere.
+
+Use a clear hierarchy:
+BRAND → HEADLINE → HERO PRODUCT → SUPPORTING MESSAGE / CTA.
+
+Place [Supporting Message] and [CTA] in a compact zone near the lower-left, followed by [Website / Contact] in a small legible line. Typography should be bold, modern, clean, and highly legible from a distance. Use only the supplied copy. Do not invent additional slogans, claims, offers, prices, or promotional information.
+
+VISUAL STYLE:
+Premium food advertising, photorealistic chocolate product photography, rich textures, glossy chocolate, realistic layers, appetizing lighting, controlled highlights, subtle shadows, sophisticated art direction, vibrant commercial color palette, high-end advertising finish.
+
+STRICT OUTPUT:
+- FINAL FLAT HORIZONTAL BANNER ONLY, full-bleed edge-to-edge artwork, wide horizontal format
+- Large intentional negative space, strong product-focused composition, one dominant chocolate hero
+- No billboard mockup, no physical billboard, no outdoor scene
+- No road, buildings, sky, poles, supports, frame, or lights
+- No photograph of a billboard, no billboard perspective, no device mockup
+- No surrounding presentation scene, no watermark, no unnecessary clutter, no invented copy
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Hero Visual / Chocolate Product] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the chocolate format (bar, wafer, truffle, pieces, or box), texture, filling, splash style, and accent colors to match the specific product supplied — milk, dark, white, filled, or wafer chocolate — while preserving the same rich, glossy, high-energy design system.
+
+Final result: the actual finished printable chocolate advertising banner, not a photograph or mockup of a billboard.

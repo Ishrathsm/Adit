@@ -1,0 +1,39 @@
+Create ONLY the FINAL FLAT HORIZONTAL ADVERTISING BANNER ARTWORK based strictly on the uploaded reference image.
+
+Use the uploaded reference ONLY as a LAYOUT, COMPOSITION, SPACING, PROPORTION, DIAGONAL FLOW, COLOR-BLOCKING, AND VISUAL-HIERARCHY REFERENCE. Extract the internal advertising design, NOT the physical billboard or environment. Strictly preserve its fundamental structure: wide horizontal format, large upper communication area, small brand placement in the upper-left, bold headline following the diagonal visual direction, strong angular/road-inspired graphic flow, one large COMPLETE hero car positioned toward the center-right, and generous open space around the major elements.
+
+Do NOT copy the reference brand, logo, wording, colors, vehicle, imagery, typography, or distinctive artwork. Create completely ORIGINAL artwork.
+
+CATEGORY: Automotive / Cars
+BRAND: [Brand Name]
+HEADLINE: [Main Headline]
+HERO VISUAL: [Car Model / Hero Visual]
+SUPPORTING MESSAGE: [Supporting Message]
+CTA: [CTA]
+
+Maintain a strong directional composition using diagonal lines, angular color fields, flowing perspective elements, or road-inspired graphics. [Hero Visual] should be large, premium, realistic, and completely visible — a single complete car with no cropped bumpers, wheels, or roofline. Position it toward the center-right while keeping sufficient breathing room around it.
+
+Place [Brand Logo] and [Brand Name] clearly in the upper-left communication area, preserving the supplied logo exactly with no distortion, stretching, or recoloring. Make [Main Headline] bold, concise, highly readable, and visually aligned with the main diagonal direction. Keep [Supporting Message] and [CTA] minimal and secondary, positioned near the headline without competing with it.
+
+MAINTAIN MORE INTENTIONAL NEGATIVE SPACE. Preserve large clean areas around the brand, headline, hero car, and supporting information. Do not fill empty areas unnecessarily. Avoid excessive graphics, multiple vehicles, icons, badges, feature lists, social-media elements, random objects, or excessive copy.
+
+Use ONLY essential information: ONE brand, ONE dominant headline, ONE complete hero car, and optionally ONE short supporting message or CTA. If [Supporting Message] or [CTA] are not supplied, leave that area empty rather than inventing copy. Never invent prices, financing terms, or specifications.
+
+Keep the COMPLETE hero car safely inside the canvas. Do NOT crop important parts of the vehicle, headline, brand, or graphic elements. Maintain comfortable margins around all critical content.
+
+Create colors, typography, imagery, graphic treatment, and textures that reflect [Brand Colors] and the character of [Brand Name] (performance, luxury, family, electric, off-road, or economy), adapting the diagonal color-blocking and lighting mood accordingly. The reference controls STRUCTURE ONLY.
+
+IMPORTANT: Generate ONLY THE FINAL FLAT HORIZONTAL BANNER ARTWORK. Fill the entire canvas edge-to-edge.
+
+ABSOLUTELY NO MOCKUP. Do NOT create a billboard, billboard frame, pole, support structure, road installation, building, city, sky, street scene, outdoor environment, lighting fixtures, physical advertising display, perspective photograph, or photograph of a billboard.
+
+PLACEHOLDERS:
+[Brand Logo] [Brand Name] [Brand Colors] [Main Headline] [Car Model / Hero Visual] [Supporting Message] [CTA] [Website / Contact]
+
+ADAPTABILITY:
+Automatically vary the body style (sedan, SUV, hatchback, sports coupe, electric vehicle, luxury saloon), paint finish, diagonal color-blocking palette, and road/track backdrop to match the specific car and brand supplied, while keeping the same wide diagonal composition, hierarchy, and negative-space discipline.
+
+NEGATIVE:
+No copied artwork, fake logos, invented specifications or prices, distorted bodywork or wheels, duplicated vehicles, cluttered backgrounds, misspelled text, illegible typography, billboard mockups, poles, frames, or obvious AI artifacts.
+
+FINAL RESULT: A premium, high-impact, modern horizontal automotive advertising banner with strict reference-based internal composition, strong diagonal visual direction, one complete dominant hero car, concise communication, and MORE INTENTIONAL NEGATIVE SPACE.
