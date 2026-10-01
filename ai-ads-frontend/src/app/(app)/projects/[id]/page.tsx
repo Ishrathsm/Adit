@@ -256,9 +256,9 @@ export default function ProjectDetailPage() {
       )}
 
       {project && isPoster && (
-        <div className="mt-4 grid items-start gap-6 lg:grid-cols-2">
-          {/* Canvas (right on wide screens, first on phones): the poster at its real size ratio, pinned while the panel scrolls. */}
-          <section className="rgb-border flex flex-col gap-3 p-5 lg:order-2 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
+        <div className="rgb-border mt-4 grid lg:h-[calc(100dvh-6rem)] lg:grid-cols-2">
+          {/* One card, two halves. Canvas (right on wide screens, first on phones): the poster at its real size ratio. */}
+          <section className="flex flex-col gap-3 p-5 lg:order-2 lg:min-h-0">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight">{project.name}</h1>
               <StatusPill job={job} />
@@ -338,8 +338,8 @@ export default function ProjectDetailPage() {
             )}
           </section>
 
-          {/* Editing panel (left on wide screens): grouped settings, Generate always in reach at the bottom. */}
-          <section className="rgb-border flex flex-col lg:order-1 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)] lg:overflow-hidden">
+          {/* Editing panel (left on wide screens): scrolls inside the card, Generate always at its foot. */}
+          <section className="flex flex-col border-t border-border-subtle lg:order-1 lg:min-h-0 lg:overflow-hidden lg:border-t-0 lg:border-r">
             <div className="flex flex-col gap-6 p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               <PanelGroup title="Brief">
                 <div className="relative">
