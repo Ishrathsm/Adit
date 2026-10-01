@@ -399,10 +399,13 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           const length = (await probe(path)).duration;
           // `offset` (seconds from the segment's start, negative = earlier) places a line exactly.
           const desired = (starts[line.shot] ?? 0) + (line.offset ?? (line.shot === 0 ? 0.5 : lead));
-          const at = Math.max(desired, prevEnd + gap);
+          // A take placed with an exact offset (an approved recording) plays where it was put, at its
+          // own speed — never stretched, never pushed (the user's rule: no time-stretched reads).
+          const placed = line.offset !== undefined;
+          const at = placed ? desired : Math.max(desired, prevEnd + gap);
           const nextDesired = k + 1 < voLines.length ? (starts[voLines[k + 1].shot] ?? total) + lead - gap : total - tail;
           const room = Math.max(0.5, nextDesired - at);
-          const tempo = line === endCardLine ? 1 : length > room ? Math.min(1.12, length / room) : 1;
+          const tempo = line === endCardLine || placed ? 1 : length > room ? Math.min(1.12, length / room) : 1;
           const fitted = length / tempo;
           const isLast = k === voLines.length - 1;
           const fade = isLast && at + fitted > total - tail ? `,afade=t=out:st=${f3(Math.max(0, total - tail - at - 0.5))}:d=0.5` : "";
