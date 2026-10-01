@@ -256,9 +256,9 @@ export default function ProjectDetailPage() {
       )}
 
       {project && isPoster && (
-        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-          {/* Canvas: the poster at its real size ratio, pinned while the panel scrolls. */}
-          <section className="flex flex-col gap-3 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
+        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
+          {/* Canvas (right on wide screens, first on phones): the poster at its real size ratio, pinned while the panel scrolls. */}
+          <section className="flex flex-col gap-3 lg:order-2 lg:sticky lg:top-6 lg:h-[calc(100dvh-6rem)]">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight">{project.name}</h1>
               <StatusPill job={job} />
@@ -338,8 +338,8 @@ export default function ProjectDetailPage() {
             )}
           </section>
 
-          {/* Editing panel: grouped settings, Generate always in reach at the bottom. */}
-          <section className="rgb-border flex flex-col">
+          {/* Editing panel (left on wide screens): grouped settings, Generate always in reach at the bottom. */}
+          <section className="rgb-border flex flex-col lg:order-1">
             <div className="flex flex-col gap-6 p-5">
               <PanelGroup title="Brief">
                 <div className="relative">
