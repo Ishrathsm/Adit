@@ -206,3 +206,71 @@ export async function renderSuper(text: string, width: number, height: number, f
   const mask = await sharp(hardMask).blur(Math.max(4, S * 0.03)).png().toBuffer();
   return { text: textLayer, mask };
 }
+
+// ---------- finishing layer: feature callouts, corner watermark, disclaimer ----------
+// Full-frame transparent PNGs the edit fades in over the footage. Flat light type with a short
+// accent rule, no box or shadow (the approved Torvik finish); placed where the shot leaves room.
+
+export type CalloutPosition = "bottom-left" | "middle-left" | "bottom-right";
+
+// A feature callout: the feature's name in the brand font, and an optional spec line under it.
+export async function renderCallout(
+  title: string,
+  line: string | null,
+  width: number,
+  height: number,
+  font: string,
+  accentColor: string | null,
+  position: CalloutPosition = "bottom-left",
+): Promise<Buffer> {
+  const S = Math.min(width, height);
+  const margin = Math.round(S * 0.09);
+  // Middle-left sits in the empty side of a frame, so it wraps narrow; the lower third runs wider.
+  const maxW = Math.round(width * (position === "middle-left" ? 0.27 : 0.45));
+  const head = await fittedLines(title.toUpperCase(), font, 500, S * 0.044, maxW, PAPER);
+  const sub = line ? await fittedLines(line, "Montserrat", 500, S * 0.029, Math.round(width * 0.45), PAPER, "92%") : null;
+  const accentRgb = accentColor ? hexToRgb(accentColor) : null;
+  const ruleW = Math.round(S * 0.064), ruleH = Math.max(3, Math.round(S * 0.005));
+  const rule = await sharp({ create: { width: ruleW, height: ruleH, channels: 4, background: accentRgb ? accentColor! : PAPER } }).png().toBuffer();
+
+  const items: { buf: Buffer; w: number; h: number; gapAfter: number }[] = [{ buf: rule, w: ruleW, h: ruleH, gapAfter: S * 0.02 }];
+  head.parts.forEach((p, i) => items.push({ ...p, gapAfter: i === head.parts.length - 1 ? S * 0.016 : S * 0.008 }));
+  sub?.parts.forEach((p) => items.push({ ...p, gapAfter: S * 0.006 }));
+  const blockH = items.reduce((sum, it, i) => sum + it.h + (i < items.length - 1 ? it.gapAfter : 0), 0);
+  let y = position === "middle-left" ? Math.round(height * 0.46 - blockH / 2) : Math.round(height - S * 0.1 - blockH);
+  const composites: OverlayOptions[] = [];
+  for (const it of items) {
+    const left = position === "bottom-right" ? width - margin - it.w : margin;
+    composites.push({ input: it.buf, left, top: Math.round(y) });
+    y += it.h + it.gapAfter;
+  }
+  return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(composites).png().toBuffer();
+}
+
+// The brand logo, small and light, in the top-right corner for the length of the footage.
+export async function renderWatermark(logoUrl: string, width: number, height: number): Promise<Buffer | null> {
+  const res = await fetch(logoUrl).catch(() => null);
+  const raw = res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
+  if (!raw || (await isPlaceholderLogo(raw))) return null;
+  const S = Math.min(width, height);
+  const resized = await sharp(raw).resize({ width: Math.round(width * 0.117), height: Math.round(S * 0.06), fit: "inside" }).png().toBuffer();
+  // Light and slightly see-through, so it reads on dark and bright shots without shouting.
+  const { data, info } = await sharp(await knockout(resized, true)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 3; i < data.length; i += 4) data[i] = Math.round(data[i] * 0.82);
+  const logo = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
+  return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: logo, left: width - info.width - Math.round(S * 0.06), top: Math.round(S * 0.05) }])
+    .png()
+    .toBuffer();
+}
+
+// Small print, centred at the foot of the frame (e.g. "Visuals for illustration only. T&C apply.").
+export async function renderDisclaimer(text: string, width: number, height: number): Promise<Buffer> {
+  const S = Math.min(width, height);
+  const { parts } = await fittedLines(text, "Montserrat", 400, S * 0.021, Math.round(width * 0.9), PAPER, "75%");
+  const p = parts[parts.length - 1];
+  return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite(parts.map((part, i) => ({ input: part.buf, left: Math.round((width - part.w) / 2), top: Math.round(height - S * 0.042 - p.h - (parts.length - 1 - i) * p.h * 1.2) })))
+    .png()
+    .toBuffer();
+}

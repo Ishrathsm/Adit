@@ -7,7 +7,7 @@ import { generateVideo } from "./lib/veo";
 import { type ClipProblem, findMarksInVideo, findSuddenEffects } from "./lib/video-check";
 import { posterDirection } from "./lib/poster-brief";
 import { clipSecondsFor, type CreativeBrief, directionText, endCardSeconds, FOLK_IMAGE_STYLE, FOLK_VIDEO_STYLE, STOP_MOTION_IMAGE_STYLE, STOP_MOTION_VIDEO_STYLE, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
-import { renderEndCard, renderSuper } from "./lib/end-card";
+import { renderCallout, renderDisclaimer, renderEndCard, renderSuper, renderWatermark } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
 import { synthesizeCastLines, synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
 import sharp from "sharp";
@@ -548,6 +548,8 @@ async function editBriefedAd(
   ]);
 
   const plan = planShots(brief);
+  const T = TRANSITION_SECONDS[effectivePacing(brief)];
+  const { layers, calloutLines } = await finishingLayer(brief, product, clips.length, width, height, font, T);
   // Hand-animated looks are held on twos and joined by cut-out transitions instead of dissolves.
   const stopMotion = brief.look === "stopmotion" || brief.look === "puppet" || brief.look === "folkpuppet";
   return stitchVideos(clips, {
@@ -567,9 +569,44 @@ async function editBriefedAd(
     ...(stopMotion ? { stepped: true, transitions: [...clips.slice(1).map((_, i) => parsePaperTransition(brief.transitions?.[i])), "tear-right" as const] } : {}),
     supers,
     superShots,
+    layers,
     music,
-    ...(Array.isArray(voiceover) ? { voiceoverLines: voiceover } : { voiceover }),
+    // Spoken callout names join the line-by-line voice (never a single full-length read).
+    ...(Array.isArray(voiceover) || (!voiceover && calloutLines.length)
+      ? { voiceoverLines: [...((voiceover as { shot: number; audio: Buffer; offset?: number }[] | undefined) ?? []), ...calloutLines].sort((x, y) => x.shot - y.shot || (x.offset ?? 0) - (y.offset ?? 0)) }
+      : { voiceover }),
   });
+}
+
+// The finishing layer (brief.callouts / watermark / disclaimer / calloutVoice): the edit's typeset
+// layers, and each callout's name spoken as it appears.
+async function finishingLayer(brief: CreativeBrief, product: ProductRow | null, clipCount: number, width: number, height: number, font: string, T: number) {
+  const layers: { png: Buffer; from: [number, number]; to: [number, number] }[] = [];
+  const calloutLines: { shot: number; audio: Buffer; offset?: number }[] = [];
+  if (brief.watermark && product?.logo_url) {
+    const png = await renderWatermark(product.logo_url, width, height).catch(() => null);
+    if (png) layers.push({ png, from: [0, 0], to: [clipCount, 0] });
+  }
+  if (brief.disclaimer?.trim()) layers.push({ png: await renderDisclaimer(brief.disclaimer.trim(), width, height), from: [0, 0.3], to: [clipCount, 0] });
+  const callouts = (brief.callouts ?? []).filter((c) => c.shot >= 0 && c.shot < clipCount && c.title.trim());
+  for (const c of callouts) {
+    const at = c.at ?? T * 0.6 + 0.15;
+    const png = await renderCallout(c.title, c.line ?? null, width, height, font, product?.primary_color ?? null, c.position ?? "bottom-left");
+    layers.push({ png, from: [c.shot, at], to: c.until !== undefined ? [c.shot, c.until] : [c.shot + 1, -0.15] });
+  }
+  if (brief.calloutVoice && callouts.length && !(brief.voiceover && (brief.audio?.voiceoverScript || brief.audio?.voiceoverLines?.some(Boolean)))) {
+    const cast = brief.voiceCast?.NARRATOR;
+    const voice = { voice: cast?.voice ?? (brief.voiceGender === "female" ? "Aoede" : "Charon"), persona: brief.calloutVoice.persona ?? cast?.persona ?? "a calm, confident narrator", accent: cast?.accent };
+    const direction = brief.calloutVoice.direction ?? "Low, soft and close to the microphone, at a natural, brisk pace; say only these words, never slowed or drawn out, never an announcer";
+    for (const c of callouts) {
+      const audio = await synthesizeVoiceover(c.say?.trim() || c.title, brief.voiceoverLanguage, brief.voiceGender, brief.tone, direction, voice).catch((err) => {
+        console.warn("[worker] callout voice failed, continuing without it:", err instanceof Error ? err.message : err);
+        return null;
+      });
+      if (audio) calloutLines.push({ shot: c.shot, audio, offset: (c.at ?? T * 0.6 + 0.15) + 0.05 });
+    }
+  }
+  return { layers, calloutLines };
 }
 
 async function processStoryboardStitch(storyboardId: string): Promise<void> {

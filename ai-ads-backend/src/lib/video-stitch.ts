@@ -193,6 +193,10 @@ export interface StitchOptions {
   // Where each clip's kept window starts (seconds into the clip; null = the default placement),
   // e.g. to start a shot just after a glitch in its first second. Clamped to what the clip allows.
   clipStarts?: (number | null)[];
+  // Finishing layers (callouts, watermark, disclaimer): full-frame transparent PNGs shown between
+  // two points on the timeline, each a shot index plus seconds from its start (index = number of
+  // clips is the end card), faded in and out.
+  layers?: { png: Buffer; from: [number, number]; to: [number, number] }[];
   // Dissolve between shots (and into the end card) instead of hard cuts. 0/omitted = hard cuts.
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
@@ -348,6 +352,18 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       video = `vs${i}`;
     });
     await Promise.all(supers.flatMap((s, i) => [write(`super-${i}.png`, s.text), write(`super-mask-${i}.png`, s.mask)]));
+
+    // ---- finishing layers: callouts, watermark, disclaimer ----
+    for (const [i, layer] of (options.layers ?? []).entries()) {
+      const at = ([shot, offset]: [number, number]) => Math.max(0, Math.min(total, (starts[shot] ?? total) + offset));
+      const a = at(layer.from), b = at(layer.to);
+      if (b - a < 0.5) continue;
+      const fade = Math.min(0.35, (b - a) / 4);
+      const idx = addInput("-loop", "1", "-framerate", String(FPS), "-t", f3(total), "-i", await write(`layer-${i}.png`, layer.png));
+      filters.push(`[${idx}:v]format=rgba,scale=${width}:${height},fade=t=in:st=${f3(a)}:d=${f3(fade)}:alpha=1,fade=t=out:st=${f3(b - fade)}:d=${f3(fade)}:alpha=1[ly${i}]`);
+      filters.push(`[${video}][ly${i}]overlay=0:0:enable='between(t,${f3(a)},${f3(b)})'[vly${i}]`);
+      video = `vly${i}`;
+    }
 
     // ---- end card text + logo: static on top, fading in with the dissolve into the card ----
     if (options.endCard && options.endCardOverlay) {

@@ -122,6 +122,17 @@ export interface CreativeBrief {
   // Per shot, where the edit starts its kept window in the clip (seconds; null = default), to skip
   // a glitch without re-rendering.
   clipStarts?: (number | null)[] | null;
+  // Finishing layer, typeset in the edit. Feature callouts: the feature's name (and a spec line)
+  // over its shot, from `at` to `until` seconds after the shot starts (defaults: after the
+  // dissolve, to just before the next shot); `say` is how its name is spoken when calloutVoice is on.
+  callouts?: { shot: number; title: string; line?: string | null; position?: "bottom-left" | "middle-left" | "bottom-right"; at?: number; until?: number; say?: string | null }[] | null;
+  // The brand logo, small and light, in the top-right corner for the length of the footage.
+  watermark?: boolean;
+  // Small print at the foot of the frame during the footage.
+  disclaimer?: string | null;
+  // Speak each callout's name as it appears, in the narrator's voice (voiceCast.NARRATOR when set);
+  // persona/direction override how it is read. Ignored when the ad has a full voiceover.
+  calloutVoice?: { persona?: string; direction?: string } | null;
 }
 
 export interface ProductScreen {
