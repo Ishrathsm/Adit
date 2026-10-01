@@ -557,6 +557,8 @@ async function editBriefedAd(
     endCardSeconds: endCardSeconds(brief),
     voiceBassDb: brief.voiceBassDb,
     clipAudio: brief.veoAudio === true,
+    musicLevel: brief.mix?.music,
+    clipAudioLevel: brief.mix?.effects,
     transitionSeconds: stopMotion ? PAPER_TRANSITION_SECONDS : TRANSITION_SECONDS[effectivePacing(brief)],
     grade: TONE_GRADE[brief.tone],
     // Stop-motion: held on twos, joined by the director's paper-cut transitions (a tear into the

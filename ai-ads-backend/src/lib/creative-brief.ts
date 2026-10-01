@@ -116,6 +116,9 @@ export interface CreativeBrief {
   veoAudio?: boolean;
   // The end card's wash: light (white) or dark; absent = picked from the film's last frame.
   endCardTone?: "light" | "dark";
+  // Mix levels for the edit (0–1): music, and Veo's own sound when veoAudio is on. Absent = the
+  // clip sound leads with the music as a bed.
+  mix?: { music?: number; effects?: number };
 }
 
 export interface ProductScreen {

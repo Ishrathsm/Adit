@@ -186,6 +186,10 @@ export interface StitchOptions {
   // Keep each clip's own sound (Veo-rendered effects) in the mix, crossfaded at the cuts, with the
   // music lowered to a faint bed under it.
   clipAudio?: boolean;
+  // Mix levels (0–1+): the music, and the clips' own sound when clipAudio is on. Defaults keep the
+  // clip sound up front with the music as a 0.35 bed; a music-led mix sets music 1, effects ~0.25.
+  musicLevel?: number;
+  clipAudioLevel?: number;
   // Dissolve between shots (and into the end card) instead of hard cuts. 0/omitted = hard cuts.
   transitionSeconds?: number;
   // ffmpeg filter chain applied to every shot and the end card (a shared color grade).
@@ -374,7 +378,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           source = labels[labels.length - 1];
         }
         filters.push(
-          `${source}${source.endsWith("]") ? "" : ","}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8${options.clipAudio ? ",volume=0.35" : ""}[mus]`,
+          `${source}${source.endsWith("]") ? "" : ","}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8${options.musicLevel !== undefined ? `,volume=${options.musicLevel}` : options.clipAudio ? ",volume=0.35" : ""}[mus]`,
         );
       }
       if (voLines.length) {
@@ -440,7 +444,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           return [`[cfx${i}]`];
         });
         if (fx.length) {
-          filters.push(`${fx.join("")}amix=inputs=${fx.length}:normalize=0[cfx]`);
+          filters.push(`${fx.join("")}amix=inputs=${fx.length}:normalize=0${options.clipAudioLevel !== undefined ? `,volume=${options.clipAudioLevel}` : ""}[cfx]`);
           if (parts.length) {
             filters.push(`[${parts[0]}][cfx]amix=inputs=2:duration=first:normalize=0[withfx]`);
             parts[0] = "withfx";
