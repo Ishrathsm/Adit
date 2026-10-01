@@ -1,0 +1,98 @@
+[
+ {
+  "shot": 1,
+  "duration": 3.6,
+  "camera_and_bike_uncoupled": false,
+  "clean_until": 3.6,
+  "notes": "Clean shot, no issues.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": null,
+  "motion_problem": null
+ },
+ {
+  "shot": 2,
+  "duration": 3.73,
+  "camera_and_bike_uncoupled": false,
+  "clean_until": 3.73,
+  "notes": "A static extreme close-up shot of a motorcycle headlight in a garage. The light turns on at 00:01.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": null,
+  "motion_problem": null
+ },
+ {
+  "shot": 3,
+  "duration": 3,
+  "camera_and_bike_uncoupled": false,
+  "clean_until": 3,
+  "notes": "The shot is clean with no issues. The camera is locked off and the motorcycle moves smoothly out of the garage.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": null,
+  "motion_problem": null
+ },
+ {
+  "shot": 4,
+  "duration": 5.05,
+  "camera_and_bike_uncoupled": true,
+  "clean_until": 0,
+  "notes": "The clip is not a single continuous shot. The background and camera angle change abruptly at 00:01, and the camera motion relative to the bike is physically implausible throughout, giving the impression the camera is sliding independently around the subject.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": 1,
+  "motion_breaks_at": 1,
+  "motion_problem": "camera and bike moving independently"
+ },
+ {
+  "shot": 5,
+  "duration": 3,
+  "camera_and_bike_uncoupled": false,
+  "clean_until": 3,
+  "notes": "The clip is entirely clean and successfully executes the intended tracking shot.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": null,
+  "motion_problem": null
+ },
+ {
+  "shot": 6,
+  "duration": 5,
+  "camera_and_bike_uncoupled": false,
+  "clean_until": 5,
+  "notes": "This is a perfect, clean, and stable video with no issues.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": null,
+  "motion_problem": null
+ },
+ {
+  "shot": 7,
+  "duration": 7.55,
+  "camera_and_bike_uncoupled": true,
+  "clean_until": 0,
+  "notes": "The motorcycle's design changes significantly partway through the shot. The camera motion is also unrealistic, moving independently of the bike in a synthetic arc, making the bike appear to float or slide rather than carve the corner.",
+  "design_drift": "The motorcycle's design changes. Initially it's a dark bike with black wheels and a single dark exhaust. It morphs into a bike with gold wheels, dual gold exhaust pipes, and a different tank design.",
+  "design_drift_at": 2,
+  "location_change_at": null,
+  "motion_breaks_at": 0,
+  "motion_problem": "The camera moves independently of the motorcycle in a non-physical arc, and the bike appears to slide or float across the frame instead of rolling on its tires."
+ },
+ {
+  "shot": 8,
+  "duration": 5.05,
+  "camera_and_bike_uncoupled": true,
+  "clean_until": 0,
+  "notes": "The shot is intended to be a slow push-in on a static motorcycle. However, the motion is unrealistic from the start. The camera appears to zoom and pan on a 2D image rather than move through 3D space. As the camera pushes in, the motorcycle slides unnaturally to the left within the frame, indicating the camera and subject are uncoupled.",
+  "design_drift": null,
+  "design_drift_at": null,
+  "location_change_at": null,
+  "motion_breaks_at": 0,
+  "motion_problem": "camera and bike uncoupled"
+ }
+]
