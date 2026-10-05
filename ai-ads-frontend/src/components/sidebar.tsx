@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +40,14 @@ import {
   type Orientation,
   type TemplateFilters,
 } from "@/lib/template-filters";
+
+// Same chip styling as the aspect-ratio/Tone/Look pickers on the poster editor
+// (projects/[id]/page.tsx's chipClass) — kept local here since that one isn't exported.
+function chipClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-xs transition-colors ${
+    active ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-foreground hover:bg-white/5"
+  }`;
+}
 
 function NavLink({
   href,
@@ -446,39 +455,31 @@ function FilterDrawer({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">Orientation</legend>
-            {ORIENTATIONS.map((value) => (
-              <label key={value} className="flex items-center gap-2.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={orientations.has(value)}
-                  onChange={() => toggleOrientation(value)}
-                  className="h-4 w-4 shrink-0 accent-foreground"
-                />
-                {value}
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">Format</legend>
-            {FORMATS.map((value) => (
-              <label key={value} className="flex items-center gap-2.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={formats.has(value)}
-                  onChange={() => toggleFormat(value)}
-                  className="h-4 w-4 shrink-0 accent-foreground"
-                />
-                {value}
-              </label>
-            ))}
-          </fieldset>
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Orientation</label>
+            <div className="flex flex-wrap gap-2">
+              {ORIENTATIONS.map((value) => (
+                <button key={value} type="button" onClick={() => toggleOrientation(value)} className={chipClass(orientations.has(value))}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="template-category" className="text-xs font-medium tracking-wide text-muted uppercase">
+            <label className="text-sm font-medium">Format</label>
+            <div className="flex flex-wrap gap-2">
+              {FORMATS.map((value) => (
+                <button key={value} type="button" onClick={() => toggleFormat(value)} className={chipClass(formats.has(value))}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="template-category" className="text-sm font-medium">
               Category
             </label>
             <select
@@ -498,24 +499,25 @@ function FilterDrawer({
         </div>
 
         <div className="flex gap-2 border-t border-border-subtle pt-4">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            className="flex-1"
             onClick={() => {
               setOrientations(new Set());
               setFormats(new Set());
               setCategory("");
             }}
-            className="h-10 flex-1 rounded-full border border-border-strong text-sm font-medium text-foreground transition-colors hover:bg-white/5"
           >
             Clear All
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            className="flex-1"
             onClick={() => onApply({ orientations: Array.from(orientations), formats: Array.from(formats), category: category || null })}
-            className="h-10 flex-1 rounded-full bg-button-bg text-sm font-medium text-button-fg transition-colors hover:opacity-90"
           >
             Apply Filters
-          </button>
+          </Button>
         </div>
       </div>
     </div>,
