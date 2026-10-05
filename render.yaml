@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: ai-ads-backend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
