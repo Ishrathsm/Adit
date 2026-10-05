@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { clsx } from "clsx";
 import {
   Building2,
   ChevronRight,
   CircleUserRound,
   Clapperboard,
+  Filter,
   FolderKanban,
   Image as ImageIcon,
   LayoutTemplate,
@@ -19,13 +21,33 @@ import {
   Sun,
   ShieldCheck,
   Video,
+  X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
 import { createProject, getAccount, listProducts, type Account, type Features, type Product, type ProjectType } from "@/lib/api";
+import {
+  CATEGORIES,
+  FORMATS,
+  ORIENTATIONS,
+  filtersFromSearchParams,
+  searchParamsFromFilters,
+  type Format,
+  type Orientation,
+  type TemplateFilters,
+} from "@/lib/template-filters";
+
+// Same chip styling as the aspect-ratio/Tone/Look pickers on the poster editor
+// (projects/[id]/page.tsx's chipClass) — kept local here since that one isn't exported.
+function chipClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-xs transition-colors ${
+    active ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-foreground hover:bg-white/5"
+  }`;
+}
 
 function NavLink({
   href,
@@ -93,6 +115,7 @@ const CREATE_CATEGORIES: {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
@@ -104,6 +127,7 @@ export function Sidebar() {
   const [quickCreating, setQuickCreating] = useState<CreateTarget | null>(null);
   // Which "Create ads" categories are expanded in place.
   const [expanded, setExpanded] = useState<Record<ProjectType, boolean>>({ poster: false, video: false });
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
@@ -157,6 +181,27 @@ export function Sidebar() {
   }
 
 
+  useEffect(() => {
+    if (!filterDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFilterDrawerOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [filterDrawerOpen]);
+
+  function handleApplyFilters(filters: TemplateFilters) {
+    const filterParams = searchParamsFromFilters(filters);
+    // Merge onto the existing query (e.g. ?product=... for an organisation's brand filter)
+    // rather than replacing it outright.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("orientation");
+    params.delete("format");
+    params.delete("category");
+    filterParams.forEach((value, key) => params.set(key, value));
+    const query = params.toString();
+    router.push(`/projects${query ? `?${query}` : ""}#templates`);
+    setFilterDrawerOpen(false);
+  }
+
   function handleTemplatesClick() {
     if (pathname === "/projects") {
       document.getElementById("templates")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -195,6 +240,13 @@ export function Sidebar() {
       >
         <LayoutTemplate size={16} className="shrink-0" />
         <span className="hidden sm:inline">Templates</span>
+      </button>
+      <button
+        onClick={() => setFilterDrawerOpen(true)}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+      >
+        <Filter size={16} className="shrink-0" />
+        <span className="hidden sm:inline">Filter templates</span>
       </button>
       {account?.account_type === "organisation" && (
         <>
@@ -335,6 +387,140 @@ export function Sidebar() {
           <LogOut size={16} className="shrink-0" />
         </button>
       </div>
+
+      {filterDrawerOpen && (
+        <FilterDrawer
+          initialFilters={filtersFromSearchParams(searchParams)}
+          onApply={handleApplyFilters}
+          onClose={() => setFilterDrawerOpen(false)}
+        />
+      )}
     </aside>
+  );
+}
+
+// A fresh mount every time the drawer opens (the parent only renders this while
+// filterDrawerOpen is true) — so its draft state can simply start from initialFilters via
+// useState's initializer, with no effect needed to "re-sync" it on reopen.
+function FilterDrawer({
+  initialFilters,
+  onApply,
+  onClose,
+}: {
+  initialFilters: TemplateFilters;
+  onApply: (filters: TemplateFilters) => void;
+  onClose: () => void;
+}) {
+  const [orientations, setOrientations] = useState(() => new Set(initialFilters.orientations));
+  const [formats, setFormats] = useState(() => new Set(initialFilters.formats));
+  const [category, setCategory] = useState(initialFilters.category ?? "");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function toggleOrientation(value: Orientation) {
+    setOrientations((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
+
+  function toggleFormat(value: Format) {
+    setFormats((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filter templates"
+    >
+      <div className="rgb-border flex h-full w-full max-w-sm flex-col gap-4 bg-background p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">Filter templates</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1 text-muted hover:text-foreground">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Orientation</label>
+            <div className="flex flex-wrap gap-2">
+              {ORIENTATIONS.map((value) => (
+                <button key={value} type="button" onClick={() => toggleOrientation(value)} className={chipClass(orientations.has(value))}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Format</label>
+            <div className="flex flex-wrap gap-2">
+              {FORMATS.map((value) => (
+                <button key={value} type="button" onClick={() => toggleFormat(value)} className={chipClass(formats.has(value))}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="template-category" className="text-sm font-medium">
+              Category
+            </label>
+            <select
+              id="template-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none focus:border-border-strong"
+            >
+              <option value="">All categories</option>
+              {CATEGORIES.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-2 border-t border-border-subtle pt-4">
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex-1"
+            onClick={() => {
+              setOrientations(new Set());
+              setFormats(new Set());
+              setCategory("");
+            }}
+          >
+            Clear All
+          </Button>
+          <Button
+            type="button"
+            className="flex-1"
+            onClick={() => onApply({ orientations: Array.from(orientations), formats: Array.from(formats), category: category || null })}
+          >
+            Apply Filters
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
