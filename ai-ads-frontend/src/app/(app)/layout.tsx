@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/sidebar";
 
 // Wraps every authenticated app page (projects, project detail, storyboard, account) — the
@@ -7,7 +8,11 @@ import { Sidebar } from "@/components/sidebar";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      {/* Sidebar reads/writes the template filter query params via useSearchParams, which Next
+          requires a Suspense boundary for. */}
+      <Suspense fallback={null}>
+        <Sidebar />
+      </Suspense>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

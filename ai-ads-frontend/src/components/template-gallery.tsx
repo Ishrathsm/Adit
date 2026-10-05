@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createProject, listTemplates, type Template } from "@/lib/api";
+import { filtersFromSearchParams, matchesFilters } from "@/lib/template-filters";
 
 // Target row height before a row is stretched to exactly fill the container's width (the same
 // "justified gallery" layout Google Photos/Flickr use). Every picture keeps its own true shape;
@@ -62,6 +63,7 @@ function ratioFromLabel(aspectRatio: Template["aspect_ratio"] | undefined): numb
 // and their logo or product photos go in as reference images.
 export function TemplateGallery({ productId, needsProduct }: { productId: string | null; needsProduct: boolean }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [templates, setTemplates] = useState<Template[] | null>(null);
   const [preview, setPreview] = useState<Template | null>(null);
   const [remixing, setRemixing] = useState(false);
@@ -93,14 +95,21 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
     return () => observer.disconnect();
   }, [containerEl]);
 
+  // Orientation/Format/Category come from the sidebar's filter drawer as URL query params, so
+  // applying a filter there doesn't need any direct connection to this component.
+  const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
+  const filteredTemplates = useMemo(
+    () => (templates ?? []).filter((t) => matchesFilters(t, filters)),
+    [templates, filters],
+  );
+
   const rows = useMemo(() => {
-    if (!templates) return [];
-    const items = templates.map((template) => ({
+    const items = filteredTemplates.map((template) => ({
       template,
       ratio: naturalRatios[template.id] ?? ratioFromLabel(template.aspect_ratio),
     }));
     return layoutJustifiedRows(items, containerWidth);
-  }, [templates, naturalRatios, containerWidth]);
+  }, [filteredTemplates, naturalRatios, containerWidth]);
 
   useEffect(() => {
     if (!preview) return;
@@ -128,6 +137,9 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   if (templates === null) return null;
   if (!templates.length) {
     return <p className="rgb-border p-8 text-center text-sm text-muted">No templates yet.</p>;
+  }
+  if (!filteredTemplates.length) {
+    return <p className="rgb-border p-8 text-center text-sm text-muted">No templates match these filters.</p>;
   }
 
   return (
