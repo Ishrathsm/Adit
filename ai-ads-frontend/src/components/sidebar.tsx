@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { clsx } from "clsx";
 import {
   Building2,
@@ -29,6 +29,16 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { NotificationBell } from "@/components/notification-bell";
 import { createClient } from "@/lib/supabase/client";
 import { createProject, getAccount, listProducts, type Account, type Features, type Product, type ProjectType } from "@/lib/api";
+import {
+  CATEGORIES,
+  FORMATS,
+  ORIENTATIONS,
+  filtersFromSearchParams,
+  searchParamsFromFilters,
+  type Format,
+  type Orientation,
+  type TemplateFilters,
+} from "@/lib/template-filters";
 
 function NavLink({
   href,
@@ -96,6 +106,7 @@ const CREATE_CATEGORIES: {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
@@ -107,7 +118,6 @@ export function Sidebar() {
   const [quickCreating, setQuickCreating] = useState<CreateTarget | null>(null);
   // Which "Create ads" categories are expanded in place.
   const [expanded, setExpanded] = useState<Record<ProjectType, boolean>>({ poster: false, video: false });
-  // Empty for now — opens the drawer shell only, no filter options wired up yet.
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -168,6 +178,20 @@ export function Sidebar() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [filterDrawerOpen]);
+
+  function handleApplyFilters(filters: TemplateFilters) {
+    const filterParams = searchParamsFromFilters(filters);
+    // Merge onto the existing query (e.g. ?product=... for an organisation's brand filter)
+    // rather than replacing it outright.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("orientation");
+    params.delete("format");
+    params.delete("category");
+    filterParams.forEach((value, key) => params.set(key, value));
+    const query = params.toString();
+    router.push(`/projects${query ? `?${query}` : ""}#templates`);
+    setFilterDrawerOpen(false);
+  }
 
   function handleTemplatesClick() {
     if (pathname === "/projects") {
@@ -355,35 +379,146 @@ export function Sidebar() {
         </button>
       </div>
 
-      {filterDrawerOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex justify-end bg-black/50"
-            onClick={() => setFilterDrawerOpen(false)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Filter templates"
-          >
-            <div
-              className="rgb-border flex h-full w-full max-w-sm flex-col gap-4 bg-background p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold tracking-tight">Filter templates</h2>
-                <button
-                  type="button"
-                  onClick={() => setFilterDrawerOpen(false)}
-                  aria-label="Close"
-                  className="rounded-full p-1 text-muted hover:text-foreground"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              {/* Empty shell for now — filter options aren't wired up yet. */}
-            </div>
-          </div>,
-          document.body,
-        )}
+      {filterDrawerOpen && (
+        <FilterDrawer
+          initialFilters={filtersFromSearchParams(searchParams)}
+          onApply={handleApplyFilters}
+          onClose={() => setFilterDrawerOpen(false)}
+        />
+      )}
     </aside>
+  );
+}
+
+// A fresh mount every time the drawer opens (the parent only renders this while
+// filterDrawerOpen is true) — so its draft state can simply start from initialFilters via
+// useState's initializer, with no effect needed to "re-sync" it on reopen.
+function FilterDrawer({
+  initialFilters,
+  onApply,
+  onClose,
+}: {
+  initialFilters: TemplateFilters;
+  onApply: (filters: TemplateFilters) => void;
+  onClose: () => void;
+}) {
+  const [orientations, setOrientations] = useState(() => new Set(initialFilters.orientations));
+  const [formats, setFormats] = useState(() => new Set(initialFilters.formats));
+  const [category, setCategory] = useState(initialFilters.category ?? "");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function toggleOrientation(value: Orientation) {
+    setOrientations((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
+
+  function toggleFormat(value: Format) {
+    setFormats((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filter templates"
+    >
+      <div className="rgb-border flex h-full w-full max-w-sm flex-col gap-4 bg-background p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">Filter templates</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1 text-muted hover:text-foreground">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">Orientation</legend>
+            {ORIENTATIONS.map((value) => (
+              <label key={value} className="flex items-center gap-2.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={orientations.has(value)}
+                  onChange={() => toggleOrientation(value)}
+                  className="h-4 w-4 shrink-0 accent-foreground"
+                />
+                {value}
+              </label>
+            ))}
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">Format</legend>
+            {FORMATS.map((value) => (
+              <label key={value} className="flex items-center gap-2.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formats.has(value)}
+                  onChange={() => toggleFormat(value)}
+                  className="h-4 w-4 shrink-0 accent-foreground"
+                />
+                {value}
+              </label>
+            ))}
+          </fieldset>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="template-category" className="text-xs font-medium tracking-wide text-muted uppercase">
+              Category
+            </label>
+            <select
+              id="template-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-full border border-border-subtle bg-background px-4 py-2.5 text-sm outline-none focus:border-border-strong"
+            >
+              <option value="">All categories</option>
+              {CATEGORIES.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-2 border-t border-border-subtle pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setOrientations(new Set());
+              setFormats(new Set());
+              setCategory("");
+            }}
+            className="h-10 flex-1 rounded-full border border-border-strong text-sm font-medium text-foreground transition-colors hover:bg-white/5"
+          >
+            Clear All
+          </button>
+          <button
+            type="button"
+            onClick={() => onApply({ orientations: Array.from(orientations), formats: Array.from(formats), category: category || null })}
+            className="h-10 flex-1 rounded-full bg-button-bg text-sm font-medium text-button-fg transition-colors hover:opacity-90"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
