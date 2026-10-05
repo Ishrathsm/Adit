@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
@@ -9,6 +10,7 @@ import {
   ChevronRight,
   CircleUserRound,
   Clapperboard,
+  Filter,
   FolderKanban,
   Image as ImageIcon,
   LayoutTemplate,
@@ -19,6 +21,7 @@ import {
   Sun,
   ShieldCheck,
   Video,
+  X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/logo";
@@ -104,6 +107,8 @@ export function Sidebar() {
   const [quickCreating, setQuickCreating] = useState<CreateTarget | null>(null);
   // Which "Create ads" categories are expanded in place.
   const [expanded, setExpanded] = useState<Record<ProjectType, boolean>>({ poster: false, video: false });
+  // Empty for now — opens the drawer shell only, no filter options wired up yet.
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
@@ -157,6 +162,13 @@ export function Sidebar() {
   }
 
 
+  useEffect(() => {
+    if (!filterDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFilterDrawerOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [filterDrawerOpen]);
+
   function handleTemplatesClick() {
     if (pathname === "/projects") {
       document.getElementById("templates")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -195,6 +207,13 @@ export function Sidebar() {
       >
         <LayoutTemplate size={16} className="shrink-0" />
         <span className="hidden sm:inline">Templates</span>
+      </button>
+      <button
+        onClick={() => setFilterDrawerOpen(true)}
+        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
+      >
+        <Filter size={16} className="shrink-0" />
+        <span className="hidden sm:inline">Filter templates</span>
       </button>
       {account?.account_type === "organisation" && (
         <>
@@ -335,6 +354,36 @@ export function Sidebar() {
           <LogOut size={16} className="shrink-0" />
         </button>
       </div>
+
+      {filterDrawerOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex justify-end bg-black/50"
+            onClick={() => setFilterDrawerOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filter templates"
+          >
+            <div
+              className="rgb-border flex h-full w-full max-w-sm flex-col gap-4 bg-background p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold tracking-tight">Filter templates</h2>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  aria-label="Close"
+                  className="rounded-full p-1 text-muted hover:text-foreground"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {/* Empty shell for now — filter options aren't wired up yet. */}
+            </div>
+          </div>,
+          document.body,
+        )}
     </aside>
   );
 }
