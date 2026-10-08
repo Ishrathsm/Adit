@@ -60,6 +60,12 @@ label.g { display: flex; gap: 8px; align-items: center; color: var(--muted); fon
 .take .vc { grid-column: 1 / -1; display: grid; gap: 8px; }
 .take .vc video { max-height: 260px; border-radius: 8px; background: #000; }
 .note { color: var(--muted); font-size: .85rem; max-width: 70ch; }
+.words { display: flex; flex-wrap: wrap; gap: 6px; }
+.w { font: 500 .8rem var(--mono); padding: 4px 8px; border-radius: 6px; background: var(--raised); border: 1px solid var(--line); }
+.w.low { border-color: var(--gold); color: var(--gold); }
+.w small { color: var(--muted); margin-left: 6px; }
+.meterline { font: 500 .85rem var(--mono); }
+.meterline b { color: var(--leaf); }
 .err { color: var(--rec); }
 @media (max-width: 760px) { .app { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); } .take { grid-template-columns: 1fr; } }
 </style>
@@ -77,6 +83,7 @@ label.g { display: flex; gap: 8px; align-items: center; color: var(--muted); fon
     <div class="lyric" id="lyric" aria-live="polite"></div>
     <div class="controls">
       <button class="b rec" id="rec">● Record</button>
+      <button class="b" id="free">● Free read (no clip)</button>
       <button class="b" id="watch">▶ Watch the clip</button>
       <label class="g">Guide voice
         <select id="guide"><option value="0.35">quiet</option><option value="1">full</option><option value="0">off</option></select></label>
@@ -186,15 +193,36 @@ async function convert(take, el, btn) {
     await new Promise((r) => setTimeout(r, 1500));
     const j = await (await fetch(`/api/job/${job}`)).json();
     if (j.state === "done") {
-      vc.innerHTML = `<video controls playsinline src="${j.preview}?t=${Date.now()}"></video>
+      const rep = j.report || {};
+      const words = (rep.words || []).map((w) => `<span class="w ${w.confidence < 0.35 ? "low" : ""}" title="yours ${w.take[0]}–${w.take[1]}s → actor ${w.original[0]}–${w.original[1]}s">${w.word}<small>${w.confidence < 0.35 ? "re-read?" : Math.round(w.confidence * 100) + "%"}</small></span>`).join("");
+      const sync = rep.sync ? `<div class="meterline">Lip sync: <b>${rep.sync.yours}</b> (the actor's own voice scores ${rep.sync.original})</div>` : "";
+      vc.innerHTML = `${words ? `<div class="words">${words}</div>` : ""}${sync}<video controls playsinline src="${j.preview}?t=${Date.now()}"></video>
         <div class="acts"><button class="b ap">✓ Use this take</button><span class="note">Your timing and pronunciation, in ${cur.who}'s voice, over the clip.</span></div>`;
       vc.querySelector(".ap").onclick = async () => { await fetch(`/api/approve/${cur.id}/${take}`, { method: "POST" }); $("status").textContent = `Line ${lines.indexOf(cur) + 1} approved.`; load(cur.id); };
       btn.disabled = false; return;
     }
+    if (j.state && !["done", "error", "queued"].includes(j.state)) vc.querySelector(".note") && (vc.querySelector(".note").textContent = j.state[0].toUpperCase() + j.state.slice(1) + "…");
     if (j.state === "error") { vc.innerHTML = `<p class="note err"></p>`; vc.firstChild.textContent = "Conversion failed: " + j.message; btn.disabled = false; return; }
   }
 }
 $("rec").onclick = record;
+// Free read: no clip, no countdown pressure; read the line your way, click again to stop. The studio
+// aligns it to the actor's words afterwards.
+let freeRec = null;
+$("free").onclick = async () => {
+  if (freeRec) { freeRec.stop(); return; }
+  try { await getMic(); } catch { $("status").textContent = "Microphone blocked. Allow it in the browser and try again."; return; }
+  const chunks = []; freeRec = new MediaRecorder(mic, { mimeType: "audio/webm;codecs=opus" });
+  freeRec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  freeRec.onstop = async () => {
+    freeRec = null; $("free").textContent = "● Free read (no clip)"; $("free").classList.remove("rec", "live");
+    $("status").textContent = "Saving…";
+    const res = await fetch(`/api/take/${cur.id}`, { method: "POST", body: new Blob(chunks, { type: "audio/webm" }) });
+    $("status").textContent = res.ok ? "Saved. Convert it: it will be aligned to the actor's words." : "Couldn't save the take.";
+    await load(cur.id);
+  };
+  freeRec.start(); $("free").textContent = "■ Stop"; $("free").classList.add("rec", "live");
+};
 $("watch").onclick = () => { const v = $("vid"); v.volume = 1; v.currentTime = 0; v.play(); };
 $("guide").onchange = () => ($("vid").volume = +$("guide").value);
 document.addEventListener("keydown", (e) => { if (e.code === "Space" && e.target.tagName !== "BUTTON" && e.target.tagName !== "SELECT") { e.preventDefault(); record(); } });

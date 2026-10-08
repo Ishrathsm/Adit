@@ -2,6 +2,10 @@
 # speech like karaoke". The user records each line over its clip (words light up in time); the take is
 # converted into the character's voice with Seed-VC (its CLI, ~1 min per line on this CPU), previewed over the clip, and
 # approved. Approved lines land in ~/Desktop/swastea/adr/final/<line>.wav for the edit.
+# Since 2026-10-08 ("it should be able to adjust that to the original audio... or if i read the script
+# first..."), every take is aligned word by word to the actor's original audio before conversion
+# (align.py: MMS forced alignment + WSOLA), so a take read at any pace, even without the clip, lands on
+# the lips. The page shows each word's timing, re-read flags and the measured lip sync.
 # Run: ~/Desktop/Adit/tools/seed-vc/.venv/bin/python ~/Desktop/Adit/tools/dub-studio/server.py
 #      then open http://localhost:8765
 import json, os, shutil, subprocess, sys, threading, time
@@ -10,6 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SEEDVC = HERE.parent / "seed-vc"
 sys.path.insert(0, str(SEEDVC))
+sys.path.insert(0, str(HERE))
 os.chdir(SEEDVC)  # the wrapper loads its configs and checkpoints relative to its own folder
 
 import numpy as np
@@ -36,6 +41,16 @@ LINES = [
     {"id": "l7", "who": "End voice-over", "mood": "soft, sweet, smiling", "ref": "vo", "text": "SWAS-tea. Roj piyo, swasth raho.", "windows": [[0.6, 1.5], [1.8, 3.5]]},
 ]
 BY_ID = {l["id"]: l for l in LINES}
+# Mouth boxes for the lip-sync meter (clip pixels); only where a mouth is clearly visible and still.
+MOUTH = {"l1": (520, 185, 610, 235), "l2": (390, 190, 460, 240), "l5": (380, 190, 450, 240)}
+
+
+def clip_voice(line_id):
+    import librosa
+    t = TAKES / f".{line_id}-orig.wav"
+    if not t.exists():
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(HERE / "media" / f"{line_id}.mp4"), "-vn", "-ac", "1", "-ar", "16000", str(t)], check=True)
+    return librosa.load(str(t), sr=16000)[0]
 
 _model, _model_lock, _jobs = None, threading.Lock(), {}
 
@@ -50,25 +65,38 @@ def model():
 
 
 def convert(job_id, line, take_wav, out_wav):
-    # Runs Seed-VC's own CLI: the in-process wrapper ran ~60x slower on this CPU (38 s per diffusion step).
-    # The pitch-aware model with auto pitch adjustment, so a man's reading lands at Aunty's pitch (~194 Hz
-    # median, measured); the plain model kept the source pitch.
+    # 1. convert the raw take into the character's voice (Seed-VC CLI, pitch-aware: a man's reading lands
+    #    at Aunty's pitch), 2. warp it onto the original's words using the raw take's word map (skipped for
+    #    the end voice-over, which has no lips), 3. preview over the clip, 4. measure lip sync.
+    # The CLI, not the in-process wrapper: that ran ~60x slower on this CPU.
     try:
-        _jobs[job_id] = {"state": "converting"}
+        import align
+        from syncscore import score
+        report = {}
+        _jobs[job_id] = {"state": "converting the voice (about 2 min)"}
         tmp = take_wav.parent / f"vc-{take_wav.stem}"
         tmp.mkdir(exist_ok=True)
         subprocess.run([sys.executable, "inference.py", "--source", str(take_wav), "--target", str(REFS / f"{line['ref']}.wav"),
                         "--output", str(tmp), "--diffusion-steps", "20", "--length-adjust", "1.0", "--inference-cfg-rate", "0.7",
                         "--f0-condition", "True", "--auto-f0-adjust", "True", "--fp16", "False"], check=True, capture_output=True, cwd=SEEDVC)
-        produced = next(tmp.glob("vc_*.wav"))
-        shutil.move(str(produced), out_wav)
+        converted = take_wav.with_name(take_wav.stem + "-unaligned.wav")
+        shutil.move(str(next(tmp.glob("vc_*.wav"))), converted)
         shutil.rmtree(tmp, ignore_errors=True)
-        # a preview: the clip with the converted line in place of the original voice
+        if line["ref"] != "vo":
+            # align AFTER converting: the word map is read from the raw take and applied to the converted voice
+            _jobs[job_id] = {"state": "aligning to the original's words"}
+            report = align.align_take(str(take_wav), clip_voice(line["id"]), line["text"], str(out_wav), apply_to=str(converted))
+        else:
+            shutil.copy(converted, out_wav)
         clip = HERE / "media" / f"{line['id']}.mp4"
         preview = out_wav.with_suffix(".mp4")
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(clip), "-i", str(out_wav), "-map", "0:v", "-map", "1:a",
                         "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest", str(preview)], check=True)
-        _jobs[job_id] = {"state": "done", "audio": f"/takes/{line['id']}/{out_wav.name}", "preview": f"/takes/{line['id']}/{preview.name}"}
+        if line["id"] in MOUTH:
+            box = MOUTH[line["id"]]
+            report["sync"] = {"original": round(score(str(clip), str(clip), box)[0], 2), "yours": round(score(str(clip), str(out_wav), box)[0], 2)}
+        (out_wav.with_suffix(".json")).write_text(json.dumps(report))
+        _jobs[job_id] = {"state": "done", "audio": f"/takes/{line['id']}/{out_wav.name}", "preview": f"/takes/{line['id']}/{preview.name}", "report": report}
     except Exception as e:  # surface the failure in the UI
         _jobs[job_id] = {"state": "error", "message": str(getattr(e, "stderr", b"") or e)[-300:]}
 
@@ -89,7 +117,7 @@ def lines():
     out = []
     for l in LINES:
         d = TAKES / l["id"]
-        takes = sorted(p.stem for p in d.glob("take-*.wav") if "-vc" not in p.stem) if d.exists() else []
+        takes = sorted(p.stem for p in d.glob("take-*.wav") if "-vc" not in p.stem and "-aligned" not in p.stem and "-unaligned" not in p.stem) if d.exists() else []
         out.append({**l, "takes": takes, "approved": l["id"] in approved})
     return out
 
