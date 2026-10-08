@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swastea Dub Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Hind:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a recording booth. Line list on the left, the clip and karaoke line centre-stage, takes below. */
+:root {
+  --bg: #0f1712; --panel: #16211a; --raised: #1d2a21; --fg: #e8efe6; --muted: #93a596; --line: #2b3a2f;
+  --leaf: #8fcf4a; --pack: #1c4a2e; --rec: #e5533d; --gold: #f2c46d;
+  --display: "Rozha One", Georgia, serif; --body: "Hind", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 400 15px/1.5 var(--body); }
+.app { display: grid; grid-template-columns: 300px 1fr; min-height: 100%; }
+aside { background: var(--panel); border-right: 1px solid var(--line); padding: 20px 14px; display: grid; align-content: start; gap: 6px; }
+aside h1 { font: 400 1.5rem/1.1 var(--display); color: var(--leaf); margin: 0 6px 12px; }
+.ln { all: unset; cursor: pointer; display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 10px; border-radius: 8px; }
+.ln:hover { background: var(--raised); }
+.ln.on { background: var(--raised); outline: 1px solid var(--leaf); }
+.ln:focus-visible { outline: 2px solid var(--gold); }
+.ln .n { font: 500 .8rem var(--mono); color: var(--muted); }
+.ln .t { font-size: .9rem; min-width: 0; }
+.ln .t small { display: block; color: var(--muted); font-size: .75rem; }
+.ln .st { font: 500 .7rem var(--mono); color: var(--muted); }
+.ln .st.ok { color: var(--leaf); }
+main { padding: 24px clamp(16px, 4vw, 40px); display: grid; gap: 18px; align-content: start; max-width: 1100px; }
+.who { font: 500 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.stage { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 16/9; max-height: 56vh; }
+video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.count { position: absolute; inset: 0; display: grid; place-items: center; font: 400 7rem var(--display); color: #fff; background: rgba(0,0,0,.45); }
+.count[hidden] { display: none; }
+.lyric { font: 400 clamp(1.6rem, 3.6vw, 2.6rem)/1.25 var(--display); text-align: center; min-height: 2.6em; display: flex; flex-wrap: wrap; justify-content: center; gap: .1em .35em; }
+.lyric span { color: #55665a; transition: color .08s; }
+.lyric span.sung { color: var(--leaf); }
+.lyric span.now { color: #fff; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button.b { font: 600 .95rem var(--body); border: 1px solid var(--line); background: var(--raised); color: var(--fg); padding: 10px 16px; border-radius: 999px; cursor: pointer; }
+button.b:hover { border-color: var(--muted); }
+button.b:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button.b:disabled { opacity: .45; cursor: default; }
+button.rec { background: var(--rec); border-color: var(--rec); color: #fff; }
+button.rec.live { animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { button.rec.live { animation: none; } }
+label.g { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: .85rem; }
+.meter { width: 140px; height: 8px; background: var(--raised); border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--leaf); }
+.takes { display: grid; gap: 10px; }
+.take { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: 110px 1fr auto; gap: 10px 14px; align-items: center; }
+.take audio { width: 100%; height: 34px; }
+.take .name { font: 500 .8rem var(--mono); color: var(--muted); }
+.take .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.take .vc { grid-column: 1 / -1; display: grid; gap: 8px; }
+.take .vc video { max-height: 260px; border-radius: 8px; background: #000; }
+.note { color: var(--muted); font-size: .85rem; max-width: 70ch; }
+.err { color: var(--rec); }
+@media (max-width: 760px) { .app { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); } .take { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Dub Studio</h1>
+    <div id="list"></div>
+    <p class="note" style="margin:14px 6px 0">Wear headphones so the guide voice doesn't leak into your mic. Space starts recording.</p>
+  </aside>
+  <main>
+    <div><div class="who" id="who"></div></div>
+    <div class="stage"><video id="vid" playsinline preload="auto"></video><div class="count" id="count" hidden></div></div>
+    <div class="lyric" id="lyric" aria-live="polite"></div>
+    <div class="controls">
+      <button class="b rec" id="rec">● Record</button>
+      <button class="b" id="watch">▶ Watch the clip</button>
+      <label class="g">Guide voice
+        <select id="guide"><option value="0.35">quiet</option><option value="1">full</option><option value="0">off</option></select></label>
+      <label class="g">Mic <span class="meter"><i id="lvl"></i></span></label>
+      <span class="note" id="status"></span>
+    </div>
+    <div class="takes" id="takes"></div>
+  </main>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let lines = [], cur = null, mic = null, analyser = null, recording = false;
+
+async function load(keep) {
+  lines = await (await fetch("/api/lines")).json();
+  renderList();
+  select(keep ?? cur?.id ?? lines[0].id);
+}
+function renderList() {
+  $("list").innerHTML = "";
+  lines.forEach((l, i) => {
+    const b = document.createElement("button");
+    b.className = "ln" + (cur && cur.id === l.id ? " on" : "");
+    b.innerHTML = `<span class="n">${i + 1}</span><span class="t"></span><span class="st ${l.approved ? "ok" : ""}">${l.approved ? "✓ dubbed" : l.takes.length ? l.takes.length + " take" + (l.takes.length > 1 ? "s" : "") : ""}</span>`;
+    b.querySelector(".t").textContent = l.text;
+    const s = document.createElement("small"); s.textContent = l.who; b.querySelector(".t").append(s);
+    b.onclick = () => select(l.id);
+    $("list").append(b);
+  });
+}
+function select(id) {
+  cur = lines.find((l) => l.id === id);
+  renderList();
+  $("who").textContent = `${cur.who} · ${cur.mood}`;
+  $("vid").src = `/media/${cur.id}.mp4`;
+  $("vid").volume = +$("guide").value;
+  buildLyric();
+  renderTakes();
+}
+// Spread the words across the line's spoken windows by length, for the karaoke highlight.
+let wordTimes = [];
+function buildLyric() {
+  const words = cur.text.split(/\s+/);
+  const total = cur.windows.reduce((s, [a, b]) => s + (b - a), 0);
+  const weights = words.map((w) => Math.max(2, w.replace(/[^\p{L}]/gu, "").length));
+  const sum = weights.reduce((a, b) => a + b, 0);
+  let acc = 0; wordTimes = [];
+  const at = (x) => { for (const [a, b] of cur.windows) { if (x <= b - a) return a + x; x -= b - a; } return cur.windows.at(-1)[1]; };
+  weights.forEach((w) => { const s = at(acc / sum * total); acc += w; wordTimes.push([s, at(acc / sum * total)]); });
+  $("lyric").innerHTML = words.map((w) => `<span>${w.replace(/</g, "&lt;")}</span>`).join("");
+}
+function tick() {
+  const t = $("vid").currentTime, spans = $("lyric").children;
+  wordTimes.forEach(([a, b], i) => { spans[i].className = t >= b ? "sung" : t >= a ? "now" : ""; });
+  if (analyser) { const d = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(d); let m = 0; for (const v of d) m = Math.max(m, Math.abs(v - 128)); $("lvl").style.width = Math.min(100, m / 128 * 180) + "%"; }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+async function getMic() {
+  if (mic) return mic;
+  mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } });
+  const ctx = new AudioContext(); analyser = ctx.createAnalyser(); analyser.fftSize = 1024; ctx.createMediaStreamSource(mic).connect(analyser);
+  return mic;
+}
+const beep = (f = 880, d = 0.12) => { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; g.gain.value = 0.15; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + d); };
+
+async function record() {
+  if (recording) return;
+  try { await getMic(); } catch { $("status").textContent = "Microphone blocked. Allow it in the browser and try again."; $("status").className = "note err"; return; }
+  recording = true; $("rec").disabled = true; $("status").textContent = ""; $("status").className = "note";
+  const v = $("vid"); v.pause(); v.currentTime = 0; v.volume = +$("guide").value;
+  $("count").hidden = false;
+  for (const n of [3, 2, 1]) { $("count").textContent = n; beep(n === 1 ? 1320 : 880); await new Promise((r) => setTimeout(r, 800)); }
+  $("count").hidden = true;
+  const chunks = [], mr = new MediaRecorder(mic, { mimeType: "audio/webm;codecs=opus" });
+  mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const done = new Promise((r) => (mr.onstop = r));
+  mr.start(); v.play();
+  $("rec").classList.add("live"); $("rec").textContent = "● Recording…";
+  await new Promise((r) => (v.onended = r));
+  await new Promise((r) => setTimeout(r, 300));
+  mr.stop(); await done;
+  $("rec").classList.remove("live"); $("rec").textContent = "● Record"; $("rec").disabled = false; recording = false;
+  $("status").textContent = "Saving…";
+  const res = await fetch(`/api/take/${cur.id}`, { method: "POST", body: new Blob(chunks, { type: "audio/webm" }) });
+  $("status").textContent = res.ok ? "Saved. Listen, then convert it." : "Couldn't save the take.";
+  await load(cur.id);
+}
+
+function renderTakes() {
+  const box = $("takes"); box.innerHTML = "";
+  [...cur.takes].reverse().forEach((t) => {
+    const el = document.createElement("div"); el.className = "take";
+    el.innerHTML = `<span class="name">${t}</span><audio controls src="/takes/${cur.id}/${t}.wav"></audio>
+      <span class="acts"><button class="b cv">Convert to ${cur.ref === "aunty" ? "Aunty" : cur.ref === "man" ? "his voice" : "VO voice"}</button></span><div class="vc"></div>`;
+    el.querySelector(".cv").onclick = (e) => convert(t, el, e.target);
+    box.append(el);
+  });
+  if (!cur.takes.length) box.innerHTML = `<p class="note">No takes yet. Press Record: the clip plays after a 3-2-1 count, and the words light up as you speak.</p>`;
+}
+async function convert(take, el, btn) {
+  btn.disabled = true; const vc = el.querySelector(".vc");
+  vc.innerHTML = `<p class="note">Converting… about 2 minutes per line on this computer.</p>`;
+  const { job } = await (await fetch(`/api/convert/${cur.id}/${take}`, { method: "POST" })).json();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 1500));
+    const j = await (await fetch(`/api/job/${job}`)).json();
+    if (j.state === "done") {
+      vc.innerHTML = `<video controls playsinline src="${j.preview}?t=${Date.now()}"></video>
+        <div class="acts"><button class="b ap">✓ Use this take</button><span class="note">Your timing and pronunciation, in ${cur.who}'s voice, over the clip.</span></div>`;
+      vc.querySelector(".ap").onclick = async () => { await fetch(`/api/approve/${cur.id}/${take}`, { method: "POST" }); $("status").textContent = `Line ${lines.indexOf(cur) + 1} approved.`; load(cur.id); };
+      btn.disabled = false; return;
+    }
+    if (j.state === "error") { vc.innerHTML = `<p class="note err"></p>`; vc.firstChild.textContent = "Conversion failed: " + j.message; btn.disabled = false; return; }
+  }
+}
+$("rec").onclick = record;
+$("watch").onclick = () => { const v = $("vid"); v.volume = 1; v.currentTime = 0; v.play(); };
+$("guide").onchange = () => ($("vid").volume = +$("guide").value);
+document.addEventListener("keydown", (e) => { if (e.code === "Space" && e.target.tagName !== "BUTTON" && e.target.tagName !== "SELECT") { e.preventDefault(); record(); } });
+load();
+</script>
+</body>
+</html>

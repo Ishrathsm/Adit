@@ -9,6 +9,7 @@ import { posterDirection } from "./lib/poster-brief";
 import { clipSecondsFor, type CreativeBrief, directionText, endCardSeconds, FOLK_IMAGE_STYLE, FOLK_VIDEO_STYLE, STOP_MOTION_IMAGE_STYLE, STOP_MOTION_VIDEO_STYLE, effectivePacing, footageSeconds, planShots, TONE_FONT, TONE_GRADE, TRANSITION_SECONDS, VIDEO_ARTIFACT_NEGATIVES } from "./lib/creative-brief";
 import { renderCallout, renderDisclaimer, renderEndCard, renderSuper, renderWatermark } from "./lib/end-card";
 import { generateMusic } from "./lib/music";
+import { generateScoreParts, planScore } from "./lib/score";
 import { synthesizeCastLines, synthesizeVoiceover, synthesizeVoiceoverLines } from "./lib/voiceover";
 import sharp from "sharp";
 import { pickBestKeyframe } from "./lib/keyframe-pick";
@@ -493,7 +494,27 @@ async function editBriefedAd(
   const brandName = brief.brandName ?? product?.name ?? null;
   const endCardLine = [brandName, brief.endCardTagline].filter(Boolean).join(". ") || null;
   const perShot = Boolean(lines?.some((l) => l?.trim()));
-  const [music, voiceover, endCard, supers] = await Promise.all([
+  const shotPlan = planShots(brief);
+  const cuts = brief.shotCuts?.length === clips.length ? brief.shotCuts : Array.isArray(shotPlan.cutSeconds) ? shotPlan.cutSeconds : clips.map(() => shotPlan.cutSeconds as number);
+  // An ad score from parts by role (bed, motif, bloom, button) placed on the edit's own timeline
+  // (src/lib/score.ts), with the single track below as the fallback. SCORE_PARTS=0 turns it off.
+  const scoreParts =
+    brief.audio?.musicPrompt && !brief.audio?.musicUrl && process.env.SCORE_PARTS !== "0"
+      ? planScore(
+          [brandName, brief.keyMessage].filter(Boolean).join(" — ") || "a short brand film",
+          brief.audio.musicPrompt,
+          brief.tone,
+          clips.map((_, i) => ({ seconds: Number(cuts[i] ?? 4), spoken: Boolean(lines?.[i]?.trim()) || brief.veoAudio === true })),
+          true,
+        )
+          .then(generateScoreParts)
+          .then((p) => (p.bed || p.bloom || p.button ? p : undefined))
+          .catch((err) => {
+            console.warn("[worker] scored music failed, using the single track:", err instanceof Error ? err.message : err);
+            return undefined;
+          })
+      : Promise.resolve(undefined);
+  const [music, voiceover, endCard, supers, score] = await Promise.all([
     brief.audio?.musicUrl
       ? fetch(brief.audio.musicUrl).then(async (r) => {
           if (!r.ok) throw new Error(`failed to fetch approved score: ${r.status}`);
@@ -545,6 +566,7 @@ async function editBriefedAd(
       tone: brief.endCardTone ?? "auto",
     }),
     Promise.all(brief.onScreenText.map((line) => renderSuper(line, width, height, font, product?.primary_color ?? null))),
+    scoreParts,
   ]);
 
   const plan = planShots(brief);
@@ -571,6 +593,9 @@ async function editBriefedAd(
     superShots,
     layers,
     music,
+    score,
+    // Room tone under the whole film when the clips carry their own sound, so no cut drops to silence.
+    ...(brief.veoAudio === true ? { roomTone: "auto" as const } : {}),
     // Spoken callout names join the line-by-line voice (never a single full-length read).
     ...(Array.isArray(voiceover) || (!voiceover && calloutLines.length)
       ? { voiceoverLines: [...((voiceover as { shot: number; audio: Buffer; offset?: number }[] | undefined) ?? []), ...calloutLines].sort((x, y) => x.shot - y.shot || (x.offset ?? 0) - (y.offset ?? 0)) }

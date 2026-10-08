@@ -16,3 +16,7 @@ node_modules/
 .claude/
 .mcp.json
 daily-notes/
+
+# Local voice-conversion model (a 6 GB clone + venv; setup in tools/dub-studio/server.py) and Dub Studio clips
+tools/seed-vc/
+tools/dub-studio/media/

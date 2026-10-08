@@ -10,12 +10,13 @@ const auth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/cloud-pl
 // Lyria sometimes 500s with "Could not generate audio. Please try again with a different prompt"
 // (seen on a director's beat-by-beat prompt; the ad went out silent). One retry of the same prompt,
 // then the plain fallback prompt, before giving up.
-export async function generateMusic(prompt: string, fallbackPrompt?: string): Promise<Buffer> {
+// `negativePrompt` overrides the default no-vocals guard, for a cue that wants a voice (e.g. a wordless aalap).
+export async function generateMusic(prompt: string, fallbackPrompt?: string, negativePrompt = "vocals, singing, spoken words, lyrics"): Promise<Buffer> {
   const attempts = [prompt, prompt, ...(fallbackPrompt ? [fallbackPrompt] : [])];
   let lastError: unknown;
   for (const [i, p] of attempts.entries()) {
     try {
-      return await generateMusicOnce(p);
+      return await generateMusicOnce(p, negativePrompt);
     } catch (err) {
       const status = (err as { status?: number }).status ?? 0;
       if (status < 500) throw err;
@@ -26,7 +27,7 @@ export async function generateMusic(prompt: string, fallbackPrompt?: string): Pr
   throw lastError;
 }
 
-async function generateMusicOnce(prompt: string): Promise<Buffer> {
+async function generateMusicOnce(prompt: string, negativePrompt: string): Promise<Buffer> {
   if (!env.googleCloudProjectId) {
     throw new Error("Music generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
@@ -39,7 +40,7 @@ async function generateMusicOnce(prompt: string): Promise<Buffer> {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt, negative_prompt: "vocals, singing, spoken words, lyrics" }],
+        instances: [{ prompt, negative_prompt: negativePrompt }],
         parameters: {},
       }),
     });

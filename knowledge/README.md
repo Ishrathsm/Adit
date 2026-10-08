@@ -4,6 +4,7 @@ This is what we've learned about making AI video ads, kept with the code so ever
 
 - **[ai-ad-production-playbook.md](ai-ad-production-playbook.md)** covers how to make it: realism rules, assets, shot types and prompts, Veo 3.1 specifics, generation strategy, editing, music, sound, voice, our failures, and open tests.
 - **[copywriting-principles.md](copywriting-principles.md)** covers what to say: the proposition, structure, voice-over word budgets, brand assets and fluent devices, CTA, taglines, and a pre-script checklist. It draws on Google ABCD (5,000+ ads), System1 *Lemon*, IPA, Ehrenberg-Bass, Ogilvy and famous-brand data.
+- **[music-scoring-for-ads.md](music-scoring-for-ads.md)** covers how ad music is scored: an underscore written to picture, not a song. It covers spotting, the 30s arc, staying out of the dialogue, sync points and the bloom, the button or sonic logo, and building stems by role with Lyria.
 - **[dials.md](dials.md)** turns the rules into 13 dials (humour, emotion, brand reveal, VO, copy, pace, camera, grade, music, sound, claim, combativeness, urgency), each set by category, brand position, price tier, audience and goal. The strategist and creative director set them for every ad.
 - **[genres/](genres/)** has one playbook per genre, mastered in this order:
   1. [Automotive and two-wheelers](genres/automotive.md)
