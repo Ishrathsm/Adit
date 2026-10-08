@@ -10,7 +10,6 @@ import {
   ChevronRight,
   CircleUserRound,
   Clapperboard,
-  Filter,
   FolderKanban,
   Image as ImageIcon,
   LayoutTemplate,
@@ -241,13 +240,6 @@ export function Sidebar() {
       >
         <LayoutTemplate size={16} className="shrink-0" />
         <span className="hidden sm:inline">Templates</span>
-      </button>
-      <button
-        onClick={() => setFilterDrawerOpen(true)}
-        className="flex h-10 items-center justify-center gap-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground sm:justify-start sm:px-3"
-      >
-        <Filter size={16} className="shrink-0" />
-        <span className="hidden sm:inline">Filter templates</span>
       </button>
       {account?.account_type === "organisation" && (
         <>
