@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: ai-ads-backend
+    runtime: node
+    plan: free
+    rootDir: ai-ads-backend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      # Non-secret fixed config — safe to commit as literal values.
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://ai-ads-frontend-black.vercel.app
+      - key: GOOGLE_CLOUD_LOCATION
+        value: us-central1
+      - key: VEO_MODEL
+        value: veo-3.1-lite-generate-001
+      - key: IMAGE_MODEL
+        value: gemini-3.1-flash-image
+      - key: IMAGE_LOCATION
+        value: global
+      - key: IMAGE_MIN_INTERVAL_MS
+        value: "4000"
+      - key: TEXT_LOCATION
+        value: global
+      # Secrets — entered once in the Render dashboard during setup, never stored in this file
+      # or in git.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: GOOGLE_CLOUD_PROJECT_ID
+        sync: false
+      # The GCP service account key's file content (not a path) — see
+      # src/lib/gcp-credentials-bootstrap.ts, already built for exactly this.
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false
