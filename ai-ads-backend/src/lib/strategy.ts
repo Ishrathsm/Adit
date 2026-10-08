@@ -23,6 +23,7 @@ import {
 import { env } from "./env";
 import { type BrandContext } from "./prompt-refiner";
 import { withRateLimitRetry } from "./rate-limit-retry";
+import { type CategoryResearch, researchCategory } from "./research";
 
 // The ad direction team's first two roles, ahead of the director: a strategist who reads the
 // brand's context, sets the dials (knowledge/dials.md) and writes the proposition, and a creative
@@ -54,6 +55,8 @@ export interface AdStrategy {
   features: { feature: string; callout: string; what_it_does: string; how_shown: string }[];
   brandPresence: string;
   review: { approved: boolean; notes: string[] };
+  // The researcher's study of the category's top ads, when it ran.
+  research?: CategoryResearch | null;
 }
 
 // The knowledge base lives at the repo root, next to the backend; absent in a deploy that ships
@@ -238,6 +241,7 @@ export async function writeStrategy(concept: string, brief: CreativeBrief, brand
   const ctx = read.context;
   const ctxLine = `Context: ${ctx.category}${ctx.beautySub ? ` (${ctx.beautySub})` : ""} · ${ctx.position} brand · ${ctx.tier} tier · audience ${ctx.audience} · goal ${ctx.goal}`;
   const knowledge = knowledgeFor(ctx);
+  const research = await researchCategory(concept, ctx, brand);
   const shared = `${facts}
 
 ${ctxLine}
@@ -247,7 +251,9 @@ ${dialsText(dials)}
 
 ${RAILS}
 
-${DEVICES}${knowledge ? `\n\nKNOWLEDGE BASE (our evidence from famous-brand ads; apply what fits this context):\n${knowledge}` : ""}`;
+${DEVICES}${knowledge ? `\n\nKNOWLEDGE BASE (our evidence from famous-brand ads; apply what fits this context):\n${knowledge}` : ""}${
+    research ? `\n\nCATEGORY RESEARCH (the researcher's study of this category's top ads; learn from their structure and devices, avoid their clichés, never copy a rival's names or claims, and use no claim the brief doesn't support):\n${research.notes}` : ""
+  }`;
 
   const draft = await json<RawStrategy>(
     "strategy-write",
@@ -305,6 +311,7 @@ ${JSON.stringify(draft, null, 2)}`,
     ...toStrategy(final),
     tagline,
     review: { approved: Boolean(final.approved), notes: final.review_notes ?? [] },
+    research,
   };
 }
 

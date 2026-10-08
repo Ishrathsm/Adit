@@ -6,6 +6,8 @@ import { join } from "node:path";
 import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import ffmpegStatic from "ffmpeg-static";
 import { END_CARD_SECONDS } from "./creative-brief";
+import { ffmpeg as ffmpegRun } from "./ffmpeg-bin";
+import { type ScoreParts, assembleScore } from "./score";
 import { type PaperTransition, paperTransitionExpr } from "./paper-transitions";
 
 // The Railway image has no system ffmpeg (every storyboard shot failed there with
@@ -169,6 +171,19 @@ export async function sampleFrames(clip: Buffer, fractions = [0.2, 0.5, 0.85]): 
   });
 }
 
+// The clip whose own sound is quietest but not silent (usually a shot nobody speaks in): its sound,
+// looped low, is the room tone under the whole film. Returns the clip's path, or null.
+async function quietestClipAudio(paths: string[], infos: { hasAudio: boolean }[]): Promise<string | null> {
+  let best: { path: string; mean: number } | null = null;
+  for (const [i, path] of paths.entries()) {
+    if (!infos[i].hasAudio) continue;
+    const { stderr } = await ffmpegRun(["-nostats", "-i", path, "-vn", "-af", "volumedetect", "-f", "null", "-"]);
+    const mean = Number(/mean_volume: (-?[\d.]+) dB/.exec(stderr)?.[1] ?? -99);
+    if (mean > -60 && (!best || mean < best.mean)) best = { path, mean };
+  }
+  return best?.path ?? null;
+}
+
 export interface StitchOptions {
   // Still image held at the end with a slow push-in (logo + tagline card).
   endCard?: Buffer;
@@ -215,6 +230,13 @@ export interface StitchOptions {
   // Soundtrack for the whole edit. When music or a voiceover is given, the clips' own audio is
   // dropped; otherwise the clips' audio is kept (older storyboards).
   music?: Buffer;
+  // A score built from parts by role (src/lib/score.ts), placed on this edit's own shot starts:
+  // bed, motif, a hush, the bloom on the peak shot, the button on the end card. Takes precedence
+  // over `music`, which stays as the fallback if assembling it fails.
+  score?: ScoreParts;
+  // Room tone under the whole film so the sound never drops out at a cut. "auto" loops the quietest
+  // clip's own sound (usually a shot nobody speaks in) at a low level.
+  roomTone?: Buffer | "auto";
   voiceover?: Buffer;
   // Narration read per shot: each line enters just after its shot's dissolve settles. Takes
   // precedence over `voiceover`.
@@ -250,7 +272,7 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     const voLines = (options.voiceoverLines ?? []).filter((l) => l.shot >= 0).sort((a, b) => a.shot - b.shot);
     const hasVoice = voLines.length > 0 || Boolean(options.voiceover);
     const endCardLine = options.endCard ? voLines.find((l) => l.shot === clipBuffers.length) : undefined;
-    const soundtrack = Boolean(options.music || hasVoice || options.clipAudio);
+    const soundtrack = Boolean(options.music || options.score || hasVoice || options.clipAudio);
 
     const args = ["-y"];
     const filters: string[] = [];
@@ -379,8 +401,18 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
     // ---- audio ----
     if (soundtrack) {
       const parts: string[] = [];
-      if (options.music) {
-        const musicPath = await write("music.wav", options.music);
+      const endCardStart = options.endCard ? starts[starts.length - 1] : null;
+      const music = options.score
+        ? await assembleScore(options.score, starts, total, endCardStart).catch((err) => {
+            console.warn("[stitch] score assembly failed, using the single track:", err instanceof Error ? err.message : err);
+            return options.music;
+          })
+        : options.music;
+      // Under voices the music is dipped where speech sits (500 Hz–1 kHz) so the words cut through without
+      // the music being pulled down; the assembled score already carries this on its bed.
+      const voiceScoop = (hasVoice || options.clipAudio) && !options.score ? ",equalizer=f=750:t=o:w=1.2:g=-6" : "";
+      if (music) {
+        const musicPath = await write("music.wav", music);
         const idx = addInput("-i", musicPath);
         // Lyria returns ~32s, and a 50s film went silent after 30s. A shorter track is repeated with
         // a 3s crossfade (the same piece, so it stays one score) and padded, so it always spans the film.
@@ -399,13 +431,13 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           source = labels[labels.length - 1];
         }
         filters.push(
-          `${source}${source.endsWith("]") ? "" : ","}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8${options.musicLevel !== undefined ? `,volume=${options.musicLevel}` : options.clipAudio ? ",volume=0.35" : ""}[mus]`,
+          `${source}${source.endsWith("]") ? "" : ","}apad,atrim=0:${f3(total)},asetpts=PTS-STARTPTS${voiceScoop},afade=t=in:d=0.6,afade=t=out:st=${f3(Math.max(0, total - 1.8))}:d=1.8${options.musicLevel !== undefined ? `,volume=${options.musicLevel}` : options.clipAudio ? ",volume=0.35" : ""}[mus]`,
         );
       }
       if (voLines.length) {
-        // Each line starts once its shot's dissolve has settled; a line that runs long is sped up a
-        // little (at most 12%) and otherwise pushes the next line later rather than overlapping it.
-        // The last line must end ~0.8s before the film does.
+        // Each line starts once its shot's dissolve has settled; a line that runs long pushes the next
+        // line later rather than overlapping it, and is never sped up (sped-up dialogue sounded rushed and
+        // uneven: Swastea cut 1, 2026-10-08). The last line fades if it would run past ~0.8s before the end.
         const lead = T * 0.6 + 0.25, gap = 0.3, tail = 0.8;
         let prevEnd = 0;
         const labels: string[] = [];
@@ -421,7 +453,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           const at = placed ? desired : Math.max(desired, prevEnd + gap);
           const nextDesired = k + 1 < voLines.length ? (starts[voLines[k + 1].shot] ?? total) + lead - gap : total - tail;
           const room = Math.max(0.5, nextDesired - at);
-          const tempo = line === endCardLine || placed ? 1 : length > room ? Math.min(1.12, length / room) : 1;
+          void room; // kept for the push logic above
+          const tempo = 1;
           const fitted = length / tempo;
           const isLast = k === voLines.length - 1;
           const fade = isLast && at + fitted > total - tail ? `,afade=t=out:st=${f3(Math.max(0, total - tail - at - 0.5))}:d=0.5` : "";
@@ -436,17 +469,17 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         const voPath = await write("voiceover.wav", options.voiceover);
         const idx = addInput("-i", voPath);
         // Narration enters just after the opening image lands and must finish ~0.8s before the
-        // end — it used to be cut at the last frame, chopping the CTA's final word. A slightly long
-        // read is sped up (at most 15%, still natural); anything beyond that fades out softly.
+        // end — it used to be cut at the last frame, chopping the CTA's final word. A long read is never
+        // sped up (no time-stretched reads); what runs past the window fades out softly.
         const start = 0.7, tail = 0.8;
         const window = Math.max(1, total - start - tail);
         const voLength = (await probe(voPath)).duration;
-        const tempo = voLength > window ? Math.min(1.15, voLength / window) : 1;
+        const tempo = 1;
         const fitted = voLength / tempo;
         const fade = fitted > window ? `,afade=t=out:st=${f3(start + window - 0.5)}:d=0.5` : "";
         filters.push(`[${idx}:a]${audioNorm}${tempo > 1 ? `,atempo=${tempo.toFixed(3)}` : ""},adelay=700|700,apad,atrim=0:${f3(total)}${fade}[vo]`);
       }
-      if (options.music && hasVoice) {
+      if (music && hasVoice) {
         // Music ducks under the voice (sidechain), then both are mixed.
         filters.push(`[vo]asplit=2[vo1][vosc]`);
         filters.push(`[mus]volume=0.8[mus2]`);
@@ -454,8 +487,8 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
         // Longest, then cut to the film: a voice line must never be clipped by a shorter music track.
         filters.push(`[duck][vo1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${f3(total)}[mix]`);
         parts.push("mix");
-      } else if (options.music || hasVoice) {
-        parts.push(options.music ? "mus" : "vo");
+      } else if (music || hasVoice) {
+        parts.push(music ? "mus" : "vo");
       }
       if (options.clipAudio) {
         // Each clip's own sound over its kept window, crossfaded across the dissolves.
@@ -464,7 +497,10 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
           const { start, length } = clipWindows[i];
           const fade = f3(Math.max(0.05, T));
           const ms = Math.round(starts[i] * 1000);
-          filters.push(`[${i}:a]atrim=start=${f3(start)}:end=${f3(start + length)},asetpts=PTS-STARTPTS,${audioNorm},afade=t=in:d=${fade},afade=t=out:st=${f3(Math.max(0, length - Math.max(0.05, T)))}:d=${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[cfx${i}]`);
+          // Each clip's voice levelled before the mix (gentle compression with a little make-up gain),
+          // so lines from different clips sound recorded in one place. Not dynaudnorm: its look-ahead
+          // swallowed short clips and lost the adelay placement (every line landed at 0s).
+          filters.push(`[${i}:a]atrim=start=${f3(start)}:end=${f3(start + length)},asetpts=PTS-STARTPTS,${audioNorm},acompressor=threshold=-22dB:ratio=3:attack=8:release=180:makeup=1.6,asetpts=N/SR/TB,afade=t=in:d=${fade},afade=t=out:st=${f3(Math.max(0, length - Math.max(0.05, T)))}:d=${fade},adelay=${ms}|${ms},apad,atrim=0:${f3(total)}[cfx${i}]`);
           return [`[cfx${i}]`];
         });
         if (fx.length) {
@@ -478,6 +514,13 @@ export async function stitchVideos(clipBuffers: Buffer[], options: StitchOptions
       if (!parts.length) {
         filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${f3(total)}[silent]`);
         parts.push("silent");
+      }
+      const tone = options.roomTone === "auto" ? await quietestClipAudio(clipPaths, infos) : options.roomTone;
+      if (tone) {
+        const idx = addInput("-i", typeof tone === "string" ? tone : await write("room-tone.wav", tone));
+        filters.push(`[${idx}:a]${audioNorm},aloop=loop=-1:size=2000000,atrim=0:${f3(total)},asetpts=PTS-STARTPTS,lowpass=f=6000,volume=0.15[room]`);
+        filters.push(`[${parts[0]}][room]amix=inputs=2:duration=first:normalize=0[withroom]`);
+        parts[0] = "withroom";
       }
       filters.push(`[${parts[0]}]loudnorm=I=-16:TP=-1.5:LRA=11,${audioNorm}[outa]`);
     } else if (T > 0) {
