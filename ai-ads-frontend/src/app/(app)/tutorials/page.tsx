@@ -3,10 +3,74 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Briefcase, Clock, Copy, Lightbulb, Search, Shuffle, Video, X } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowRight, Clock, Lightbulb, Search, X } from "lucide-react";
 
 type Category = "Poster" | "Video" | "Templates" | "Brand Kit";
+
+type IconComponent = (props: { className?: string }) => React.JSX.Element;
+
+// Solid, gray, glossy glyphs (gradient fill + a subtle top-left highlight), drawn large enough to
+// fill most of the 16:9 tile with minimal margin, matching the reference icon style.
+const GRADIENT_ID = "tutorial-icon-gradient";
+
+function IconDefs() {
+  return (
+    <svg width={0} height={0} aria-hidden className="absolute">
+      <defs>
+        <linearGradient id={GRADIENT_ID} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#d4d4d8" />
+          <stop offset="45%" stopColor="#9ca3af" />
+          <stop offset="100%" stopColor="#52525b" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+const PosterIcon: IconComponent = ({ className }) => (
+  <svg viewBox="0 0 64 64" className={className} fill="none">
+    <rect x="6" y="4" width="34" height="40" rx="5" fill="#71717a" />
+    <rect x="12" y="10" width="34" height="40" rx="5" fill="#9ca3af" />
+    <path
+      d="M23 16 H42 L52 26 L52 51 Q52 56 47 56 L23 56 Q18 56 18 51 V21 Q18 16 23 16 Z"
+      fill={`url(#${GRADIENT_ID})`}
+    />
+    <path d="M42 16 L52 26 L42 26 Z" fill="#3f3f46" opacity={0.5} />
+  </svg>
+);
+
+const VideoIcon: IconComponent = ({ className }) => (
+  <svg viewBox="0 0 64 64" className={className} fill="none">
+    <path
+      d="M44 24 L56 15 Q60 12 60 17 V47 Q60 52 56 49 L44 40 Z"
+      fill={`url(#${GRADIENT_ID})`}
+      stroke="#27272a"
+      strokeOpacity={0.2}
+    />
+    <rect x="4" y="12" width="42" height="40" rx="9" fill={`url(#${GRADIENT_ID})`} />
+  </svg>
+);
+
+const RemixIcon: IconComponent = ({ className }) => (
+  <svg viewBox="0 0 64 64" className={className} fill="none">
+    <path d="M6 16 C 28 16 28 48 44 48" stroke={`url(#${GRADIENT_ID})`} strokeWidth={9} strokeLinecap="round" />
+    <path d="M6 48 C 28 48 28 16 44 16" stroke={`url(#${GRADIENT_ID})`} strokeWidth={9} strokeLinecap="round" />
+    <path d="M6 16 C 28 16 28 48 44 48" stroke="#e4e4e7" strokeWidth={2.5} strokeLinecap="round" opacity={0.35} />
+    <path d="M6 48 C 28 48 28 16 44 16" stroke="#e4e4e7" strokeWidth={2.5} strokeLinecap="round" opacity={0.35} />
+    <polygon points="42,38 58,48 42,58" fill={`url(#${GRADIENT_ID})`} />
+    <polygon points="42,6 58,16 42,26" fill={`url(#${GRADIENT_ID})`} />
+  </svg>
+);
+
+const BriefcaseIcon: IconComponent = ({ className }) => (
+  <svg viewBox="0 0 64 64" className={className} fill="none">
+    <rect x="24" y="18" width="16" height="10" rx="4" stroke={`url(#${GRADIENT_ID})`} strokeWidth={4.5} fill="none" />
+    <rect x="4" y="24" width="56" height="36" rx="7" fill={`url(#${GRADIENT_ID})`} />
+    <rect x="4" y="24" width="56" height="9" fill="#3f3f46" opacity={0.3} />
+    <rect x="25" y="28" width="14" height="10" rx="2" fill="#3f3f46" opacity={0.6} />
+    <rect x="4" y="57" width="56" height="3" rx="1.5" fill="#e4e4e7" opacity={0.15} />
+  </svg>
+);
 
 interface Lesson {
   title: string;
@@ -14,7 +78,7 @@ interface Lesson {
   duration: string;
   level: "Beginner" | "Intermediate";
   category: Category;
-  icon: LucideIcon;
+  icon: IconComponent;
   // When set, this lesson opens its own dedicated step-by-step page (real app screenshots) instead
   // of the generic video modal every other lesson uses.
   guidePath?: string;
@@ -30,7 +94,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Poster",
-    icon: Copy,
+    icon: PosterIcon,
     guidePath: "/tutorials/create-your-first-poster",
   },
   {
@@ -39,7 +103,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Video",
-    icon: Video,
+    icon: VideoIcon,
     guidePath: "/tutorials/make-a-video-ad",
   },
   {
@@ -48,7 +112,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Templates",
-    icon: Shuffle,
+    icon: RemixIcon,
     guidePath: "/tutorials/use-templates-remix",
   },
   {
@@ -57,7 +121,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Brand Kit",
-    icon: Briefcase,
+    icon: BriefcaseIcon,
     guidePath: "/tutorials/add-your-brand-kit",
   },
 ];
@@ -108,6 +172,7 @@ export default function TutorialsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10 sm:px-10">
+      <IconDefs />
       <div className="mt-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Learn Adit</h1>
@@ -160,7 +225,7 @@ export default function TutorialsPage() {
             >
               <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-900">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
-                <lesson.icon size={56} strokeWidth={1.5} className="relative text-neutral-300" />
+                <lesson.icon className="relative h-32 w-32 drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)]" />
               </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
