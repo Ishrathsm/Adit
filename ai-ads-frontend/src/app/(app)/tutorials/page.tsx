@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, Lightbulb, Search, X } from "lucide-react";
-import { listTemplates, type Template } from "@/lib/api";
+import { ArrowRight, Briefcase, Clock, Copy, Lightbulb, Search, Shuffle, Video, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type Category = "Poster" | "Video" | "Templates" | "Brand Kit";
 
@@ -14,6 +14,7 @@ interface Lesson {
   duration: string;
   level: "Beginner" | "Intermediate";
   category: Category;
+  icon: LucideIcon;
   // When set, this lesson opens its own dedicated step-by-step page (real app screenshots) instead
   // of the generic video modal every other lesson uses.
   guidePath?: string;
@@ -29,6 +30,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Poster",
+    icon: Copy,
     guidePath: "/tutorials/create-your-first-poster",
   },
   {
@@ -37,6 +39,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Video",
+    icon: Video,
     guidePath: "/tutorials/make-a-video-ad",
   },
   {
@@ -45,6 +48,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Templates",
+    icon: Shuffle,
     guidePath: "/tutorials/use-templates-remix",
   },
   {
@@ -53,6 +57,7 @@ const LESSONS: Lesson[] = [
     duration: "5 min",
     level: "Beginner",
     category: "Brand Kit",
+    icon: Briefcase,
     guidePath: "/tutorials/add-your-brand-kit",
   },
 ];
@@ -75,7 +80,6 @@ export default function TutorialsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>(ALL);
   const [search, setSearch] = useState("");
-  const [templates, setTemplates] = useState<Template[] | null>(null);
   const [playing, setPlaying] = useState<Lesson | null>(null);
 
   function openLesson(lesson: Lesson) {
@@ -87,29 +91,11 @@ export default function TutorialsPage() {
   }
 
   useEffect(() => {
-    listTemplates("poster")
-      .then(({ templates }) => setTemplates(templates.filter((t) => t.thumbnail_url)))
-      .catch(() => setTemplates([]));
-  }, []);
-
-  useEffect(() => {
     if (!playing) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPlaying(null);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [playing]);
-
-  // There's no lesson video library to pull real thumbnails from, so each card reuses one of the
-  // existing template images already in the project — assigned once per title, so a lesson's
-  // picture never changes as the filter is applied.
-  const imageByTitle = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (!templates?.length) return map;
-    LESSONS.forEach((lesson, i) => {
-      map[lesson.title] = templates[i % templates.length].thumbnail_url!;
-    });
-    return map;
-  }, [templates]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -172,21 +158,9 @@ export default function TutorialsPage() {
               onClick={() => openLesson(lesson)}
               className="rgb-border flex h-full flex-col gap-1.5 p-2.5 text-left transition-colors hover:bg-white/5"
             >
-              <span className="w-fit rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white">
-                Lesson
-              </span>
-              <div className="relative aspect-video overflow-hidden rounded-xl bg-surface">
-                {imageByTitle[lesson.title] && (
-                  <>
-                    {/* A heavily blurred, dim backdrop so a portrait image doesn't leave stark
-                        empty bars next to the landscape ones — just an ambient color wash, not a
-                        recognizable copy, so it reads as intentional rather than messy. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop fill, not meaningful content */}
-                    <img src={imageByTitle[lesson.title]} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-150 object-cover opacity-25 blur-3xl" />
-                    {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image, reused as a lesson thumbnail */}
-                    <img src={imageByTitle[lesson.title]} alt="" className="absolute inset-0 h-full w-full object-contain" />
-                  </>
-                )}
+              <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-900">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
+                <lesson.icon size={56} strokeWidth={1.5} className="relative text-neutral-300" />
               </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
