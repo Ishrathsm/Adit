@@ -5,16 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { ArrowRight, Clapperboard, Play, X } from "lucide-react";
+import { ArrowRight, Clapperboard, ImageIcon, LayoutTemplate, Play, Video, X } from "lucide-react";
 import { clsx } from "clsx";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { MediaThumb } from "@/components/ui/media-thumb";
 import { savePrefillForProject } from "@/lib/draft-prompt";
-import { createProject, type Account, type AdLength, type ProjectType, type Template } from "@/lib/api";
+import { createProject, type Account, type ProjectType, type Template } from "@/lib/api";
 
 // A video template picked in the gallery, waiting in the prompt bar for the user's own idea.
 export interface AttachedTemplate {
   template: Template;
-  length: AdLength;
+  // The length picked in the preview (15/30 for studio films, the shot length for trendy ones).
+  length: number;
 }
 
 // Logged-in counterpart to the marketing landing page's FunctionalHero — same
@@ -228,48 +230,108 @@ export function CreateHero({
       {docked &&
         mounted &&
         createPortal(
-          // Spans the content area to the right of the sidebar (w-16 / sm:w-56), centred in it.
+          // Floating composer, after DaVinci's: a pill row of modes above a frosted panel with a
+          // template tile on the left and the prompt, settings and Create on the right. Spans the
+          // content area to the right of the sidebar (w-16 / sm:w-56), centred in it.
           <div className="pointer-events-none fixed right-0 bottom-4 left-16 z-40 flex justify-center px-4 sm:left-56">
-            <div className="rgb-border pointer-events-auto flex w-full max-w-2xl flex-col gap-2 bg-background/90 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl">
-              <div className="flex items-center gap-2">
-                <textarea
-                  ref={dockInputRef}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={onEnter}
-                  disabled={creating}
-                  placeholder={placeholder}
-                  rows={1}
-                  className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted disabled:opacity-60"
-                />
-                <DictationButton value={prompt} onChange={setPrompt} disabled={creating} />
-                {createButton}
-              </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-2 px-1">
-                {templateChip}
-                {!attached &&
-                  CHIPS.map((chip) => (
+            <div className="flex w-full max-w-3xl flex-col items-start gap-2">
+              <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border-subtle bg-surface/80 p-1 shadow-lg shadow-black/30 backdrop-blur-2xl">
+                {CHIPS.map((chip) => {
+                  const Icon = chip.id === "video" ? Video : ImageIcon;
+                  return (
                     <button
                       key={chip.id}
                       type="button"
-                      disabled={creating}
+                      disabled={creating || Boolean(attached)}
                       onClick={() => setProjectType(chip.id)}
+                      aria-pressed={effectiveType === chip.id}
                       className={clsx(
-                        "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
-                        projectType === chip.id
-                          ? "border-transparent bg-button-bg text-button-fg"
-                          : "border-border-strong text-foreground hover:bg-white/5",
+                        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors disabled:cursor-default",
+                        effectiveType === chip.id ? "bg-button-bg text-button-fg" : "text-muted hover:text-foreground",
                       )}
                     >
+                      <Icon size={14} />
                       {chip.label}
                     </button>
-                  ))}
-                <span className="ml-auto text-[11px] text-muted">
-                  {effectiveType === "video" ? "Video" : "Poster"}
-                  {attached?.template.type === "video" && ` · ${attached.length}s · ${attached.template.aspect_ratio}`}
-                </span>
+                  );
+                })}
+                {!attached && projectType === "video" && (
+                  <>
+                    <span className="mx-1 h-4 w-px bg-border-strong" aria-hidden />
+                    <button
+                      type="button"
+                      disabled={creating}
+                      onClick={() => setStoryboard((on) => !on)}
+                      aria-pressed={storyboard}
+                      className={clsx(
+                        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                        storyboard ? "bg-foreground/10 text-foreground" : "text-muted hover:text-foreground",
+                      )}
+                    >
+                      <Clapperboard size={14} /> Shot by shot
+                    </button>
+                  </>
+                )}
               </div>
-              {error && <p className="px-1 text-xs text-red-400">{error}</p>}
+
+              <div className="pointer-events-auto flex w-full gap-3 rounded-3xl border border-border-subtle bg-surface/80 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl">
+                <button
+                  type="button"
+                  onClick={() =>
+                    attached
+                      ? onDetach?.()
+                      : document.getElementById("templates")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                  disabled={creating}
+                  title={attached ? "Remove template" : "Pick a template"}
+                  className="group relative hidden w-28 shrink-0 flex-col justify-between overflow-hidden rounded-2xl bg-foreground/5 p-3 text-left text-xs text-muted transition-colors hover:bg-foreground/10 hover:text-foreground sm:flex"
+                >
+                  {attached?.template.thumbnail_url ? (
+                    <>
+                      <MediaThumb
+                        src={attached.template.thumbnail_url}
+                        type={attached.template.type === "video" ? "video" : "image"}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-40"
+                      />
+                      <X size={14} className="relative self-end text-white" />
+                      <span className="relative line-clamp-2 font-medium text-white">{attached.template.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <LayoutTemplate size={16} />
+                      <span>Template</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <textarea
+                    ref={dockInputRef}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={onEnter}
+                    disabled={creating}
+                    placeholder={placeholder}
+                    rows={2}
+                    className="min-w-0 flex-1 resize-none bg-transparent px-1 pt-1 text-sm outline-none placeholder:text-muted disabled:opacity-60"
+                  />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="inline-flex h-8 min-w-0 items-center gap-1.5 truncate rounded-full border border-border-subtle bg-foreground/5 px-3 text-xs text-foreground">
+                      {effectiveType === "video" ? <Video size={13} /> : <ImageIcon size={13} />}
+                      {effectiveType === "video" ? "Video" : "Poster"}
+                      {attached?.template.type === "video" &&
+                        ` · ${attached.length}s · ${attached.template.aspect_ratio}`}
+                      {!attached && projectType === "video" && (storyboard ? " · Shot by shot" : " · Quick")}
+                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <DictationButton value={prompt} onChange={setPrompt} disabled={creating} />
+                      {createButton}
+                    </div>
+                  </div>
+                  {error && <p className="px-1 text-xs text-red-400">{error}</p>}
+                </div>
+              </div>
             </div>
           </div>,
           document.body,

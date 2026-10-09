@@ -4,10 +4,10 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import sharp from "sharp";
 import { isAspectRatio, nearestAspectRatio, type AspectRatio } from "../src/lib/aspect-ratio";
-import { AD_LENGTHS, LOOKS, SHOT_SECONDS, TONES } from "../src/lib/creative-brief";
+import { AD_LENGTHS, LOOKS, SHOT_SECONDS, SINGLE_SHOT_SECONDS, TONES } from "../src/lib/creative-brief";
 import { ffmpeg } from "../src/lib/ffmpeg-bin";
 import { uploadThumb, uploadVideo, videoThumb } from "../src/lib/storage";
 import type { TemplateType, VideoRecipe } from "../src/lib/templates";
@@ -16,6 +16,8 @@ export const IMAGE_FILES = ["template.png", "template.jpg", "template.jpeg", "te
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 // Video templates: the sample film, shown in the preview (keep it small: 720p, ~5 MB).
 export const VIDEO_FILE = "preview.mp4";
+// Optional further samples made with the template, shown as Sample 2, 3… in the preview.
+const EXTRA_SAMPLE_FILES = ["preview-2.mp4", "preview-3.mp4"];
 export const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
 
 export interface TemplateMeta {
@@ -27,7 +29,7 @@ export interface TemplateMeta {
   aspectRatio?: AspectRatio;
   // Video templates only: the recipe minus what the importer makes (hoverUrl), plus the moments
   // of the sample used for the card still (posterAt) and the hover loop (hoverAt), in seconds.
-  recipe?: Omit<VideoRecipe, "hoverUrl">;
+  recipe?: Omit<VideoRecipe, "hoverUrl" | "samples">;
   posterAt?: number;
   hoverAt?: number;
 }
@@ -83,9 +85,12 @@ export async function resolveAspectRatio(meta: TemplateMeta, imagePath: string):
 
 function checkRecipe(recipe: TemplateMeta["recipe"]): string | null {
   if (!recipe) return "missing";
+  if (recipe.shelf !== "trendy" && recipe.shelf !== "studio") return 'shelf must be "trendy" or "studio"';
   if (!TONES.includes(recipe.tone)) return `tone must be one of ${TONES.join(", ")}`;
   if (!LOOKS.includes(recipe.look)) return `look must be one of ${LOOKS.join(", ")}`;
-  if (!Array.isArray(recipe.plans) || !recipe.plans.length) return "plans must list at least one length";
+  if (!Array.isArray(recipe.plans)) return "plans must be a list";
+  if (recipe.singleSeconds !== undefined && !SINGLE_SHOT_SECONDS.includes(recipe.singleSeconds)) return `singleSeconds must be one of ${SINGLE_SHOT_SECONDS.join(", ")}`;
+  if (!recipe.plans.length && recipe.singleSeconds === undefined) return "needs plans (studio) or singleSeconds (one shot)";
   for (const plan of recipe.plans) {
     if (!AD_LENGTHS.includes(plan.length)) return `plan length must be one of ${AD_LENGTHS.join(", ")}`;
     if (!SHOT_SECONDS.includes(plan.shotSeconds)) return `shotSeconds must be one of ${SHOT_SECONDS.join(", ")}`;
@@ -109,7 +114,12 @@ export async function uploadVideoTemplate(folder: string, meta: TemplateMeta, vi
     const hover = join(dir, "hover.mp4");
     await ffmpeg(["-y", "-ss", String(meta.hoverAt ?? 2), "-i", videoPath, "-t", "5", "-an", "-vf", "scale=-2:360", "-c:v", "libx264", "-crf", "30", "-preset", "slow", "-movflags", "+faststart", hover]);
     const hoverUrl = await uploadVideo(`${path}-hover`, await readFile(hover), "video/mp4");
-    return { thumbnailUrl, recipe: { ...meta.recipe!, hoverUrl } };
+    const samples: string[] = [];
+    for (const [i, file] of EXTRA_SAMPLE_FILES.entries()) {
+      const extra = join(dirname(videoPath), file);
+      if (existsSync(extra)) samples.push(await uploadVideo(`${path}-sample-${i + 2}`, readFileSync(extra), "video/mp4"));
+    }
+    return { thumbnailUrl, recipe: { ...meta.recipe!, hoverUrl, samples } };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

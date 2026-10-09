@@ -1,5 +1,5 @@
 import type { AspectRatio } from "./aspect-ratio";
-import type { AdLength, Look, ShotSeconds, Tone } from "./creative-brief";
+import type { AdLength, Look, ShotSeconds, SingleShotSeconds, Tone } from "./creative-brief";
 import { supabase } from "./supabase";
 
 export type TemplateType = "poster" | "video";
@@ -8,13 +8,21 @@ export type TemplateType = "poster" | "video";
 // still change them) and the director follows the template's notes (template_prompt). The sample
 // film itself is thumbnail_url.
 export interface VideoRecipe {
+  // "trendy": one quick shot made straight from the prompt bar. "studio": a longer film that
+  // needs the step-by-step studio flow (coming soon).
+  shelf: "trendy" | "studio";
   tone: Tone;
   look: Look;
-  // One shot plan per length offered, e.g. 15s = 2 x 6s and 30s = 4 x 6s, each plus the end card.
+  // Studio: one shot plan per length offered, e.g. 15s = 2 x 6s and 30s = 4 x 6s, each plus the
+  // end card. Empty for a one-shot template.
   plans: { length: AdLength; shotCount: number; shotSeconds: ShotSeconds }[];
+  // Trendy: one continuous shot of this length, plus the end card.
+  singleSeconds?: SingleShotSeconds;
   voiceover: boolean;
   // A short, small, silent loop of the sample played on hover in the gallery.
   hoverUrl: string | null;
+  // More sample films made with the template (the first is thumbnail_url).
+  samples?: string[];
   // Length of the sample film, shown in the preview.
   sampleSeconds: number;
   // What the user brings, listed in the preview ("A product photo", "Your offer in one line").

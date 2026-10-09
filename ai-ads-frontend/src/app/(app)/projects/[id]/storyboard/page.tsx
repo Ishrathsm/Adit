@@ -169,14 +169,20 @@ export default function StoryboardPage() {
       .then(({ templates }) => {
         const picked = templates.find((t) => t.id === templateId);
         const recipe = picked?.recipe;
-        if (!picked || !recipe?.plans.length) return;
+        if (!picked || !recipe) return;
         const plan = recipe.plans.find((p) => p.length === wantedLength) ?? recipe.plans[recipe.plans.length - 1];
+        if (!recipe.singleSeconds && !plan) return;
         setTemplate(picked);
-        setFormat("ad");
+        if (recipe.singleSeconds) {
+          setFormat("single");
+          setSingleSeconds(recipe.singleSeconds);
+        } else {
+          setFormat("ad");
+          setPlannedShots(plan.shotCount);
+          setShotSeconds(plan.shotSeconds);
+        }
         setTone(recipe.tone);
         setLook(recipe.look);
-        setPlannedShots(plan.shotCount);
-        setShotSeconds(plan.shotSeconds);
         setVoiceover(recipe.voiceover);
         if (picked.aspect_ratio === "16:9" || picked.aspect_ratio === "9:16") setAspectRatio(picked.aspect_ratio);
       })

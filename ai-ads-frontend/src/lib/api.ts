@@ -74,11 +74,19 @@ export interface Template {
 // How a video template is made: the storyboard form starts from these settings, and the sample
 // film is the template's thumbnail_url.
 export interface VideoRecipe {
+  // "trendy": one quick shot made straight from the prompt bar. "studio": a longer film for the
+  // step-by-step studio flow (coming soon).
+  shelf: "trendy" | "studio";
   tone: AdTone;
   look: AdLook;
+  // Studio: one shot plan per length offered. Empty for a one-shot template.
   plans: VideoTemplatePlan[];
+  // Trendy: one continuous shot of this length.
+  singleSeconds?: SingleShotSeconds;
   voiceover: boolean;
   hoverUrl: string | null;
+  // More sample films (the first is the template's thumbnail_url).
+  samples?: string[];
   sampleSeconds: number;
   provide: string[];
 }

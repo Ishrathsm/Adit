@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Play, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaThumb } from "@/components/ui/media-thumb";
-import { createProject, listTemplates, type AdLength, type Template, type TemplateType } from "@/lib/api";
+import { createProject, listTemplates, type Template, type TemplateType } from "@/lib/api";
 import {
   CATEGORIES,
   FORMATS,
@@ -147,10 +147,13 @@ function KindTabs({ kind }: { kind: TemplateType }) {
   );
 }
 
-// "15s · 30s" — the lengths a video template offers.
+// "8s" for a one-shot template, "15s · 30s" for a studio one.
 function lengthsLabel(t: Template): string {
+  if (t.recipe?.singleSeconds) return `${t.recipe.singleSeconds}s`;
   return (t.recipe?.plans ?? []).map((p) => `${p.length}s`).join(" · ");
 }
+
+const isStudio = (t: Template) => t.recipe?.shelf === "studio";
 
 // A video template's card picture: its still, and its small silent loop while hovered. The loop
 // is only mounted on hover, so the grid never downloads a clip nobody looks at.
@@ -189,6 +192,7 @@ function VideoCardMedia({
       )}
       <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
         <Play size={10} className="fill-current" /> {lengthsLabel(template)}
+        {isStudio(template) && " · Studio"}
       </span>
     </div>
   );
@@ -200,30 +204,45 @@ function VideoTemplatePreview({
   onClose,
 }: {
   template: Template;
-  onUse: (length: AdLength) => void;
+  onUse: (seconds: number) => void;
   onClose: () => void;
 }) {
   const recipe = template.recipe;
   const plans = recipe?.plans ?? [];
-  const [length, setLength] = useState<AdLength>(plans[plans.length - 1]?.length ?? 30);
+  const [length, setLength] = useState<number>(recipe?.singleSeconds ?? plans[plans.length - 1]?.length ?? 30);
   const plan = plans.find((p) => p.length === length);
+  const samples = [template.thumbnail_url!, ...(recipe?.samples ?? [])];
+  const [sample, setSample] = useState(0);
+  const portrait = template.aspect_ratio === "9:16";
 
   return (
     <div
       className="rgb-border flex max-h-full w-full max-w-5xl flex-col gap-5 overflow-auto bg-background p-5 lg:flex-row"
       onClick={(e) => e.stopPropagation()}
     >
-      <video
-        src={template.thumbnail_url!}
-        controls
-        autoPlay
-        playsInline
-        className="w-full bg-black lg:w-[60%]"
-        style={{
-          borderRadius: "var(--radius-card)",
-          aspectRatio: template.aspect_ratio.replace(":", " / "),
-        }}
-      />
+      <div className={`flex flex-col gap-2 ${portrait ? "items-center" : "lg:w-[60%]"}`}>
+        <video
+          key={samples[sample]}
+          src={samples[sample]}
+          controls
+          autoPlay
+          playsInline
+          className={portrait ? "max-h-[70vh] w-auto bg-black" : "w-full bg-black"}
+          style={{
+            borderRadius: "var(--radius-card)",
+            aspectRatio: template.aspect_ratio.replace(":", " / "),
+          }}
+        />
+        {samples.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {samples.map((url, i) => (
+              <button key={url} type="button" onClick={() => setSample(i)} className={chipClass(sample === i)}>
+                Sample {i + 1}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="flex flex-1 flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-semibold tracking-tight">{template.name}</h2>
@@ -262,6 +281,12 @@ function VideoTemplatePreview({
           </div>
         )}
 
+        {recipe?.singleSeconds && (
+          <p className="text-xs text-muted">
+            One {recipe.singleSeconds}s shot · {template.aspect_ratio} · music · ends on your logo
+          </p>
+        )}
+
         {recipe && recipe.provide.length > 0 && (
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium tracking-wide text-muted uppercase">What you&apos;ll provide</span>
@@ -277,13 +302,19 @@ function VideoTemplatePreview({
         )}
 
         <p className="text-xs text-muted">
-          The sample is a {recipe?.sampleSeconds ?? 30}s ad made in this style for another brand. Yours follows the same
-          story, camera and pace with your own product, brand and words, and you review every shot before the film is
-          made.
+          {samples.length > 1 ? "The samples are" : "The sample is a"} {recipe?.sampleSeconds ?? 30}s{" "}
+          {samples.length > 1 ? "ads" : "ad"} made with this template for made-up or other brands. Yours follows the
+          same story, camera and pace with your own product, brand and words.
         </p>
-        <Button onClick={() => onUse(length)} className="mt-auto w-full justify-center">
-          <Wand2 size={16} /> Use this template
-        </Button>
+        {isStudio(template) ? (
+          <Button disabled className="mt-auto w-full justify-center">
+            Studio flow – coming soon
+          </Button>
+        ) : (
+          <Button onClick={() => onUse(length)} className="mt-auto w-full justify-center">
+            <Wand2 size={16} /> Use this template
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -356,7 +387,7 @@ export function TemplateGallery({
   productId: string | null;
   needsProduct: boolean;
   // A picked video template goes to the prompt bar, where the user describes their own ad.
-  onUseVideoTemplate: (template: Template, length: AdLength) => void;
+  onUseVideoTemplate: (template: Template, seconds: number) => void;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -406,13 +437,36 @@ export function TemplateGallery({
     [templates, filters],
   );
 
-  const rows = useMemo(() => {
-    const items = filteredTemplates.map((template) => ({
-      template,
-      ratio: naturalRatios[template.id] ?? ratioFromLabel(template.aspect_ratio),
-    }));
-    return layoutJustifiedRows(items, containerWidth);
-  }, [filteredTemplates, naturalRatios, containerWidth]);
+  // Video templates sit on two shelves: quick trendy shots, then studio films.
+  const groups = useMemo(() => {
+    const shelves =
+      kind === "video"
+        ? [
+            {
+              title: "Trendy",
+              note: "One quick shot, made straight from your prompt.",
+              items: filteredTemplates.filter((t) => !isStudio(t)),
+            },
+            {
+              title: "Studio ads",
+              note: "Longer films with a step-by-step studio flow, coming soon.",
+              items: filteredTemplates.filter(isStudio),
+            },
+          ]
+        : [{ title: null, note: null, items: filteredTemplates }];
+    return shelves
+      .filter((shelf) => shelf.items.length)
+      .map((shelf) => ({
+        ...shelf,
+        rows: layoutJustifiedRows(
+          shelf.items.map((template) => ({
+            template,
+            ratio: naturalRatios[template.id] ?? ratioFromLabel(template.aspect_ratio),
+          })),
+          containerWidth,
+        ),
+      }));
+  }, [kind, filteredTemplates, naturalRatios, containerWidth]);
 
   useEffect(() => {
     if (!preview) return;
@@ -471,37 +525,47 @@ export function TemplateGallery({
           every picture kept at its own true shape — rows end up slightly different heights so
           there's never empty space on the right, and nothing is cropped or stretched. */}
       <div ref={setContainerEl} className="flex flex-col gap-4">
-        {rows.map((row, i) => (
-          <div key={i} className="flex gap-4">
-            {row.map(({ template: t, width, height }) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setPreview(t);
-                }}
-                className="group shrink-0 text-left focus-visible:outline-none"
-                style={{ width }}
-              >
-                {/* The image's own corners are rounded to match --radius-card (the same token
+        {groups.map((group) => (
+          <div key={group.title ?? "all"} className="flex flex-col gap-4">
+            {group.title && (
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="text-sm font-semibold">{group.title}</h3>
+                <p className="text-xs text-muted">{group.note}</p>
+              </div>
+            )}
+            {group.rows.map((row, i) => (
+              <div key={i} className="flex gap-4">
+                {row.map(({ template: t, width, height }) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setPreview(t);
+                    }}
+                    className="group shrink-0 text-left focus-visible:outline-none"
+                    style={{ width }}
+                  >
+                    {/* The image's own corners are rounded to match --radius-card (the same token
                     .rgb-border uses) so the picture's edge and its card chrome read as one
                     consistent shape, instead of two different roundings stacked on top of each
                     other. */}
-                <div className="rgb-border" style={{ width, height }}>
-                  {t.type === "video" ? (
-                    <VideoCardMedia template={t} onLoad={measure(t.id)} />
-                  ) : (
-                    <MediaThumb
-                      src={t.thumbnail_url!}
-                      alt={t.name}
-                      className="h-full w-full"
-                      style={{ borderRadius: "var(--radius-card)" }}
-                      onLoad={measure(t.id)}
-                    />
-                  )}
-                </div>
-              </button>
+                    <div className="rgb-border" style={{ width, height }}>
+                      {t.type === "video" ? (
+                        <VideoCardMedia template={t} onLoad={measure(t.id)} />
+                      ) : (
+                        <MediaThumb
+                          src={t.thumbnail_url!}
+                          alt={t.name}
+                          className="h-full w-full"
+                          style={{ borderRadius: "var(--radius-card)" }}
+                          onLoad={measure(t.id)}
+                        />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         ))}
