@@ -33,7 +33,12 @@ export interface GenerateVideoOptions {
   // Veo's dedicated negative-prompt parameter — unlike Nano Banana, Veo has a real one, so things
   // to avoid belong here rather than in the prompt text (where naming them primes them).
   negativePrompt?: string;
+  // "720p" (default) or "1080p"; 1080p costs more per second.
+  resolution?: VideoResolution;
 }
+
+export const VIDEO_RESOLUTIONS = ["720p", "1080p"] as const;
+export type VideoResolution = (typeof VIDEO_RESOLUTIONS)[number];
 
 // Veo generation is a long-running operation — kick it off, then poll until done.
 export async function generateVideo(prompt: string, options: GenerateVideoOptions = {}): Promise<GeneratedVideo> {
@@ -41,7 +46,7 @@ export async function generateVideo(prompt: string, options: GenerateVideoOption
     throw new Error("Veo is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
   }
 
-  const { generateAudio = true, durationSeconds = 8, aspectRatio = "16:9", image, negativePrompt } = options;
+  const { generateAudio = true, durationSeconds = 8, aspectRatio = "16:9", image, negativePrompt, resolution } = options;
 
   let operation = await withRateLimitRetry("veo", () =>
     genAI.models.generateVideos({
@@ -53,6 +58,7 @@ export async function generateVideo(prompt: string, options: GenerateVideoOption
         durationSeconds,
         generateAudio,
         ...(negativePrompt ? { negativePrompt } : {}),
+        ...(resolution && resolution !== "720p" ? { resolution } : {}),
       },
     }),
   );

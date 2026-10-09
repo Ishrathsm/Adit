@@ -31,6 +31,8 @@ export interface PosterBrief {
   mustShow: string | null;
   avoid: string | null;
   assets: PosterAsset[];
+  // Off: the prompt goes to the image model as written, without the prompt refiner.
+  enhance: boolean;
 }
 
 const LIMITS = { headline: 60, subline: 120, offer: 24, cta: 28, contactLine: 120, feature: 70, guidance: 300 };
@@ -91,6 +93,7 @@ export function parsePosterBrief(raw: unknown): PosterBrief {
     mustShow: text(b.mustShow, "mustShow", LIMITS.guidance),
     avoid: text(b.avoid, "avoid", LIMITS.guidance),
     assets,
+    enhance: b.enhance !== false,
   };
 }
 

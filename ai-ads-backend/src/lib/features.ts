@@ -11,6 +11,7 @@ export const FEATURES = {
   voiceover: { label: "Voiceover", description: "Narration over video ads" },
   reference_assets: { label: "Reference assets", description: "Upload product / person / location photos" },
   character_sheet: { label: "Character sheet", description: "Generated, approvable cast for video ads" },
+  image_tools: { label: "Image tools", description: "Upscale, background, expand, restyle, relight and remove" },
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;

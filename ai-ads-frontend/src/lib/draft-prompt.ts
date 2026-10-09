@@ -62,3 +62,30 @@ export function consumePrefillForProject(projectId: string): string | null {
     return null;
   }
 }
+
+// Settings and files picked in the prompt composer, handed to the project page it opens. Kept in
+// memory (the composer navigates client-side), since files can't go through sessionStorage; a
+// reload simply drops them and the page starts from its defaults.
+export interface ComposerHandoff {
+  aspectRatio?: string;
+  // Video: one quick shot of `singleSeconds`, or a shot-by-shot ad.
+  format?: "single" | "ad";
+  singleSeconds?: 4 | 6 | 8;
+  resolution?: "720p" | "1080p";
+  enhance?: boolean;
+  // Video: the picture the first shot starts from.
+  startImage?: File | null;
+  references?: { file: File; kind: "product" | "character" | "location" }[];
+}
+
+const handoffs = new Map<string, ComposerHandoff>();
+
+export function saveHandoffForProject(projectId: string, handoff: ComposerHandoff) {
+  handoffs.set(projectId, handoff);
+}
+
+export function takeHandoffForProject(projectId: string): ComposerHandoff | null {
+  const handoff = handoffs.get(projectId) ?? null;
+  handoffs.delete(projectId);
+  return handoff;
+}

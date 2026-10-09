@@ -1,3 +1,4 @@
+import { VIDEO_RESOLUTIONS, type VideoResolution } from "./veo";
 import type { PackInsert } from "./video-stitch";
 
 // The user's creative brief for a video ad. One house style doesn't fit every brand (a school's
@@ -66,6 +67,11 @@ export interface CreativeBrief {
   // A software product's real screens (uploaded screenshots of its UI). When present, the director
   // may show the product on screen through screen-insert shots built from these images.
   screens: ProductScreen[];
+  // Veo output size for every shot.
+  resolution: VideoResolution;
+  // Off: the user's prompt is followed literally — the director adds no ideas of its own and the
+  // shot prompts aren't expanded.
+  enhance: boolean;
   // Written by the director step (not user input): the music brief and, if voiceover is on, the
   // narration script. Kept with the brief so the stitch step (a later queue task) can use them.
   audio?: {
@@ -169,6 +175,8 @@ export const DEFAULT_BRIEF: CreativeBrief = {
   voiceGender: "female",
   voiceoverScript: null,
   screens: [],
+  resolution: "720p",
+  enhance: true,
 };
 
 export const MAX_ON_SCREEN_LINES = 4;
@@ -215,6 +223,8 @@ export function parseCreativeBrief(raw: unknown): CreativeBrief {
     voiceGender: pick(b.voiceGender, VOICE_GENDERS, DEFAULT_BRIEF.voiceGender, "voiceGender"),
     voiceoverScript: voiceoverScriptFor(b),
     screens: screensFor(b.screens),
+    resolution: pick(b.resolution, VIDEO_RESOLUTIONS, DEFAULT_BRIEF.resolution, "resolution"),
+    enhance: b.enhance !== false,
     variableShots: b.variableShots === true,
     endCardVoice: b.endCardVoice === true,
   };

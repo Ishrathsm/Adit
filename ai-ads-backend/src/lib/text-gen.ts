@@ -245,6 +245,8 @@ function directionBrief(concept: string, brief: CreativeBrief, plan: ShotPlan, o
       `PRODUCT SCREENS — the product is software, and these are its real screens (supplied images, shown full-frame and never regenerated):\n${brief.screens
         .map((sc, i) => `- screen ${i}: ${sc.description ?? "product screen"}`)
         .join("\n")}\nUse one screen-insert shot (two at most) to show the product visibly doing its job at the moment the person turns to it — after they reach for it, before the change it causes. Never the first or the last shot (the last shot is the person, living the result). In live shots the device's screen stays angled away.`,
+    !brief.enhance &&
+      "LITERAL: the client turned prompt enhancement off. Film exactly what the concept describes, in its own order, with nothing added — no extra story beats, people, props or setting. Fill in camera, lens and light only as far as the concept implies.",
     options.characterSheet &&
       "CHARACTER SHEET: every recurring person who is not already a reference asset must be listed in `characters` — a reference image is generated for each before shooting, so the same face, hair, and wardrobe carry through every shot.",
   ].filter(Boolean);

@@ -7,6 +7,7 @@ import { accountRouter } from "./routes/account";
 import { adminRouter } from "./routes/admin";
 import { foldersRouter } from "./routes/folders";
 import { healthRouter } from "./routes/health";
+import { imageToolsRouter } from "./routes/image-tools";
 import { jobsRouter } from "./routes/jobs";
 import { notificationsRouter } from "./routes/notifications";
 import { productsRouter } from "./routes/products";
@@ -33,6 +34,7 @@ export function createApp() {
   app.use("/api/notifications", requireAuth, notificationsRouter);
   app.use("/api/storyboards", requireAuth, rateLimitGenerations, storyboardsRouter);
   app.use("/api/templates", requireAuth, templatesRouter);
+  app.use("/api/image-tools", requireAuth, rateLimitGenerations, imageToolsRouter);
 
   return app;
 }

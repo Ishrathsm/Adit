@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Accordion } from "@/components/ui/accordion";
-import { consumePrefillForProject } from "@/lib/draft-prompt";
+import { consumePrefillForProject, takeHandoffForProject } from "@/lib/draft-prompt";
 import {
   createStoryboard,
   getAccount,
@@ -49,6 +49,8 @@ import {
   type StoryboardAspectRatio,
   type StoryboardShot,
   type Template,
+  VIDEO_RESOLUTIONS,
+  type VideoResolution,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
@@ -157,6 +159,8 @@ export default function StoryboardPage() {
   const [voiceoverLanguage, setVoiceoverLanguage] = useState<VoiceoverLanguage>("en");
   const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
   const [voiceoverScript, setVoiceoverScript] = useState("");
+  const [resolution, setResolution] = useState<VideoResolution>("720p");
+  const [enhance, setEnhance] = useState(true);
 
   // ?template=<id>&length=15|30: a video template picked on the Projects page. The form starts
   // from its recipe (tone, look, shot plan, voice-over), and the director follows its notes.
@@ -281,6 +285,30 @@ export default function StoryboardPage() {
     const prefill = consumePrefillForProject(id);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (prefill) setConcept(prefill);
+    // Settings and pictures picked in the prompt composer on the Projects page.
+    const handoff = takeHandoffForProject(id);
+    if (!handoff) return;
+    if (handoff.aspectRatio === "9:16" || handoff.aspectRatio === "16:9") setAspectRatio(handoff.aspectRatio);
+    if (handoff.format) setFormat(handoff.format);
+    if (handoff.singleSeconds) setSingleSeconds(handoff.singleSeconds);
+    if (handoff.resolution) setResolution(handoff.resolution);
+    if (handoff.enhance !== undefined) setEnhance(handoff.enhance);
+    if (handoff.startImage) {
+      setReferenceImageFile(handoff.startImage);
+      setReferenceImageRole("subject");
+    }
+    if (handoff.references?.length) {
+      const names = { product: "Product", character: "Person", location: "Place" };
+      setProAssets(
+        handoff.references.map((ref, i) => ({
+          file: ref.file,
+          previewUrl: URL.createObjectURL(ref.file),
+          kind: ref.kind,
+          name: `${names[ref.kind]} ${i + 1}`,
+          description: "",
+        })),
+      );
+    }
   }, [id]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -377,6 +405,8 @@ export default function StoryboardPage() {
           voiceoverLanguage,
           voiceGender,
           voiceoverScript: voiceover ? voiceoverScript.trim() || null : null,
+          resolution,
+          enhance,
         },
         referenceImageUrl,
         referenceImageRole: referenceImageUrl ? referenceImageRole : undefined,
@@ -626,6 +656,31 @@ export default function StoryboardPage() {
                 ))}
               </div>
               <p className="text-xs text-muted">Photoreal keeps everything filmable-real. Effects only appear with Surreal.</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Quality</label>
+              <div className="flex flex-wrap gap-2">
+                {VIDEO_RESOLUTIONS.map((value) => (
+                  <button key={value} type="button" disabled={creating} onClick={() => setResolution(value)} className={pillClass(resolution === value)}>
+                    {value}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted">1080p is sharper and costs more per second.</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Prompt</label>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={creating} onClick={() => setEnhance(true)} className={pillClass(enhance)}>
+                  Enhance
+                </button>
+                <button type="button" disabled={creating} onClick={() => setEnhance(false)} className={pillClass(!enhance)}>
+                  Use as written
+                </button>
+              </div>
+              <p className="text-xs text-muted">Enhance turns your idea into a detailed shot plan; &ldquo;as written&rdquo; follows your words exactly.</p>
             </div>
 
             <div className="flex flex-col gap-3 sm:col-span-2">
