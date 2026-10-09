@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   LogOut,
   Moon,
+  PlayCircle,
   Plus,
   Sparkles,
   Sun,
@@ -275,6 +276,7 @@ export function Sidebar() {
         <span className="hidden sm:inline">Motion Poster</span>
         <span className="hidden text-[10px] text-muted sm:inline">Soon</span>
       </div>
+      <NavLink href="/tutorials" icon={PlayCircle} label="Tutorials" active={pathname.startsWith("/tutorials")} />
 
       <div className="flex-1" />
 
