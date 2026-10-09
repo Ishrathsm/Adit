@@ -4,7 +4,7 @@ import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Download, Wand2, ChevronLeft, ChevronRight, Image as ImageIcon, Video } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, thumbSrc } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -353,10 +353,14 @@ export function ImageLightbox({
                   <video
                     key={project.id}
                     src={project.image}
-                    className="w-full h-auto max-h-[70vh] object-contain bg-background flex-shrink-0"
+                    // A still from the film until it plays (its first frame is the black fade-in),
+                    // on black so any letterbox around a wide film reads as part of the player.
+                    poster={thumbSrc(project.image) ?? undefined}
+                    className="w-full h-auto max-h-[70vh] object-contain bg-black flex-shrink-0"
                     style={{ minWidth: "100%" }}
                     controls
                     playsInline
+                    preload="metadata"
                   />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
