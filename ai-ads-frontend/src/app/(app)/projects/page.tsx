@@ -1,6 +1,5 @@
 "use client";
 
-import { videoThumbSrc } from "@/lib/utils";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,6 +23,7 @@ import { BrandKitPanel } from "@/components/brand-kit-panel";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CreateHero } from "@/components/create-hero";
 import { TemplateGallery } from "@/components/template-gallery";
+import { MediaThumb } from "@/components/ui/media-thumb";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
 import {
   createFolder,
@@ -466,18 +466,12 @@ function ProjectsPageInner() {
                 className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface"
               >
                 {project.preview_url ? (
-                  project.preview_type === "video" ? (
-                    <video
-                      src={videoThumbSrc(project.preview_url)}
-                      className="h-full w-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element -- remote, dynamically-generated image
-                    <img src={project.preview_url} alt={project.name} className="h-full w-full object-cover" />
-                  )
+                  <MediaThumb
+                    src={project.preview_url}
+                    type={project.preview_type === "video" ? "video" : "image"}
+                    alt={project.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted">
                     {project.type === "video" ? <Video size={24} /> : <ImageIcon size={24} />}

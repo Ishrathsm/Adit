@@ -14,3 +14,12 @@ export function cn(...inputs: ClassValue[]) {
 export function videoThumbSrc(url: string, seconds = 1.5): string {
   return url.includes("#") ? url : `${url}#t=${seconds}`;
 }
+
+// Small WebP preview the backend saves next to each generated poster or video in storage
+// (<name>.thumb.webp, see ai-ads-backend/src/lib/storage.ts). Null for anything else, e.g. brand
+// logos or sample files. Files from before thumbs existed may have none, so show it through
+// MediaThumb, which falls back to the full file.
+export function thumbSrc(url: string): string | null {
+  const m = url.match(/^(.*\/storage\/v1\/object\/public\/generated-media\/.+)\.(png|mp4)(\?[^#]*)?(#.*)?$/);
+  return m ? `${m[1]}.thumb.webp${m[3] ?? ""}` : null;
+}
