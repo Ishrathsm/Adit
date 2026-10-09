@@ -10,6 +10,7 @@ import {
   CircleUserRound,
   Clapperboard,
   FolderKanban,
+  ImageUp,
   Image as ImageIcon,
   LayoutTemplate,
   LogOut,
@@ -276,6 +277,7 @@ export function Sidebar() {
         <span className="hidden sm:inline">Motion Poster</span>
         <span className="hidden text-[10px] text-muted sm:inline">Soon</span>
       </div>
+      <NavLink href="/tools/image" icon={ImageUp} label="Image tools" active={pathname.startsWith("/tools/image")} />
       <NavLink href="/tutorials" icon={PlayCircle} label="Tutorials" active={pathname.startsWith("/tutorials")} />
 
       <div className="flex-1" />

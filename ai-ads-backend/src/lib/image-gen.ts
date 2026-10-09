@@ -42,6 +42,8 @@ export async function generateImage(
   // potentially inconsistent-looking subject from text alone — e.g. a storyboard shot gets both
   // the user's product photo and the previous shot's chosen frame.
   referenceImages: ReferenceImage[] = [],
+  // Output size: "1K" (the model's default), "2K" or "4K".
+  imageSize?: "1K" | "2K" | "4K",
 ): Promise<GeneratedImage> {
   if (!genAI) {
     throw new Error("Image generation is not configured — missing GOOGLE_CLOUD_PROJECT_ID");
@@ -58,7 +60,7 @@ export async function generateImage(
       contents,
       config: {
         responseModalities: ["IMAGE"],
-        imageConfig: { aspectRatio },
+        imageConfig: { aspectRatio, ...(imageSize ? { imageSize } : {}) },
       },
     });
   });

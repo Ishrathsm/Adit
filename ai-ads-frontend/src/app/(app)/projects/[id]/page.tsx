@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
-import { consumePrefillForProject } from "@/lib/draft-prompt";
+import { consumePrefillForProject, takeHandoffForProject } from "@/lib/draft-prompt";
 import {
   AD_LOOKS,
   AD_TONES,
@@ -72,6 +72,7 @@ export default function ProjectDetailPage() {
   const [audience, setAudience] = useState("");
   const [mustShow, setMustShow] = useState("");
   const [avoid, setAvoid] = useState("");
+  const [enhance, setEnhance] = useState(true);
   // Feature switches (plan defaults + admin overrides); null until loaded = treat as available.
   const [features, setFeatures] = useState<Features | null>(null);
   useEffect(() => {
@@ -146,6 +147,24 @@ export default function ProjectDetailPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrompt(prefill);
     }
+    // Settings and pictures picked in the prompt composer on the Projects page.
+    const handoff = takeHandoffForProject(id);
+    if (!handoff) return;
+    if (handoff.aspectRatio && (ASPECT_RATIOS as readonly string[]).includes(handoff.aspectRatio)) {
+      setAspectRatio(handoff.aspectRatio as AspectRatio);
+    }
+    if (handoff.enhance !== undefined) setEnhance(handoff.enhance);
+    if (handoff.references?.length) {
+      const names = { product: "Product", character: "Person", location: "Place" };
+      setPosterAssets(
+        handoff.references.map((ref, i) => ({
+          file: ref.file,
+          previewUrl: URL.createObjectURL(ref.file),
+          kind: ref.kind,
+          name: `${names[ref.kind]} ${i + 1}`,
+        })),
+      );
+    }
   }, [project, id, router]);
 
   useEffect(() => {
@@ -211,6 +230,7 @@ export default function ProjectDetailPage() {
             audience: audience.trim() || null,
             mustShow: mustShow.trim() || null,
             avoid: avoid.trim() || null,
+            enhance,
             assets: await Promise.all(
               posterAssets.map(async (asset) => ({
                 kind: asset.kind,
@@ -385,6 +405,17 @@ export default function ProjectDetailPage() {
                         {option.label}
                       </button>
                     ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted">Prompt</span>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" disabled={busy} onClick={() => setEnhance(true)} className={chipClass(enhance)}>
+                      Enhance
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => setEnhance(false)} className={chipClass(!enhance)}>
+                      Use as written
+                    </button>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">

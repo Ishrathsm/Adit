@@ -138,15 +138,18 @@ async function processGenerationJob(jobId: string): Promise<void> {
       return;
     }
 
-    const refinedPrompt = await refineImagePrompt(
-      job.prompt,
-      job.aspect_ratio,
-      brand,
-      template?.template_prompt,
-      job.reference_image_role ?? undefined,
-      brief ? posterDirection(brief) : null,
-      brief?.assets.length ? references.map((r) => r.label) : undefined,
-    );
+    // Enhance off: the user's own words go to the image model as written.
+    const refinedPrompt = brief?.enhance === false
+      ? job.prompt
+      : await refineImagePrompt(
+          job.prompt,
+          job.aspect_ratio,
+          brand,
+          template?.template_prompt,
+          job.reference_image_role ?? undefined,
+          brief ? posterDirection(brief) : null,
+          brief?.assets.length ? references.map((r) => r.label) : undefined,
+        );
     const image = await generateCleanImage(refinedPrompt, job.aspect_ratio, references.map((r) => r.image), allowedMarks);
     const rawBuffer = Buffer.from(image.imageBytes, "base64");
 
@@ -294,18 +297,22 @@ async function processShotChoices(shotId: string): Promise<void> {
     // The client's own product photos (and an older-style subject photo) may show genuine branding.
     const allowedMarks = [...productRefs, ...(userRole === "subject" && userRef ? [userRef] : [])];
 
-    const refinedPrompt = await refineShotImagePrompt(
-      shot.description,
-      storyboard.concept,
-      shot.shot_index,
-      storyboard.shot_count,
-      storyboard.aspect_ratio,
-      brand,
-      userRole,
-      storyboard.look_sheet,
-      directionText(storyboard.creative_brief),
-      references.map((r) => r.label),
-    );
+    // Enhance off: the shot is drawn from its literal description, not an expanded prompt.
+    const literal = storyboard.creative_brief?.enhance === false;
+    const refinedPrompt = literal
+      ? shot.description
+      : await refineShotImagePrompt(
+          shot.description,
+          storyboard.concept,
+          shot.shot_index,
+          storyboard.shot_count,
+          storyboard.aspect_ratio,
+          brand,
+          userRole,
+          storyboard.look_sheet,
+          directionText(storyboard.creative_brief),
+          references.map((r) => r.label),
+        );
     const look = storyboard.creative_brief?.look;
     const imagePrompt = look === "stopmotion" ? `${refinedPrompt}\n\n${STOP_MOTION_IMAGE_STYLE}` : look === "folkpuppet" ? `${refinedPrompt}\n\n${FOLK_IMAGE_STYLE}` : refinedPrompt;
     // Sequential, not parallel — bursting the image API is what trips its rate limit.
@@ -366,19 +373,21 @@ async function processShotVideo(shotId: string): Promise<void> {
     const imageBytes = Buffer.from(await imageRes.arrayBuffer()).toString("base64");
 
     const brand = await getBrandContextForProject(storyboard.project_id);
-    const refinedPrompt = await refineShotVideoPrompt(
-      shot.description,
-      storyboard.concept,
-      shot.shot_index,
-      storyboard.shot_count,
-      clipSeconds,
-      storyboard.aspect_ratio,
-      brand,
-      storyboard.look_sheet,
-      directionText(storyboard.creative_brief),
-      { imageBytes, mimeType: "image/png" },
-      storyboard.reference_image_role === "subject" || (await listAssets(storyboard.id)).some((a) => a.kind === "product"),
-    );
+    const refinedPrompt = storyboard.creative_brief?.enhance === false
+      ? shot.description
+      : await refineShotVideoPrompt(
+          shot.description,
+          storyboard.concept,
+          shot.shot_index,
+          storyboard.shot_count,
+          clipSeconds,
+          storyboard.aspect_ratio,
+          brand,
+          storyboard.look_sheet,
+          directionText(storyboard.creative_brief),
+          { imageBytes, mimeType: "image/png" },
+          storyboard.reference_image_role === "subject" || (await listAssets(storyboard.id)).some((a) => a.kind === "product"),
+        );
     const { prompt: refinedMotion, negativePrompt: refinedNegative } = splitNegativePrompt(refinedPrompt);
     const look = storyboard.creative_brief?.look;
     const prompt = look === "stopmotion" ? `${refinedMotion}\n\n${STOP_MOTION_VIDEO_STYLE}` : look === "folkpuppet" ? `${refinedMotion}\n\n${FOLK_VIDEO_STYLE}` : refinedMotion;
@@ -439,6 +448,7 @@ async function processShotVideo(shotId: string): Promise<void> {
           aspectRatio: storyboard.aspect_ratio,
           image: { imageBytes, mimeType: "image/png" },
           negativePrompt: [negativePrompt, ...avoid].filter(Boolean).join(", ") || undefined,
+          resolution: brief?.resolution,
         });
       } catch (err) {
         if (!best) throw err;

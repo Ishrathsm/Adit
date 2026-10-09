@@ -105,7 +105,15 @@ export type Role = (typeof ROLES)[number];
 
 // Feature switches — mirrors ai-ads-backend/src/lib/features.ts. Plan gives defaults; admins can
 // override any feature per user.
-export type FeatureKey = "poster" | "video_quick" | "video_ad" | "long_ads" | "voiceover" | "reference_assets" | "character_sheet";
+export type FeatureKey =
+  | "poster"
+  | "video_quick"
+  | "video_ad"
+  | "long_ads"
+  | "voiceover"
+  | "reference_assets"
+  | "character_sheet"
+  | "image_tools";
 export type Features = Record<FeatureKey, boolean>;
 
 export interface Account {
@@ -154,7 +162,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      // A FormData body sets its own multipart content type (with the boundary).
+      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...init?.headers,
     },
@@ -374,6 +383,8 @@ export interface PosterBrief {
   mustShow?: string | null;
   avoid?: string | null;
   assets?: UploadedAssetInput[];
+  // Off: the prompt goes to the image model as written, without the prompt refiner.
+  enhance?: boolean;
 }
 
 export const MAX_POSTER_ASSETS = 3;
@@ -491,7 +502,14 @@ export interface CreativeBrief {
   voiceoverLanguage?: VoiceoverLanguage;
   voiceGender?: VoiceGender;
   voiceoverScript?: string | null;
+  // Veo output size; 1080p costs more per second.
+  resolution?: VideoResolution;
+  // Off: the prompt is followed literally, without the prompt refiner.
+  enhance?: boolean;
 }
+
+export const VIDEO_RESOLUTIONS = ["720p", "1080p"] as const;
+export type VideoResolution = (typeof VIDEO_RESOLUTIONS)[number];
 
 // Seconds of footage (before the end card) — what a voiceover has to fit into.
 export function footageSeconds(brief: Pick<CreativeBrief, "format" | "singleSeconds" | "lengthSeconds" | "shotCount" | "shotSeconds">): number {
@@ -663,4 +681,29 @@ export interface ActivityItem {
 
 export function listRecentActivity() {
   return request<{ activity: ActivityItem[] }>("/api/notifications");
+}
+
+export const IMAGE_TOOLS = [
+  { id: "upscale", label: "Upscale", hint: "Sharper and bigger, nothing else changes" },
+  { id: "background", label: "Background", hint: "Keep the product, swap the scene", placeholder: "e.g. a sunlit marble kitchen counter" },
+  { id: "expand", label: "Expand", hint: "Grow the picture to a new shape" },
+  { id: "restyle", label: "Restyle", hint: "Same picture, new art style", placeholder: "e.g. soft watercolour illustration" },
+  { id: "relight", label: "Relight", hint: "Change the light and mood", placeholder: "e.g. warm golden-hour sun from the left" },
+  { id: "remove", label: "Remove", hint: "Erase something from the picture", placeholder: "e.g. the coffee cup on the left" },
+] as const;
+export type ImageTool = (typeof IMAGE_TOOLS)[number]["id"];
+
+// Runs one image tool on an uploaded picture; the result is saved as a new project.
+export async function runImageTool(
+  image: File,
+  options: { tool: ImageTool; instruction?: string; aspectRatio?: AspectRatio; size?: "2K" | "4K"; productId?: string | null },
+): Promise<{ projectId: string; outputUrl: string }> {
+  const formData = new FormData();
+  formData.append("image", image);
+  formData.append("tool", options.tool);
+  if (options.instruction) formData.append("instruction", options.instruction);
+  if (options.aspectRatio) formData.append("aspectRatio", options.aspectRatio);
+  if (options.size) formData.append("size", options.size);
+  if (options.productId) formData.append("productId", options.productId);
+  return request<{ projectId: string; outputUrl: string }>("/api/image-tools", { method: "POST", body: formData });
 }
