@@ -176,7 +176,7 @@ export function Sidebar() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border-subtle bg-surface px-2 py-4 sm:w-56 sm:px-3">
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col gap-1 overflow-x-hidden overflow-y-auto border-r border-border-subtle bg-surface px-2 py-4 sm:w-56 sm:px-3">
       <Link href="/projects" className="mb-6 flex items-center justify-center px-1 sm:justify-start sm:px-2">
         <Logo className="text-foreground" />
       </Link>
@@ -297,7 +297,7 @@ export function Sidebar() {
         <Link
           href="/account"
           className={clsx(
-            "flex min-h-10 flex-1 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3 sm:py-1.5",
+            "flex min-h-10 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-xl text-sm font-medium transition-colors sm:justify-start sm:px-3 sm:py-1.5",
             pathname === "/account"
               ? "bg-button-bg text-button-fg"
               : "text-muted hover:bg-white/5 hover:text-foreground",
@@ -310,7 +310,9 @@ export function Sidebar() {
             <CircleUserRound size={16} className="shrink-0" />
           )}
           <span className="hidden min-w-0 flex-1 sm:flex sm:flex-col sm:items-start sm:leading-tight">
-            <span className="max-w-full truncate">{displayName ?? "Account"}</span>
+            <span className="max-w-full truncate" title={displayName ?? undefined}>
+              {displayName ?? "Account"}
+            </span>
             {account && (
               <span className="mt-0.5 flex items-center gap-1.5">
                 <span
