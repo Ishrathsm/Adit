@@ -193,9 +193,9 @@ export function ImageLightbox({
         className={cn(
           "absolute top-5 right-5 z-50",
           "w-10 h-10 flex items-center justify-center",
-          "rounded-full bg-muted/50 backdrop-blur-md",
-          "border border-border",
-          "text-muted-foreground hover:text-foreground hover:bg-muted",
+          "rounded-full bg-surface/80 backdrop-blur-md",
+          "border border-border-strong",
+          "text-muted hover:text-foreground hover:bg-surface",
           "transition-all duration-300 ease-out hover:scale-105 active:scale-95",
         )}
         style={{
@@ -216,9 +216,9 @@ export function ImageLightbox({
         className={cn(
           "absolute left-4 md:left-8 z-50",
           "w-12 h-12 flex items-center justify-center",
-          "rounded-full bg-muted/50 backdrop-blur-md",
-          "border border-border",
-          "text-muted-foreground hover:text-foreground hover:bg-muted",
+          "rounded-full bg-surface/80 backdrop-blur-md",
+          "border border-border-strong",
+          "text-muted hover:text-foreground hover:bg-surface",
           "transition-all duration-300 ease-out hover:scale-110 active:scale-95",
           "disabled:opacity-0 disabled:pointer-events-none",
         )}
@@ -240,9 +240,9 @@ export function ImageLightbox({
         className={cn(
           "absolute right-4 md:right-8 z-50",
           "w-12 h-12 flex items-center justify-center",
-          "rounded-full bg-muted/50 backdrop-blur-md",
-          "border border-border",
-          "text-muted-foreground hover:text-foreground hover:bg-muted",
+          "rounded-full bg-surface/80 backdrop-blur-md",
+          "border border-border-strong",
+          "text-muted hover:text-foreground hover:bg-surface",
           "transition-all duration-300 ease-out hover:scale-110 active:scale-95",
           "disabled:opacity-0 disabled:pointer-events-none",
         )}
@@ -270,14 +270,14 @@ export function ImageLightbox({
         }}
       >
         <div
-          className={cn("relative overflow-hidden", "rounded-2xl", "bg-card", "ring-1 ring-border", "shadow-2xl")}
+          className={cn("rgb-border relative overflow-hidden", "shadow-2xl shadow-black/40")}
           style={{
             borderRadius: animationPhase === "initial" && !isClosing ? "8px" : "16px",
             transition: "border-radius 500ms cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <div
-            className={cn("flex items-center justify-between gap-3", "px-4 py-3", "bg-card", "border-b border-border")}
+            className={cn("flex items-center justify-between gap-3", "px-4 py-3", "border-b border-border-subtle")}
             style={{
               opacity: animationPhase === "complete" && !isClosing ? 1 : 0,
               transform: animationPhase === "complete" && !isClosing ? "translateY(0)" : "translateY(-10px)",
@@ -285,7 +285,7 @@ export function ImageLightbox({
             }}
           >
             <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-foreground/5 text-muted">
                 {currentProject.mediaType === "video" ? (
                   <Video className="h-4 w-4" />
                 ) : (
@@ -322,12 +322,9 @@ export function ImageLightbox({
                 download
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-2",
-                  "text-sm font-medium text-muted-foreground",
-                  "bg-muted/50 hover:bg-muted",
-                  "rounded-lg border border-border",
-                  "transition-all duration-200 ease-out",
-                  "hover:text-foreground",
+                  "inline-flex h-9 items-center gap-1.5 rounded-full px-4",
+                  "border border-border-strong text-sm font-medium text-foreground",
+                  "transition-colors duration-200 hover:bg-foreground/5",
                 )}
               >
                 <Download className="h-3.5 w-3.5" />
@@ -335,7 +332,7 @@ export function ImageLightbox({
               </a>
               <button
                 onClick={() => currentProject && router.push(`/projects/${currentProject.id}`)}
-                className="shiny-button flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-button-fg transition-transform duration-150 hover:scale-[1.03] active:scale-95"
+                className="shiny-button inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-button-fg transition-transform duration-150 hover:scale-[1.03] active:scale-95"
               >
                 <Wand2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Remix this design</span>
