@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MediaThumb } from "@/components/ui/media-thumb";
 import { createProject, listTemplates, type Template } from "@/lib/api";
 import {
   CATEGORIES,
@@ -259,8 +260,7 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
                     consistent shape, instead of two different roundings stacked on top of each
                     other. */}
                 <div className="rgb-border" style={{ width, height }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
-                  <img
+                  <MediaThumb
                     src={t.thumbnail_url!}
                     alt={t.name}
                     className="h-full w-full"
