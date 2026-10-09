@@ -2,10 +2,99 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createProject, listTemplates, type Template } from "@/lib/api";
+import {
+  CATEGORIES,
+  FORMATS,
+  ORIENTATIONS,
+  filtersFromSearchParams,
+  matchesFilters,
+  searchParamsFromFilters,
+  type TemplateFilters,
+} from "@/lib/template-filters";
+
+// Same chip styling as the aspect-ratio/Tone/Look pickers on the poster editor.
+function chipClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-xs transition-colors ${
+    active ? "border-transparent bg-button-bg text-button-fg" : "border-border-strong text-foreground hover:bg-white/5"
+  }`;
+}
+
+function toggle<T>(list: T[], value: T): T[] {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
+// Orientation/Format/Category chips above the gallery. Filters live in the URL query, merged onto
+// whatever else is there (e.g. ?product=... for an organisation's brand), so they survive a reload.
+function TemplateFilterBar({ filters }: { filters: TemplateFilters }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function apply(next: TemplateFilters) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("orientation");
+    params.delete("format");
+    params.delete("category");
+    searchParamsFromFilters(next).forEach((value, key) => params.set(key, value));
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+  }
+
+  const active = filters.orientations.length > 0 || filters.formats.length > 0 || filters.category !== null;
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {ORIENTATIONS.map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => apply({ ...filters, orientations: toggle(filters.orientations, value) })}
+          className={chipClass(filters.orientations.includes(value))}
+        >
+          {value}
+        </button>
+      ))}
+      <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden />
+      {FORMATS.map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => apply({ ...filters, formats: toggle(filters.formats, value) })}
+          className={chipClass(filters.formats.includes(value))}
+        >
+          {value}
+        </button>
+      ))}
+      <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden />
+      <select
+        aria-label="Category"
+        value={filters.category ?? ""}
+        onChange={(e) => apply({ ...filters, category: e.target.value || null })}
+        className="rounded-full border border-border-strong bg-background px-3 py-1.5 text-xs outline-none focus:border-foreground"
+      >
+        <option value="">All categories</option>
+        {CATEGORIES.map((value) => (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        ))}
+      </select>
+      {active && (
+        <button
+          type="button"
+          onClick={() => apply({ orientations: [], formats: [], category: null })}
+          className="px-2 text-xs text-muted hover:text-foreground"
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Target row height before a row is stretched to exactly fill the container's width (the same
 // "justified gallery" layout Google Photos/Flickr use). Every picture keeps its own true shape;
@@ -62,6 +151,7 @@ function ratioFromLabel(aspectRatio: Template["aspect_ratio"] | undefined): numb
 // and their logo or product photos go in as reference images.
 export function TemplateGallery({ productId, needsProduct }: { productId: string | null; needsProduct: boolean }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [templates, setTemplates] = useState<Template[] | null>(null);
   const [preview, setPreview] = useState<Template | null>(null);
   const [remixing, setRemixing] = useState(false);
@@ -93,14 +183,20 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
     return () => observer.disconnect();
   }, [containerEl]);
 
+  // Orientation/Format/Category come from the filter bar as URL query params.
+  const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
+  const filteredTemplates = useMemo(
+    () => (templates ?? []).filter((t) => matchesFilters(t, filters)),
+    [templates, filters],
+  );
+
   const rows = useMemo(() => {
-    if (!templates) return [];
-    const items = templates.map((template) => ({
+    const items = filteredTemplates.map((template) => ({
       template,
       ratio: naturalRatios[template.id] ?? ratioFromLabel(template.aspect_ratio),
     }));
     return layoutJustifiedRows(items, containerWidth);
-  }, [templates, naturalRatios, containerWidth]);
+  }, [filteredTemplates, naturalRatios, containerWidth]);
 
   useEffect(() => {
     if (!preview) return;
@@ -129,9 +225,18 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   if (!templates.length) {
     return <p className="rgb-border p-8 text-center text-sm text-muted">No templates yet.</p>;
   }
+  if (!filteredTemplates.length) {
+    return (
+      <>
+        <TemplateFilterBar filters={filters} />
+        <p className="rgb-border p-8 text-center text-sm text-muted">No templates match these filters.</p>
+      </>
+    );
+  }
 
   return (
     <>
+      <TemplateFilterBar filters={filters} />
       {/* A justified photo-wall: each row stretches to exactly fill the container's width, with
           every picture kept at its own true shape — rows end up slightly different heights so
           there's never empty space on the right, and nothing is cropped or stretched. */}
