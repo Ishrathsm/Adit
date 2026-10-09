@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { uploadPoster } from "../src/lib/storage";
 import { supabase } from "../src/lib/supabase";
 import { createTemplate } from "../src/lib/templates";
-import { checkTemplateFolder, resolveAspectRatio } from "./template-folder";
+import { checkTemplateFolder, resolveAspectRatio, uploadVideoTemplate } from "./template-folder";
 
 const ROOT = join(__dirname, "..", "..", "ad-templates");
 
@@ -38,12 +38,13 @@ const ROOT = join(__dirname, "..", "..", "ad-templates");
       console.log(`– ${folder}: "${meta.name}" is already in the library, skipped`);
       continue;
     }
-    const aspectRatio = await resolveAspectRatio(meta, image);
+    const aspectRatio = meta.type === "video" ? meta.aspectRatio! : await resolveAspectRatio(meta, image);
     if (dryRun) {
       console.log(`✓ ${folder}: ready ("${meta.name}", ${prompt.length} chars, ${aspectRatio})`);
       continue;
     }
-    const thumbnailUrl = await uploadPoster(`templates/${folder}`, readFileSync(image));
+    const { thumbnailUrl, recipe } =
+      meta.type === "video" ? await uploadVideoTemplate(folder, meta, image) : { thumbnailUrl: await uploadPoster(`templates/${folder}`, readFileSync(image)), recipe: null };
     const t = await createTemplate({
       type: meta.type ?? "poster",
       name: meta.name.trim(),
@@ -51,6 +52,7 @@ const ROOT = join(__dirname, "..", "..", "ad-templates");
       thumbnailUrl,
       templatePrompt: prompt,
       aspectRatio,
+      recipe,
     });
     console.log(`✓ ${folder}: imported "${t.name}" (${aspectRatio})`);
   }

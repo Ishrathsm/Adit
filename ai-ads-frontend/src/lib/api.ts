@@ -66,7 +66,35 @@ export interface Template {
   // The ratio this template's own image was designed at — preselect it on remix instead of one
   // default ratio for every template.
   aspect_ratio: AspectRatio;
+  // Video templates only (see VideoRecipe in ai-ads-backend/src/lib/templates.ts).
+  recipe: VideoRecipe | null;
   created_at: string;
+}
+
+// How a video template is made: the storyboard form starts from these settings, and the sample
+// film is the template's thumbnail_url.
+export interface VideoRecipe {
+  // "trendy": one quick shot made straight from the prompt bar. "studio": a longer film for the
+  // step-by-step studio flow (coming soon).
+  shelf: "trendy" | "studio";
+  tone: AdTone;
+  look: AdLook;
+  // Studio: one shot plan per length offered. Empty for a one-shot template.
+  plans: VideoTemplatePlan[];
+  // Trendy: one continuous shot of this length.
+  singleSeconds?: SingleShotSeconds;
+  voiceover: boolean;
+  hoverUrl: string | null;
+  // More sample films (the first is the template's thumbnail_url).
+  samples?: string[];
+  sampleSeconds: number;
+  provide: string[];
+}
+
+export interface VideoTemplatePlan {
+  length: AdLength;
+  shotCount: number;
+  shotSeconds: ShotSeconds;
 }
 
 export type AccountType = "individual" | "organisation";
@@ -555,6 +583,8 @@ export interface CreateStoryboardOptions {
   characterSheet?: boolean;
   referenceImageUrl?: string;
   referenceImageRole?: ReferenceImageRole;
+  // A video template the user picked; its director notes steer the script.
+  templateId?: string;
 }
 
 export function createStoryboard(projectId: string, concept: string, options: CreateStoryboardOptions) {

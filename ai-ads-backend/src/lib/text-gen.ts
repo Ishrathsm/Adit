@@ -109,6 +109,9 @@ export interface ScriptOptions {
   // With a strategy: skip writing and send this treatment straight to the checks (a re-check of a
   // saved script).
   startFrom?: AdScript;
+  // The director's notes of a video template the user picked (its story structure, camera, pace
+  // and sound), followed with the client's own product and concept.
+  template?: string;
 }
 
 const STRING = { type: Type.STRING };
@@ -264,7 +267,16 @@ Hard rules:
 
 ${CRAFT_RULES}
 
-${CATEGORY_PLAYBOOKS}${options.strategy ? `\n\n${strategyDirection(options.strategy)}` : ""}`;
+${CATEGORY_PLAYBOOKS}${options.strategy ? `\n\n${strategyDirection(options.strategy)}` : ""}${options.template ? `\n\n${templateDirection(options.template)}` : ""}`;
+}
+
+// A picked template is a proven recipe, not a script: keep its structure and craft, never the
+// sample ad's brand, people or product.
+function templateDirection(notes: string): string {
+  return `VIDEO TEMPLATE — the client chose this template. Follow its story structure, shot types, camera language, pacing, look and sound as fixed creative direction, filled with the client's own concept, product and brand. Never copy the sample ad's brand, product, people, words or setting where they don't fit the client:
+"""
+${notes}
+"""`;
 }
 
 // Roughly 2.3 spoken words per second leaves room to breathe. The narration is written per shot

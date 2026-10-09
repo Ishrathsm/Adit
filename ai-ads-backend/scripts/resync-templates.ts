@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { uploadPoster } from "../src/lib/storage";
 import { supabase } from "../src/lib/supabase";
 import { createTemplate, updateTemplateSync } from "../src/lib/templates";
-import { checkTemplateFolder, resolveAspectRatio } from "./template-folder";
+import { checkTemplateFolder, resolveAspectRatio, uploadVideoTemplate } from "./template-folder";
 
 const ROOT = join(__dirname, "..", "..", "ad-templates");
 
@@ -36,7 +36,7 @@ const ROOT = join(__dirname, "..", "..", "ad-templates");
     const { meta, prompt, image } = result;
     const name = meta.name.trim();
     const description = meta.description?.trim() || null;
-    const aspectRatio = await resolveAspectRatio(meta, image);
+    const aspectRatio = meta.type === "video" ? meta.aspectRatio! : await resolveAspectRatio(meta, image);
     const row = byName.get(name);
 
     if (!row) {
@@ -44,8 +44,9 @@ const ROOT = join(__dirname, "..", "..", "ad-templates");
         console.log(`+ ${folder}: would import new template "${name}" (${aspectRatio})`);
         continue;
       }
-      const thumbnailUrl = await uploadPoster(`templates/${folder}`, readFileSync(image));
-      const t = await createTemplate({ type: meta.type ?? "poster", name, description, thumbnailUrl, templatePrompt: prompt, aspectRatio });
+      const { thumbnailUrl, recipe } =
+        meta.type === "video" ? await uploadVideoTemplate(folder, meta, image) : { thumbnailUrl: await uploadPoster(`templates/${folder}`, readFileSync(image)), recipe: null };
+      const t = await createTemplate({ type: meta.type ?? "poster", name, description, thumbnailUrl, templatePrompt: prompt, aspectRatio, recipe });
       console.log(`✓ ${folder}: imported new template "${t.name}" (${aspectRatio})`);
       continue;
     }
@@ -59,8 +60,9 @@ const ROOT = join(__dirname, "..", "..", "ad-templates");
       );
       continue;
     }
-    const thumbnailUrl = await uploadPoster(`templates/${folder}`, readFileSync(image));
-    await updateTemplateSync(row.id, { thumbnailUrl, templatePrompt: prompt, description, aspectRatio });
+    const { thumbnailUrl, recipe } =
+      meta.type === "video" ? await uploadVideoTemplate(folder, meta, image) : { thumbnailUrl: await uploadPoster(`templates/${folder}`, readFileSync(image)), recipe: undefined };
+    await updateTemplateSync(row.id, { thumbnailUrl, templatePrompt: prompt, description, aspectRatio, recipe });
     console.log(`✓ ${folder}: re-synced "${name}" (${aspectRatio})`);
   }
   process.exit(failed ? 1 : 0);

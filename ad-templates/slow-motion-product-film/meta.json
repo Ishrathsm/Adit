@@ -1,0 +1,32 @@
+{
+  "name": "Slow-Motion Product Film",
+  "description": "A bright, faceless product film: slow-motion liquid and texture macros, each key ingredient or feature shown in its own shot, ending on the product hero. For beauty, personal care and packaged goods.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 8,
+  "hoverAt": 4,
+  "recipe": {
+    "shelf": "studio",
+    "tone": "premium",
+    "look": "photoreal",
+    "plans": [
+      {
+        "length": 15,
+        "shotCount": 2,
+        "shotSeconds": 6
+      },
+      {
+        "length": 30,
+        "shotCount": 4,
+        "shotSeconds": 6
+      }
+    ],
+    "voiceover": true,
+    "sampleSeconds": 31,
+    "provide": [
+      "A clear photo of your product (front, plain background)",
+      "Two or three key ingredients or features",
+      "Your tagline or one-line promise"
+    ]
+  }
+}

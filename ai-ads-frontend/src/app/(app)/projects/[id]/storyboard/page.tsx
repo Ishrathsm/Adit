@@ -3,7 +3,7 @@
 import { DictationButton } from "@/components/ui/dictation-button";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { CheckCircle2, Clock, Download, Loader2, Upload, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Download, Loader2, Play, Upload, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -15,6 +15,7 @@ import {
   getLatestJobForProject,
   getLatestStoryboard,
   getStoryboard,
+  listTemplates,
   regenerateStoryboardAsset,
   startStoryboard,
   selectShotChoice,
@@ -47,6 +48,7 @@ import {
   type Storyboard,
   type StoryboardAspectRatio,
   type StoryboardShot,
+  type Template,
 } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 4000;
@@ -155,6 +157,37 @@ export default function StoryboardPage() {
   const [voiceoverLanguage, setVoiceoverLanguage] = useState<VoiceoverLanguage>("en");
   const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
   const [voiceoverScript, setVoiceoverScript] = useState("");
+
+  // ?template=<id>&length=15|30: a video template picked on the Projects page. The form starts
+  // from its recipe (tone, look, shot plan, voice-over), and the director follows its notes.
+  const [template, setTemplate] = useState<Template | null>(null);
+  useEffect(() => {
+    const templateId = searchParams.get("template");
+    if (!templateId) return;
+    const wantedLength = Number(searchParams.get("length"));
+    listTemplates("video")
+      .then(({ templates }) => {
+        const picked = templates.find((t) => t.id === templateId);
+        const recipe = picked?.recipe;
+        if (!picked || !recipe) return;
+        const plan = recipe.plans.find((p) => p.length === wantedLength) ?? recipe.plans[recipe.plans.length - 1];
+        if (!recipe.singleSeconds && !plan) return;
+        setTemplate(picked);
+        if (recipe.singleSeconds) {
+          setFormat("single");
+          setSingleSeconds(recipe.singleSeconds);
+        } else {
+          setFormat("ad");
+          setPlannedShots(plan.shotCount);
+          setShotSeconds(plan.shotSeconds);
+        }
+        setTone(recipe.tone);
+        setLook(recipe.look);
+        setVoiceover(recipe.voiceover);
+        if (picked.aspect_ratio === "16:9" || picked.aspect_ratio === "9:16") setAspectRatio(picked.aspect_ratio);
+      })
+      .catch(() => {});
+  }, [searchParams]);
   const scriptWords = voiceoverScript.trim() ? voiceoverScript.trim().split(/\s+/).length : 0;
   const adSeconds = plannedShots * shotSeconds;
   // Older briefs' length field, sent for compatibility; the explicit plan overrides it.
@@ -347,6 +380,7 @@ export default function StoryboardPage() {
         },
         referenceImageUrl,
         referenceImageRole: referenceImageUrl ? referenceImageRole : undefined,
+        templateId: template?.id,
       });
       setStoryboard(storyboard);
       setShots(shots);
@@ -413,6 +447,23 @@ export default function StoryboardPage() {
             </div>
           )}
           <div className="rgb-border grid gap-x-8 gap-y-7 p-6 sm:grid-cols-2 sm:p-8">
+            {template && (
+              <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-button-bg py-1 pr-1 pl-3 text-xs font-medium text-button-fg">
+                  <Play size={11} className="fill-current" /> Template: {template.name}
+                  <button
+                    type="button"
+                    onClick={() => setTemplate(null)}
+                    disabled={creating}
+                    aria-label="Stop using this template"
+                    className="rounded-full p-0.5 hover:bg-black/10"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+                <span className="text-xs text-muted">The settings below start from the template; change anything you like.</span>
+              </div>
+            )}
             <div className="flex flex-col gap-3 sm:col-span-2">
               <label htmlFor="concept" className="text-sm font-medium">
                 Describe the ad concept

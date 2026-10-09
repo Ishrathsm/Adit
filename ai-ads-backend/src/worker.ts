@@ -557,7 +557,8 @@ async function editBriefedAd(
     renderEndCard(lastFrame, {
       brandName: brief.brandName ?? product?.name ?? null,
       tagline: brief.endCardTagline ?? null,
-      keyMessage: brief.keyMessage ?? product?.tagline ?? null,
+      // The director often reuses the key message as the tagline; show it once, not twice.
+      keyMessage: sameLine(brief.keyMessage ?? product?.tagline ?? null, brief.endCardTagline) ? null : brief.keyMessage ?? product?.tagline ?? null,
       contactLine: brief.contactLine,
       logoUrl: product?.logo_url ?? null,
       accentColor: product?.primary_color ?? null,
@@ -733,3 +734,8 @@ worker.on("failed", (job, err) => console.error(`[worker] job ${job?.id} failed:
 ensureMediaBucket().catch((err) => console.error("[worker] failed to ensure media bucket:", err));
 
 console.log("[worker] generation worker started, waiting for jobs...");
+
+function sameLine(a: string | null | undefined, b: string | null | undefined): boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return Boolean(a && b && norm(a) === norm(b));
+}

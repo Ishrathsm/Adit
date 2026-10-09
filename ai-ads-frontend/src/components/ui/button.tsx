@@ -13,7 +13,7 @@ export function Button({ variant = "primary", className, ...props }: ButtonProps
         variant === "primary" &&
           "bg-button-bg text-button-fg hover:opacity-90",
         variant === "ghost" &&
-          "border border-border-strong text-foreground hover:bg-white/5",
+          "border border-border-strong text-foreground hover:bg-foreground/5",
         className,
       )}
       {...props}

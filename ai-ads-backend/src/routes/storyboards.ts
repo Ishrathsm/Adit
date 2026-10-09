@@ -6,6 +6,7 @@ import { generateAdScript } from "../lib/text-gen";
 import { type CreativeBrief, fitShotCuts, footageSeconds, parseCreativeBrief, planShots } from "../lib/creative-brief";
 import { getProductById, toBrandContext } from "../lib/products";
 import { uploadReferenceImage } from "../lib/storage";
+import { getTemplateById } from "../lib/templates";
 import {
   type AssetKind,
   createAssets,
@@ -50,7 +51,7 @@ storyboardsRouter.post("/reference-image", upload.single("image"), async (req: A
 });
 
 storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { projectId, concept, aspectRatio, brief: rawBrief, referenceImageUrl, referenceImageRole, assets: rawAssets, characterSheet } =
+  const { projectId, concept, aspectRatio, brief: rawBrief, referenceImageUrl, referenceImageRole, assets: rawAssets, characterSheet, templateId } =
     req.body ?? {};
 
   if (typeof projectId !== "string" || typeof concept !== "string" || !concept.trim()) {
@@ -86,6 +87,10 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
     return;
   }
   const wantsCharacterSheet = characterSheet === true;
+  if (templateId !== undefined && templateId !== null && typeof templateId !== "string") {
+    res.status(400).json({ error: "templateId must be a string" });
+    return;
+  }
 
   // Access control: each part of the brief maps to a feature switch (plan defaults + admin overrides).
   if (!checkFeature(req, res, brief.format === "single" ? "video_quick" : "video_ad", brief.format === "single" ? "Quick video" : "Full video ads")) return;
@@ -101,8 +106,15 @@ storyboardsRouter.post("/", async (req: AuthedRequest, res) => {
       return;
     }
 
+    const template = templateId ? await getTemplateById(templateId) : null;
+    if (templateId && template?.type !== "video") {
+      res.status(400).json({ error: "templateId must be a video template" });
+      return;
+    }
+
     const product = project.product_id ? await getProductById(project.product_id) : null;
     const script = await generateAdScript(concept.trim(), brief, plan, {
+      template: template?.template_prompt,
       brand: toBrandContext(product),
       assets: assets.map((a) => ({ kind: a.kind, name: a.name, description: a.description })),
       characterSheet: wantsCharacterSheet,
