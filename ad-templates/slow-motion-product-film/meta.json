@@ -6,6 +6,7 @@
   "posterAt": 8,
   "hoverAt": 4,
   "recipe": {
+    "shelf": "studio",
     "tone": "premium",
     "look": "photoreal",
     "plans": [

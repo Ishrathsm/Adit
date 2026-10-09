@@ -6,6 +6,7 @@
   "posterAt": 7,
   "hoverAt": 18,
   "recipe": {
+    "shelf": "studio",
     "tone": "playful",
     "look": "folkpuppet",
     "plans": [

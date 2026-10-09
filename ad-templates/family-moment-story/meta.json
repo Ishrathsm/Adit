@@ -6,6 +6,7 @@
   "posterAt": 13,
   "hoverAt": 9,
   "recipe": {
+    "shelf": "studio",
     "tone": "warm",
     "look": "cinematic",
     "plans": [
