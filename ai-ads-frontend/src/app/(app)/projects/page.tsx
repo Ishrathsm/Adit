@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ChevronDown,
   Download,
   Folder as FolderIcon,
   FolderInput,
@@ -99,6 +100,20 @@ function ProjectsPageInner() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [previewSelection, setPreviewSelection] = useState<{ index: number; sourceRect: DOMRect } | null>(null);
   const previewCardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // The main page shows two rows of projects, then "View more"; a folder shows everything.
+  const [showAllProjects, setShowAllProjects] = useState(false);
+  const [projectColumns, setProjectColumns] = useState(4);
+  const [projectGridEl, setProjectGridEl] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!projectGridEl) return;
+    // The grid's column count changes with the breakpoints (1 → 4); read it from the grid itself.
+    const observer = new ResizeObserver(() =>
+      setProjectColumns(Math.max(1, getComputedStyle(projectGridEl).gridTemplateColumns.split(" ").length)),
+    );
+    observer.observe(projectGridEl);
+    return () => observer.disconnect();
+  }, [projectGridEl]);
 
   function refreshProjects() {
     listProjects({ productId: productId ?? undefined, folderId: folderId ?? undefined })
@@ -397,7 +412,7 @@ function ProjectsPageInner() {
                                 setRenameFolderValue(folder.name);
                                 setFolderMenuOpenFor(null);
                               }}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-foreground/5"
                             >
                               <Pencil size={12} /> Rename
                             </button>
@@ -462,8 +477,8 @@ function ProjectsPageInner() {
           {!activeFolder && folders.length > 0 && (
             <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Projects</p>
           )}
-          <div className="grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {projects.map((project) => (
+          <div ref={setProjectGridEl} className="grid gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {(activeFolder || showAllProjects ? projects : projects.slice(0, projectColumns * 2)).map((project) => (
             <div key={project.id} className="rgb-border flex flex-col gap-3 p-3">
               <button
                 ref={(el) => {
@@ -540,7 +555,7 @@ function ProjectsPageInner() {
                             setRenameValue(project.name);
                             setMenuOpenFor(null);
                           }}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-foreground/5"
                         >
                           <Pencil size={12} /> Rename
                         </button>
@@ -555,7 +570,7 @@ function ProjectsPageInner() {
                                 <button
                                   key={f.id}
                                   onClick={() => handleMove(project, f.id)}
-                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-foreground/5"
                                 >
                                   <FolderIcon size={12} /> {f.name}
                                 </button>
@@ -563,7 +578,7 @@ function ProjectsPageInner() {
                             {project.folder_id && (
                               <button
                                 onClick={() => handleMove(project, null)}
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-white/5"
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-foreground/5"
                               >
                                 <FolderInput size={12} /> Uncategorized
                               </button>
@@ -590,6 +605,20 @@ function ProjectsPageInner() {
             </div>
           ))}
           </div>
+          {!activeFolder && projects.length > projectColumns * 2 && (
+            <div className="flex items-center gap-4 pt-2">
+              <span className="h-px flex-1 bg-border-subtle" aria-hidden />
+              <button
+                type="button"
+                onClick={() => setShowAllProjects((all) => !all)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border-strong px-4 text-xs font-medium text-foreground transition-colors hover:bg-foreground/5"
+              >
+                {showAllProjects ? "Show less" : `View more (${projects.length - projectColumns * 2})`}
+                <ChevronDown size={14} className={showAllProjects ? "rotate-180" : undefined} />
+              </button>
+              <span className="h-px flex-1 bg-border-subtle" aria-hidden />
+            </div>
+          )}
         </div>
       ) : !activeFolder && folders.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-10 text-center">
