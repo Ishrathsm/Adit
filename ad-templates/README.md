@@ -46,7 +46,7 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 }
 ```
 - `name` must be unique. It's the card title, and the importer skips a name that already exists.
-- `type` is `"poster"`. Video templates aren't supported yet.
+- `type` is `"poster"` (see [Video templates](#video-templates) for `"video"`).
 - `aspectRatio` (optional): one of `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `9:16`, `16:9`, `21:9`. Only set this if the template's intended ratio genuinely isn't what `template.png`'s own pixels say — normally omit it and let the importer derive it from the image.
 
 ### `prompt.txt`
@@ -56,6 +56,47 @@ Folders starting with `_` (like `_drafts/`) are ignored by the importer, so keep
 - **Never hard-code facts.** Prices, discounts, dates, phone numbers, websites, addresses, awards and statistics must be placeholders. If the user doesn't give them, Adit leaves them off the poster. It never invents them.
 - **Don't paste a chat conversation.** The file should contain only the prompt. `_drafts/product-offer-prompt.txt` shows a chat transcript rewritten as a proper template.
 - The importer rejects a prompt that has no `[Placeholders]` or is too short.
+
+## Video templates
+
+A video template is a proven ad recipe. The user watches its sample film, picks 15s or 30s, describes their own ad in the prompt bar, and lands on the video storyboard page with the template's settings filled in. The director follows the template's notes with the user's product and brand.
+
+```
+ad-templates/
+  smooth-ride-vehicle-film/
+    preview.mp4      the sample film (720p, under 15 MB; ~3–5 MB is plenty)
+    prompt.txt       the director's notes: story structure, camera, edit, sound, things to avoid
+    meta.json        name, description, type "video", ratio, recipe
+```
+
+`meta.json` for a video template:
+
+```json
+{
+  "name": "Smooth Ride Vehicle Film",
+  "description": "One sentence shown in the preview.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 19,
+  "hoverAt": 13,
+  "recipe": {
+    "tone": "bold",
+    "look": "cinematic",
+    "plans": [
+      { "length": 15, "shotCount": 2, "shotSeconds": 6 },
+      { "length": 30, "shotCount": 4, "shotSeconds": 6 }
+    ],
+    "voiceover": false,
+    "sampleSeconds": 30,
+    "provide": ["A clear photo of your vehicle (side view)", "Three features with one spec each"]
+  }
+}
+```
+
+- `aspectRatio` is `16:9` or `9:16` (the only ratios video supports).
+- `posterAt` is the second of the sample used as the card's still; `hoverAt` is where the 5-second silent hover loop starts. The importer makes both.
+- `recipe` is what the storyboard form starts from: `tone` and `look` use the form's values, and each plan is shots × seconds (4, 6 or 8) plus the end card, at most 32s of footage.
+- `prompt.txt` is director's notes, not a poster prompt, so it needs no `[Placeholders]`. Describe the structure beat by beat and never name the sample's brand.
 
 ## Importing
 

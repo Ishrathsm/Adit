@@ -1,0 +1,31 @@
+{
+  "name": "Folk-Tale Animated Legend",
+  "description": "A storybook brand legend in Indian folk-art cut-out animation: a kingdom, a problem, a clever maker and the product that saves the day, told by a narrator. For snacks, sweets and heritage brands.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 7,
+  "hoverAt": 18,
+  "recipe": {
+    "tone": "playful",
+    "look": "folkpuppet",
+    "plans": [
+      {
+        "length": 15,
+        "shotCount": 3,
+        "shotSeconds": 4
+      },
+      {
+        "length": 30,
+        "shotCount": 7,
+        "shotSeconds": 4
+      }
+    ],
+    "voiceover": true,
+    "sampleSeconds": 50,
+    "provide": [
+      "A clear photo of your product or pack",
+      "Your product's hero ingredient or taste",
+      "Your tagline"
+    ]
+  }
+}

@@ -27,16 +27,16 @@ export function posterThumb(image: Buffer): Promise<Buffer> {
   return sharp(image).resize({ width: THUMB_MAX, height: THUMB_MAX, fit: "inside", withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
 }
 
-// A frame from just after the opening fade (every stitched ad fades in from black); clips
-// shorter than that fall back to their first frame.
-export async function videoThumb(video: Buffer): Promise<Buffer> {
+// A frame from just after the opening fade (every stitched ad fades in from black), or from `at`
+// seconds; clips shorter than that fall back to their first frame.
+export async function videoThumb(video: Buffer, at = 1.5): Promise<Buffer> {
   const dir = await mkdtemp(join(tmpdir(), "thumb-"));
   try {
     const input = join(dir, "in.mp4");
     const frame = join(dir, "frame.png");
     await writeFile(input, video);
-    for (const at of ["1.5", "0"]) {
-      await ffmpeg(["-y", "-ss", at, "-i", input, "-frames:v", "1", frame]).catch(() => undefined);
+    for (const seek of [String(at), "0"]) {
+      await ffmpeg(["-y", "-ss", seek, "-i", input, "-frames:v", "1", frame]).catch(() => undefined);
       const png = await readFile(frame).catch(() => null);
       if (png) return posterThumb(png);
     }

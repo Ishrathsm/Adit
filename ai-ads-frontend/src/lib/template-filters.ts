@@ -75,6 +75,12 @@ const CATEGORY_BY_NAME: Record<string, string> = {
   "Telecom & Communication Billboard": "Technology",
   "Travel & Tourism Promotion": "Travel & Tourism",
   "Universal Promotional Banner": "Retail & Sales",
+  // Video templates.
+  "Course Promo Film": "Education",
+  "Family Moment Story": "Food & Beverage",
+  "Folk-Tale Animated Legend": "Food & Beverage",
+  "Slow-Motion Product Film": "Beauty & Personal Care",
+  "Smooth Ride Vehicle Film": "Automotive",
 };
 const FALLBACK_CATEGORY = "Other";
 

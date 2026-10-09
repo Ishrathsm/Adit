@@ -21,7 +21,7 @@ import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { BackLink } from "@/components/back-link";
 import { BrandKitPanel } from "@/components/brand-kit-panel";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { CreateHero } from "@/components/create-hero";
+import { CreateHero, type AttachedTemplate } from "@/components/create-hero";
 import { TemplateGallery } from "@/components/template-gallery";
 import { MediaThumb } from "@/components/ui/media-thumb";
 import { clearDraftPrompt, peekDraftPrompt, savePrefillForProject } from "@/lib/draft-prompt";
@@ -77,6 +77,8 @@ function ProjectsPageInner() {
   const [accountChecked, setAccountChecked] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  // A video template picked in the gallery, waiting in the prompt bar for the user's idea.
+  const [attachedTemplate, setAttachedTemplate] = useState<AttachedTemplate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const draftHandledRef = useRef(false);
 
@@ -315,7 +317,12 @@ function ProjectsPageInner() {
           {creating ? (
             <p className="text-sm text-muted">Setting up your project…</p>
           ) : (
-            <CreateHero account={account} productId={productId} />
+            <CreateHero
+              account={account}
+              productId={productId}
+              attached={attachedTemplate}
+              onDetach={() => setAttachedTemplate(null)}
+            />
           )}
         </div>
       )}
@@ -616,9 +623,14 @@ function ProjectsPageInner() {
       )}
 
       {!activeFolder && (
-        <div id="templates" className="mt-14 scroll-mt-6 pb-10">
+        // Bottom padding leaves room for the floating prompt bar over the last row.
+        <div id="templates" className="mt-14 scroll-mt-6 pb-36">
           <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Templates</p>
-          <TemplateGallery productId={productId} needsProduct={account?.account_type === "organisation"} />
+          <TemplateGallery
+            productId={productId}
+            needsProduct={account?.account_type === "organisation"}
+            onUseVideoTemplate={(template, length) => setAttachedTemplate({ template, length })}
+          />
         </div>
       )}
 

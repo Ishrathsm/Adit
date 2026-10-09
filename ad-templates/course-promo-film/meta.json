@@ -1,0 +1,31 @@
+{
+  "name": "Course Promo Film",
+  "description": "A warm, aspirational education promo: a student's journey from opening the course to growing confidence, with on-screen benefit lines and a clear sign-up end card. For ed-tech, coaching and online courses.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 12,
+  "hoverAt": 20,
+  "recipe": {
+    "tone": "trustworthy",
+    "look": "photoreal",
+    "plans": [
+      {
+        "length": 15,
+        "shotCount": 3,
+        "shotSeconds": 4
+      },
+      {
+        "length": 30,
+        "shotCount": 7,
+        "shotSeconds": 4
+      }
+    ],
+    "voiceover": false,
+    "sampleSeconds": 30,
+    "provide": [
+      "What you teach and who it's for",
+      "Three benefits in a few words each (e.g. Doubts solved 24×7)",
+      "Your offer or sign-up line (e.g. Start your free trial)"
+    ]
+  }
+}

@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Wand2, X } from "lucide-react";
+import { Play, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaThumb } from "@/components/ui/media-thumb";
-import { createProject, listTemplates, type Template } from "@/lib/api";
+import { createProject, listTemplates, type AdLength, type Template, type TemplateType } from "@/lib/api";
 import {
   CATEGORIES,
   FORMATS,
@@ -30,7 +30,7 @@ function toggle<T>(list: T[], value: T): T[] {
 
 // Orientation/Format/Category chips above the gallery. Filters live in the URL query, merged onto
 // whatever else is there (e.g. ?product=... for an organisation's brand), so they survive a reload.
-function TemplateFilterBar({ filters }: { filters: TemplateFilters }) {
+function TemplateFilterBar({ filters, kind }: { filters: TemplateFilters; kind: TemplateType }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,23 +53,33 @@ function TemplateFilterBar({ filters }: { filters: TemplateFilters }) {
         <button
           key={value}
           type="button"
-          onClick={() => apply({ ...filters, orientations: toggle(filters.orientations, value) })}
+          onClick={() =>
+            apply({
+              ...filters,
+              orientations: toggle(filters.orientations, value),
+            })
+          }
           className={chipClass(filters.orientations.includes(value))}
         >
           {value}
         </button>
       ))}
-      <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden />
-      {FORMATS.map((value) => (
-        <button
-          key={value}
-          type="button"
-          onClick={() => apply({ ...filters, formats: toggle(filters.formats, value) })}
-          className={chipClass(filters.formats.includes(value))}
-        >
-          {value}
-        </button>
-      ))}
+      {/* Poster/Billboard/Social is read from an image's ratio; it means nothing for a video. */}
+      {kind === "poster" && (
+        <>
+          <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden />
+          {FORMATS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => apply({ ...filters, formats: toggle(filters.formats, value) })}
+              className={chipClass(filters.formats.includes(value))}
+            >
+              {value}
+            </button>
+          ))}
+        </>
+      )}
       <span className="mx-1 h-5 w-px bg-border-subtle" aria-hidden />
       <select
         aria-label="Category"
@@ -97,6 +107,188 @@ function TemplateFilterBar({ filters }: { filters: TemplateFilters }) {
   );
 }
 
+// Posters | Videos switch, kept in the URL (?kind=video) like the filters.
+function KindTabs({ kind }: { kind: TemplateType }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function pick(next: TemplateType) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "video") params.set("kind", "video");
+    else params.delete("kind");
+    // Format filters only exist for posters.
+    if (next === "video") params.delete("format");
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+  }
+
+  return (
+    <div
+      className="mb-3 inline-flex rounded-full border border-border-strong p-0.5"
+      role="tablist"
+      aria-label="Template type"
+    >
+      {(["poster", "video"] as const).map((value) => (
+        <button
+          key={value}
+          type="button"
+          role="tab"
+          aria-selected={kind === value}
+          onClick={() => pick(value)}
+          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+            kind === value ? "bg-button-bg text-button-fg" : "text-muted hover:text-foreground"
+          }`}
+        >
+          {value === "poster" ? "Posters" : "Videos"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// "15s · 30s" — the lengths a video template offers.
+function lengthsLabel(t: Template): string {
+  return (t.recipe?.plans ?? []).map((p) => `${p.length}s`).join(" · ");
+}
+
+// A video template's card picture: its still, and its small silent loop while hovered. The loop
+// is only mounted on hover, so the grid never downloads a clip nobody looks at.
+function VideoCardMedia({
+  template,
+  onLoad,
+}: {
+  template: Template;
+  onLoad: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative h-full w-full"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <MediaThumb
+        src={template.thumbnail_url!}
+        type="video"
+        alt={template.name}
+        className="h-full w-full object-cover"
+        style={{ borderRadius: "var(--radius-card)" }}
+        onLoad={onLoad}
+      />
+      {hovered && template.recipe?.hoverUrl && (
+        <video
+          src={template.recipe.hoverUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ borderRadius: "var(--radius-card)" }}
+        />
+      )}
+      <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+        <Play size={10} className="fill-current" /> {lengthsLabel(template)}
+      </span>
+    </div>
+  );
+}
+
+function VideoTemplatePreview({
+  template,
+  onUse,
+  onClose,
+}: {
+  template: Template;
+  onUse: (length: AdLength) => void;
+  onClose: () => void;
+}) {
+  const recipe = template.recipe;
+  const plans = recipe?.plans ?? [];
+  const [length, setLength] = useState<AdLength>(plans[plans.length - 1]?.length ?? 30);
+  const plan = plans.find((p) => p.length === length);
+
+  return (
+    <div
+      className="rgb-border flex max-h-full w-full max-w-5xl flex-col gap-5 overflow-auto bg-background p-5 lg:flex-row"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <video
+        src={template.thumbnail_url!}
+        controls
+        autoPlay
+        playsInline
+        className="w-full bg-black lg:w-[60%]"
+        style={{
+          borderRadius: "var(--radius-card)",
+          aspectRatio: template.aspect_ratio.replace(":", " / "),
+        }}
+      />
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">{template.name}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close preview"
+            className="rounded-full p-1 text-muted hover:text-foreground"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {template.description && <p className="text-sm text-muted">{template.description}</p>}
+
+        {plans.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium tracking-wide text-muted uppercase">Length</span>
+            <div className="flex flex-wrap gap-2">
+              {plans.map((p) => (
+                <button
+                  key={p.length}
+                  type="button"
+                  onClick={() => setLength(p.length)}
+                  className={chipClass(length === p.length)}
+                >
+                  {p.length}s
+                </button>
+              ))}
+            </div>
+            {plan && (
+              <p className="text-xs text-muted">
+                {plan.shotCount} shots · {template.aspect_ratio} · music
+                {recipe?.voiceover ? " + voice-over" : ""} · ends on your logo
+              </p>
+            )}
+          </div>
+        )}
+
+        {recipe && recipe.provide.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium tracking-wide text-muted uppercase">What you&apos;ll provide</span>
+            <ul className="flex flex-col gap-1 text-sm">
+              {recipe.provide.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="text-muted">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <p className="text-xs text-muted">
+          The sample is a {recipe?.sampleSeconds ?? 30}s ad made in this style for another brand. Yours follows the same
+          story, camera and pace with your own product, brand and words, and you review every shot before the film is
+          made.
+        </p>
+        <Button onClick={() => onUse(length)} className="mt-auto w-full justify-center">
+          <Wand2 size={16} /> Use this template
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Target row height before a row is stretched to exactly fill the container's width (the same
 // "justified gallery" layout Google Photos/Flickr use). Every picture keeps its own true shape;
 // what changes per row is how tall that row ends up, so there's never empty space on the right.
@@ -118,7 +310,13 @@ function layoutJustifiedRows(items: { template: Template; ratio: number }[], con
   let ratioSum = 0;
 
   const flushRow = (height: number) => {
-    rows.push(row.map(({ template, ratio }) => ({ template, height, width: height * ratio })));
+    rows.push(
+      row.map(({ template, ratio }) => ({
+        template,
+        height,
+        width: height * ratio,
+      })),
+    );
     row = [];
     ratioSum = 0;
   };
@@ -150,10 +348,21 @@ function ratioFromLabel(aspectRatio: Template["aspect_ratio"] | undefined): numb
 // Curated poster templates: click one to preview it large, then Remix to start a poster in that
 // template's style — the template is preselected, the prompt is left empty for the user's own ad,
 // and their logo or product photos go in as reference images.
-export function TemplateGallery({ productId, needsProduct }: { productId: string | null; needsProduct: boolean }) {
+export function TemplateGallery({
+  productId,
+  needsProduct,
+  onUseVideoTemplate,
+}: {
+  productId: string | null;
+  needsProduct: boolean;
+  // A picked video template goes to the prompt bar, where the user describes their own ad.
+  onUseVideoTemplate: (template: Template, length: AdLength) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [templates, setTemplates] = useState<Template[] | null>(null);
+  const kind: TemplateType = searchParams.get("kind") === "video" ? "video" : "poster";
+  const [templatesByKind, setTemplatesByKind] = useState<Partial<Record<TemplateType, Template[]>>>({});
+  const templates = templatesByKind[kind] ?? null;
   const [preview, setPreview] = useState<Template | null>(null);
   const [remixing, setRemixing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,10 +379,16 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
-    listTemplates("poster")
-      .then(({ templates }) => setTemplates(templates.filter((t) => t.thumbnail_url)))
-      .catch(() => setTemplates([]));
-  }, []);
+    if (templatesByKind[kind]) return;
+    listTemplates(kind)
+      .then(({ templates }) =>
+        setTemplatesByKind((prev) => ({
+          ...prev,
+          [kind]: templates.filter((t) => t.thumbnail_url),
+        })),
+      )
+      .catch(() => setTemplatesByKind((prev) => ({ ...prev, [kind]: [] })));
+  }, [kind, templatesByKind]);
 
   useEffect(() => {
     if (!containerEl) return;
@@ -222,22 +437,36 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
     }
   }
 
-  if (templates === null) return null;
+  if (templates === null) return <KindTabs kind={kind} />;
   if (!templates.length) {
-    return <p className="rgb-border p-8 text-center text-sm text-muted">No templates yet.</p>;
+    return (
+      <>
+        <KindTabs kind={kind} />
+        <p className="rgb-border p-8 text-center text-sm text-muted">No {kind} templates yet.</p>
+      </>
+    );
   }
   if (!filteredTemplates.length) {
     return (
       <>
-        <TemplateFilterBar filters={filters} />
+        <KindTabs kind={kind} />
+        <TemplateFilterBar filters={filters} kind={kind} />
         <p className="rgb-border p-8 text-center text-sm text-muted">No templates match these filters.</p>
       </>
     );
   }
 
+  const measure = (id: string) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    setNaturalRatios((prev) => (prev[id] === ratio ? prev : { ...prev, [id]: ratio }));
+  };
+
   return (
     <>
-      <TemplateFilterBar filters={filters} />
+      <KindTabs kind={kind} />
+      <TemplateFilterBar filters={filters} kind={kind} />
       {/* A justified photo-wall: each row stretches to exactly fill the container's width, with
           every picture kept at its own true shape — rows end up slightly different heights so
           there's never empty space on the right, and nothing is cropped or stretched. */}
@@ -260,18 +489,17 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
                     consistent shape, instead of two different roundings stacked on top of each
                     other. */}
                 <div className="rgb-border" style={{ width, height }}>
-                  <MediaThumb
-                    src={t.thumbnail_url!}
-                    alt={t.name}
-                    className="h-full w-full"
-                    style={{ borderRadius: "var(--radius-card)" }}
-                    onLoad={(e) => {
-                      const img = e.currentTarget;
-                      if (!img.naturalWidth || !img.naturalHeight) return;
-                      const ratio = img.naturalWidth / img.naturalHeight;
-                      setNaturalRatios((prev) => (prev[t.id] === ratio ? prev : { ...prev, [t.id]: ratio }));
-                    }}
-                  />
+                  {t.type === "video" ? (
+                    <VideoCardMedia template={t} onLoad={measure(t.id)} />
+                  ) : (
+                    <MediaThumb
+                      src={t.thumbnail_url!}
+                      alt={t.name}
+                      className="h-full w-full"
+                      style={{ borderRadius: "var(--radius-card)" }}
+                      onLoad={measure(t.id)}
+                    />
+                  )}
                 </div>
               </button>
             ))}
@@ -288,42 +516,53 @@ export function TemplateGallery({ productId, needsProduct }: { productId: string
             aria-modal="true"
             aria-label={preview.name}
           >
-            <div
-              className="rgb-border flex max-h-full w-full max-w-4xl flex-col gap-5 overflow-auto bg-background p-5 sm:flex-row"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
-              <img
-                src={preview.thumbnail_url!}
-                alt={preview.name}
-                className="max-h-[75vh] w-full object-contain sm:w-auto sm:max-w-[55%]"
-                style={{ borderRadius: "var(--radius-card)" }}
+            {preview.type === "video" ? (
+              <VideoTemplatePreview
+                template={preview}
+                onClose={() => setPreview(null)}
+                onUse={(length) => {
+                  setPreview(null);
+                  onUseVideoTemplate(preview, length);
+                }}
               />
-              <div className="flex flex-1 flex-col gap-4">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-xl font-semibold tracking-tight">{preview.name}</h2>
-                  <button
-                    type="button"
-                    onClick={() => setPreview(null)}
-                    disabled={remixing}
-                    aria-label="Close preview"
-                    className="rounded-full p-1 text-muted hover:text-foreground disabled:opacity-50"
-                  >
-                    <X size={18} />
-                  </button>
+            ) : (
+              <div
+                className="rgb-border flex max-h-full w-full max-w-4xl flex-col gap-5 overflow-auto bg-background p-5 sm:flex-row"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- remote curated template image */}
+                <img
+                  src={preview.thumbnail_url!}
+                  alt={preview.name}
+                  className="max-h-[75vh] w-full object-contain sm:w-auto sm:max-w-[55%]"
+                  style={{ borderRadius: "var(--radius-card)" }}
+                />
+                <div className="flex flex-1 flex-col gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-xl font-semibold tracking-tight">{preview.name}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setPreview(null)}
+                      disabled={remixing}
+                      aria-label="Close preview"
+                      className="rounded-full p-1 text-muted hover:text-foreground disabled:opacity-50"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {preview.description && <p className="text-sm text-muted">{preview.description}</p>}
+                  <p className="text-sm text-muted">
+                    Remix it for your own ad: describe what it&apos;s for, and add your logo or product photos as
+                    reference images. Anything you don&apos;t give us — prices, dates, contact details — stays off the
+                    poster.
+                  </p>
+                  <Button onClick={() => remix(preview)} disabled={remixing} className="w-full justify-center">
+                    <Wand2 size={16} /> {remixing ? "Opening…" : "Remix with this template"}
+                  </Button>
+                  {error && <p className="text-sm text-red-400">{error}</p>}
                 </div>
-                {preview.description && <p className="text-sm text-muted">{preview.description}</p>}
-                <p className="text-sm text-muted">
-                  Remix it for your own ad: describe what it&apos;s for, and add your logo or product photos as
-                  reference images. Anything you don&apos;t give us — prices, dates, contact details — stays off
-                  the poster.
-                </p>
-                <Button onClick={() => remix(preview)} disabled={remixing} className="w-full justify-center">
-                  <Wand2 size={16} /> {remixing ? "Opening…" : "Remix with this template"}
-                </Button>
-                {error && <p className="text-sm text-red-400">{error}</p>}
               </div>
-            </div>
+            )}
           </div>,
           document.body,
         )}

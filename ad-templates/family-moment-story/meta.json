@@ -1,0 +1,31 @@
+{
+  "name": "Family Moment Story",
+  "description": "A warm, real-life story film: a small everyday problem at home, a caring gesture, and the product as the moment of relief, ending on a pack hero. For food, beverages and home products.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 13,
+  "hoverAt": 9,
+  "recipe": {
+    "tone": "warm",
+    "look": "cinematic",
+    "plans": [
+      {
+        "length": 15,
+        "shotCount": 2,
+        "shotSeconds": 6
+      },
+      {
+        "length": 30,
+        "shotCount": 4,
+        "shotSeconds": 6
+      }
+    ],
+    "voiceover": true,
+    "sampleSeconds": 30,
+    "provide": [
+      "A clear photo of your pack",
+      "The everyday moment your product helps with",
+      "Your tagline"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "Smooth Ride Vehicle Film",
+  "description": "A cinematic vehicle launch film: detail shots of the design and engineering with feature callouts, then a calm, steady ride at golden hour and a hero shot. For bikes, cars and scooters.",
+  "type": "video",
+  "aspectRatio": "16:9",
+  "posterAt": 19,
+  "hoverAt": 13,
+  "recipe": {
+    "tone": "bold",
+    "look": "cinematic",
+    "plans": [
+      {
+        "length": 15,
+        "shotCount": 2,
+        "shotSeconds": 6
+      },
+      {
+        "length": 30,
+        "shotCount": 4,
+        "shotSeconds": 6
+      }
+    ],
+    "voiceover": false,
+    "sampleSeconds": 30,
+    "provide": [
+      "A clear photo of your vehicle (side view)",
+      "Three features with one spec each (e.g. ABS, engine, weight)",
+      "Your call to action (e.g. Book a test ride)"
+    ]
+  }
+}
